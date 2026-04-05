@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, GitBranch, Play, Pause, Eye, Trash2, Search, ArrowLeft, MessageSquare, ListChecks, SplitSquareHorizontal } from "lucide-react";
+import { Plus, GitBranch, Play, Pause, Eye, Trash2, Search, ArrowLeft, MessageSquare, ListChecks, SplitSquareHorizontal, Send } from "lucide-react";
 
 const flows = [
   { id: 1, name: "تسجيل العملاء", status: "PUBLISHED", account: "متجر الإلكترونيات", steps: 5, responses: 1240, lastEdited: "قبل 3 أيام" },
