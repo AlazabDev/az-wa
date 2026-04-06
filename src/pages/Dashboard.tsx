@@ -1,48 +1,56 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileText, GitBranch, MessageCircle, TrendingUp, Clock } from "lucide-react";
+import { FolderKanban, Users, Wrench, HardHat } from "lucide-react";
 
 const stats = [
-  { label: "الحسابات النشطة", value: "4", icon: Users, change: "+1 هذا الشهر" },
-  { label: "القوالب المعتمدة", value: "12", icon: FileText, change: "3 قيد المراجعة" },
-  { label: "التدفقات النشطة", value: "8", icon: GitBranch, change: "2 متوقفة" },
-  { label: "الرسائل المرسلة", value: "24.5K", icon: MessageCircle, change: "+12% هذا الأسبوع" },
+  { title: "المشاريع النشطة", value: "12", icon: FolderKanban, change: "+3 هذا الشهر", color: "text-primary" },
+  { title: "العملاء", value: "48", icon: Users, change: "+5 جدد", color: "text-info" },
+  { title: "طلبات الصيانة", value: "23", icon: Wrench, change: "8 قيد التنفيذ", color: "text-warning" },
+  { title: "العمال والفنيين", value: "36", icon: HardHat, change: "32 متاحين", color: "text-success" },
 ];
 
-const recentTemplates = [
-  { name: "ترحيب العملاء الجدد", status: "approved", account: "متجر الإلكترونيات", date: "قبل ساعتين" },
-  { name: "تأكيد الطلب", status: "pending", account: "مطعم السعادة", date: "قبل 5 ساعات" },
-  { name: "عرض خاص رمضان", status: "rejected", account: "متجر الأزياء", date: "أمس" },
-  { name: "تذكير بالموعد", status: "approved", account: "عيادة الصحة", date: "قبل يومين" },
+const recentProjects = [
+  { name: "برج السلام السكني", client: "شركة الأفق", status: "قيد التنفيذ", progress: 65 },
+  { name: "صيانة مجمع النور", client: "مؤسسة النور", status: "قيد التنفيذ", progress: 40 },
+  { name: "ترميم فيلا الياسمين", client: "أحمد العلي", status: "مكتمل", progress: 100 },
+  { name: "بناء مستودعات صناعية", client: "شركة الصناعات", status: "تخطيط", progress: 10 },
 ];
 
-const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  approved: { label: "معتمد", variant: "default" },
-  pending: { label: "قيد المراجعة", variant: "secondary" },
-  rejected: { label: "مرفوض", variant: "destructive" },
+const recentMaintenance = [
+  { title: "تسريب مياه - الطابق 3", building: "برج السلام", priority: "عاجل", time: "منذ ساعة" },
+  { title: "صيانة مصعد", building: "مجمع النور", priority: "متوسط", time: "منذ 3 ساعات" },
+  { title: "إصلاح كهرباء", building: "فيلا الورد", priority: "عادي", time: "منذ يوم" },
+];
+
+const priorityMap: Record<string, "destructive" | "secondary" | "default"> = {
+  "عاجل": "destructive",
+  "متوسط": "secondary",
+  "عادي": "default",
+};
+
+const statusMap: Record<string, "default" | "secondary" | "outline"> = {
+  "قيد التنفيذ": "default",
+  "مكتمل": "secondary",
+  "تخطيط": "outline",
 };
 
 export default function Dashboard() {
   return (
-    <AppLayout title="لوحة التحكم" subtitle="نظرة عامة على حساباتك وقوالبك">
+    <AppLayout title="لوحة التحكم" subtitle="نظرة عامة على المشاريع والصيانة">
       <div className="space-y-6">
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
-            <Card key={stat.label} className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
+            <Card key={stat.title} className="shadow-card">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{stat.title}</p>
                     <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3 text-success" />
-                      {stat.change}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
                   </div>
-                  <div className="rounded-lg bg-accent p-2.5">
-                    <stat.icon className="h-5 w-5 text-primary" />
+                  <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
+                    <stat.icon className="h-5 w-5" />
                   </div>
                 </div>
               </CardContent>
@@ -50,39 +58,58 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Recent Templates */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              آخر القوالب
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentTemplates.map((template, i) => {
-                const status = statusMap[template.status];
-                return (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
-                        <FileText className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{template.name}</p>
-                        <p className="text-xs text-muted-foreground">{template.account}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                      <span className="text-xs text-muted-foreground">{template.date}</span>
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-primary" />
+                أحدث المشاريع
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentProjects.map((project) => (
+                <div key={project.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{project.name}</p>
+                    <p className="text-xs text-muted-foreground">{project.client}</p>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20">
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${project.progress}%` }} />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 text-center">{project.progress}%</p>
+                    </div>
+                    <Badge variant={statusMap[project.status]} className="text-xs">{project.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-warning" />
+                آخر طلبات الصيانة
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentMaintenance.map((req) => (
+                <div key={req.title} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{req.title}</p>
+                    <p className="text-xs text-muted-foreground">{req.building}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">{req.time}</span>
+                    <Badge variant={priorityMap[req.priority]} className="text-xs">{req.priority}</Badge>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );
