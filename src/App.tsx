@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Templates from "./pages/Templates";
 import Flows from "./pages/Flows";
+import FlowBuilder from "./pages/FlowBuilder";
 import Projects from "./pages/Projects";
 import Clients from "./pages/Clients";
 import Maintenance from "./pages/Maintenance";
