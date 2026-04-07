@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Templates from "./pages/Templates";
 import Flows from "./pages/Flows";
+import FlowBuilder from "./pages/FlowBuilder";
 import Projects from "./pages/Projects";
 import Clients from "./pages/Clients";
 import Maintenance from "./pages/Maintenance";
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/flows" element={<Flows />} />
+          <Route path="/flows/new" element={<FlowBuilder />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
