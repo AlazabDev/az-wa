@@ -20,12 +20,13 @@ const statusMap: Record<string, { label: string; variant: "default" | "secondary
 };
 
 export default function Flows() {
+  const navigate = useNavigate();
   return (
     <AppLayout
       title="التدفقات"
       subtitle="أتمتة مراسلات المقاولات والصيانة"
       actions={
-        <Button size="sm" className="gradient-primary text-primary-foreground">
+        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => navigate("/flows/new")}>
           <Plus className="h-4 w-4 ml-1" />
           تدفق جديد
         </Button>

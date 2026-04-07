@@ -31,6 +31,7 @@ const App = () => (
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/flows" element={<Flows />} />
+          <Route path="/flows/new" element={<FlowBuilder />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
