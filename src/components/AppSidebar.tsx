@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, FileText, GitBranch, Settings, Building2, Wrench, HardHat, FolderKanban, MessageCircle } from "lucide-react";
+import { LayoutDashboard, Users, FileText, GitBranch, Settings, Building2, Wrench, HardHat, FolderKanban, MessageCircle, Webhook } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -25,6 +25,7 @@ const mainItems = [
 const messagingItems = [
   { title: "القوالب", url: "/templates", icon: FileText },
   { title: "التدفقات", url: "/flows", icon: GitBranch },
+  { title: "الويب هوك", url: "/webhooks", icon: Webhook },
 ];
 
 const settingsItems = [

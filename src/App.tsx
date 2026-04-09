@@ -12,6 +12,7 @@ import Projects from "./pages/Projects";
 import Clients from "./pages/Clients";
 import Maintenance from "./pages/Maintenance";
 import Teams from "./pages/Teams";
+import Webhooks from "./pages/Webhooks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/templates" element={<Templates />} />
           <Route path="/flows" element={<Flows />} />
           <Route path="/flows/new" element={<FlowBuilder />} />
+          <Route path="/webhooks" element={<Webhooks />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
