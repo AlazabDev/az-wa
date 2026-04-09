@@ -1,66 +1,73 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Plus, ChevronDown, ChevronUp, Eye, EyeOff, Copy, MoreVertical, Webhook, Trash2, AlertCircle } from "lucide-react";
+import {
+  Plus, ChevronDown, Eye, EyeOff, Copy, MoreVertical,
+  Webhook, Trash2, AlertCircle, Phone, Activity, CheckCircle2
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-const WEBHOOK_TYPES = [
-  { value: "kapso", label: "Kapso (events)", description: "اختر أحداث Kapso لإرسالها إلى نقطة النهاية" },
-  { value: "meta", label: "Meta (forward raw webhook)", description: "يعيد توجيه حمولة Meta webhook الخام" },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const EVENT_OPTIONS = [
-  { value: "whatsapp.message.received", label: "رسالة مستلمة", description: "عند وصول رسالة جديدة" },
-  { value: "whatsapp.message.sent", label: "رسالة مرسلة", description: "عند إرسال رسالة إلى واتساب" },
-  { value: "whatsapp.conversation.started", label: "بداية محادثة", description: "عند بدء محادثة جديدة" },
-  { value: "whatsapp.conversation.inactive", label: "محادثة غير نشطة", description: "عند عدم إرسال رسائل لفترة" },
-  { value: "whatsapp.conversation.ended", label: "انتهاء محادثة", description: "عند إنهاء محادثة" },
-  { value: "whatsapp.message.delivered", label: "رسالة تم تسليمها", description: "عند تسليم رسالتك" },
-  { value: "whatsapp.message.read", label: "رسالة مقروءة", description: "عند قراءة رسالتك" },
-  { value: "whatsapp.message.failed", label: "فشل إرسال رسالة", description: "عند فشل تسليم الرسالة" },
+  { value: "message.received", label: "رسالة واردة", icon: "📩" },
+  { value: "message.sent", label: "رسالة صادرة", icon: "📤" },
+  { value: "message.delivered", label: "تم التسليم", icon: "✅" },
+  { value: "message.read", label: "تمت القراءة", icon: "👁" },
+  { value: "message.failed", label: "فشل الإرسال", icon: "❌" },
+  { value: "conversation.started", label: "محادثة جديدة", icon: "💬" },
+  { value: "conversation.closed", label: "إغلاق محادثة", icon: "🔒" },
+  { value: "status.changed", label: "تغيير حالة", icon: "🔄" },
 ];
 
-interface WebhookFormData {
-  name: string;
-  webhookType: string;
-  url: string;
-  secret: string;
-  customHeaders: string;
-  payloadVersion: string;
-  selectedEvents: string[];
-  numbersFilter: string[];
+interface WaNumber {
+  id: string;
+  phone_e164: string;
+  display_phone_number: string | null;
+  verified_name: string | null;
+  phone_number_id: string;
+  status: string;
+  wa_account_id: string;
 }
 
-const initialFormData: WebhookFormData = {
-  name: "",
-  webhookType: "kapso",
-  url: "",
-  secret: "",
-  customHeaders: "{}",
-  payloadVersion: "v2",
-  selectedEvents: [],
-  numbersFilter: [],
-};
+interface WebhookTarget {
+  id: string;
+  name: string;
+  url: string;
+  is_active: boolean;
+  secret: string | null;
+  events_filter: string[];
+  numbers_filter: string[];
+  timeout_ms: number;
+  retry_count: number;
+  success_rate: number | null;
+  last_delivery_at: string | null;
+  last_error: string | null;
+  created_at: string;
+}
 
 export default function Webhooks() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [formData, setFormData] = useState<WebhookFormData>(initialFormData);
   const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
+
+  // Form state
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [secret, setSecret] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
+  const [allNumbers, setAllNumbers] = useState(true);
 
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ["webhooks"],
@@ -70,35 +77,65 @@ export default function Webhooks() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as WebhookTarget[];
     },
   });
 
   const { data: waNumbers } = useQuery({
-    queryKey: ["wa_numbers"],
+    queryKey: ["wa_numbers_webhook"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("wa_numbers").select("id, phone_e164, display_phone_number, verified_name");
+      const { data, error } = await supabase
+        .from("wa_numbers")
+        .select("id, phone_e164, display_phone_number, verified_name, phone_number_id, status, wa_account_id")
+        .eq("status", "active");
       if (error) throw error;
-      return data;
+      // Deduplicate by phone_number_id
+      const seen = new Set<string>();
+      return (data as WaNumber[]).filter((n) => {
+        if (seen.has(n.phone_number_id)) return false;
+        seen.add(n.phone_number_id);
+        return true;
+      });
+    },
+  });
+
+  const { data: deliveryStats } = useQuery({
+    queryKey: ["webhook_delivery_stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("hub_deliveries")
+        .select("target_id, status, http_status")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      const stats: Record<string, { total: number; success: number; failed: number }> = {};
+      (data || []).forEach((d: any) => {
+        if (!stats[d.target_id]) stats[d.target_id] = { total: 0, success: 0, failed: 0 };
+        stats[d.target_id].total++;
+        if (d.status === "delivered") stats[d.target_id].success++;
+        else if (d.status === "failed") stats[d.target_id].failed++;
+      });
+      return stats;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (form: WebhookFormData) => {
+    mutationFn: async () => {
+      const tenantRes = await supabase.from("tenant_members").select("tenant_id").limit(1).single();
+      if (tenantRes.error) throw new Error("يجب تسجيل الدخول أولاً");
       const { error } = await supabase.from("hub_dispatch_targets").insert({
-        name: form.name || form.url,
-        url: form.url,
-        secret: form.secret || null,
-        events_filter: form.selectedEvents,
-        numbers_filter: form.numbersFilter,
-        tenant_id: (await supabase.from("tenants").select("id").limit(1).single()).data?.id ?? "",
+        name: name || url,
+        url,
+        secret: secret || null,
+        events_filter: selectedEvents,
+        numbers_filter: allNumbers ? [] : selectedNumbers,
+        tenant_id: tenantRes.data.tenant_id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["webhooks"] });
-      setDialogOpen(false);
-      setFormData(initialFormData);
+      resetForm();
       toast.success("تم إنشاء الويب هوك بنجاح");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -123,42 +160,87 @@ export default function Webhooks() {
     },
   });
 
-  const handleSubmit = () => {
-    if (!formData.url) return toast.error("يرجى إدخال رابط نقطة النهاية");
-    if (formData.webhookType === "kapso" && formData.selectedEvents.length === 0)
-      return toast.error("يرجى اختيار حدث واحد على الأقل");
-    createMutation.mutate(formData);
+  const resetForm = () => {
+    setDialogOpen(false);
+    setName("");
+    setUrl("");
+    setSecret("");
+    setSelectedEvents([]);
+    setSelectedNumbers([]);
+    setAllNumbers(true);
   };
 
-  const toggleEvent = (event: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedEvents: prev.selectedEvents.includes(event)
-        ? prev.selectedEvents.filter((e) => e !== event)
-        : [...prev.selectedEvents, event],
-    }));
+  const handleSubmit = () => {
+    if (!url) return toast.error("يرجى إدخال رابط نقطة النهاية");
+    if (selectedEvents.length === 0) return toast.error("يرجى اختيار حدث واحد على الأقل");
+    createMutation.mutate();
   };
+
+  const toggleEvent = (ev: string) =>
+    setSelectedEvents((prev) => prev.includes(ev) ? prev.filter((e) => e !== ev) : [...prev, ev]);
+
+  const toggleNumber = (id: string) =>
+    setSelectedNumbers((prev) => prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]);
 
   const getEventLabel = (val: string) => EVENT_OPTIONS.find((e) => e.value === val)?.label ?? val;
 
-  return (
-    <AppLayout title="الويب هوك" subtitle="استقبل تحديثات فورية عند وصول الرسائل أو بدء المحادثات" actions={
-      <Button onClick={() => setDialogOpen(true)} className="gap-2">
-        <Plus className="h-4 w-4" />
-        إضافة ويب هوك
-      </Button>
-    }>
-      <div className="space-y-6" dir="rtl">
+  const getNumberDisplay = (numberId: string) => {
+    const num = waNumbers?.find((n) => n.id === numberId);
+    return num ? (num.display_phone_number || num.phone_e164) : numberId;
+  };
 
-        {/* Webhook List */}
+  const activeWebhooks = webhooks?.filter((w) => w.is_active).length ?? 0;
+  const totalDeliveries = Object.values(deliveryStats ?? {}).reduce((s, d) => s + d.total, 0);
+
+  return (
+    <AppLayout
+      title="الويب هوك"
+      subtitle={`إدارة نقاط الاستقبال — ${activeWebhooks} نشط من ${webhooks?.length ?? 0}`}
+      actions={
+        <Button onClick={() => setDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> إضافة ويب هوك
+        </Button>
+      }
+    >
+      <div className="space-y-6" dir="rtl">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-primary">{webhooks?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground">إجمالي الويب هوك</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-success">{activeWebhooks}</p>
+              <p className="text-xs text-muted-foreground">نشط</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-info">{waNumbers?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground">أرقام متاحة</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-warning">{totalDeliveries}</p>
+              <p className="text-xs text-muted-foreground">عمليات التسليم</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Webhooks List */}
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
         ) : !webhooks?.length ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
               <Webhook className="h-12 w-12 text-muted-foreground/40" />
-              <p className="text-muted-foreground">لا توجد ويب هوك مضافة بعد</p>
-              <Button variant="outline" onClick={() => setDialogOpen(true)} className="gap-2">
+              <p className="text-lg font-medium">لا توجد ويب هوك</p>
+              <p className="text-sm text-muted-foreground">أنشئ ويب هوك لاستقبال إشعارات فورية عن رسائل جميع الأرقام</p>
+              <Button onClick={() => setDialogOpen(true)} className="gap-2 mt-2">
                 <Plus className="h-4 w-4" /> إنشاء أول ويب هوك
               </Button>
             </CardContent>
@@ -167,27 +249,37 @@ export default function Webhooks() {
           <div className="space-y-4">
             {webhooks.map((wh) => {
               const events = (wh.events_filter as string[]) || [];
+              const numbers = (wh.numbers_filter as string[]) || [];
+              const stats = deliveryStats?.[wh.id];
               const secretVisible = visibleSecrets[wh.id];
+
               return (
-                <Card key={wh.id}>
-                  <CardContent className="p-5 space-y-3">
+                <Card key={wh.id} className="shadow-card">
+                  <CardContent className="p-5 space-y-4">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <code className="text-sm bg-muted px-2 py-1 rounded font-mono">{wh.url}</code>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Webhook className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm">{wh.name}</h3>
+                          <code className="text-xs text-muted-foreground font-mono" dir="ltr">{wh.url}</code>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Badge variant={wh.is_active ? "default" : "secondary"}>
                           {wh.is_active ? "نشط" : "معطل"}
                         </Badge>
-                        <Badge variant="outline">Kapso</Badge>
-                        <Badge variant="outline">v2</Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <Switch
                           checked={wh.is_active}
                           onCheckedChange={(checked) => toggleMutation.mutate({ id: wh.id, is_active: checked })}
                         />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem className="text-destructive gap-2" onClick={() => deleteMutation.mutate(wh.id)}>
@@ -198,64 +290,70 @@ export default function Webhooks() {
                       </div>
                     </div>
 
+                    {/* Numbers Coverage */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">الأرقام:</span>
+                      {numbers.length === 0 ? (
+                        <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+                          جميع الأرقام ({waNumbers?.length ?? 0})
+                        </Badge>
+                      ) : (
+                        numbers.map((nId) => (
+                          <Badge key={nId} variant="outline" className="text-xs font-mono" dir="ltr">
+                            {getNumberDisplay(nId)}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+
                     {/* Events */}
                     {events.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">الأحداث:</span>
                         {events.map((ev) => (
                           <Badge key={ev} variant="outline" className="text-xs">{getEventLabel(ev)}</Badge>
                         ))}
                       </div>
                     )}
 
-                    {/* Secret */}
-                    {wh.secret && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Secret:</span>
-                        <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                          {secretVisible ? wh.secret : "••••••••••"}
-                        </code>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setVisibleSecrets((p) => ({ ...p, [wh.id]: !p[wh.id] }))}>
-                          {secretVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(wh.secret!); toast.success("تم النسخ"); }}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Last Delivery */}
-                    {wh.last_delivery_at && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">آخر تسليم:</span>
-                        {wh.last_error ? (
-                          <Badge variant="destructive" className="text-xs gap-1"><AlertCircle className="h-3 w-3" />فشل</Badge>
-                        ) : (
-                          <Badge variant="default" className="text-xs">نجح</Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(wh.last_delivery_at).toLocaleDateString("ar-SA", { day: "numeric", month: "short" })}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Quick Reference */}
-                    <Collapsible>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 px-0">
-                          مرجع سريع <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 bg-muted/50 rounded-lg p-4 text-xs font-mono space-y-1 text-muted-foreground">
-                          <p className="font-semibold text-foreground mb-2">Kapso webhooks تتضمن هذه الهيدرز:</p>
-                          <p>X-Webhook-Event: whatsapp.message.received</p>
-                          <p>X-Webhook-Signature: ...</p>
-                          <p>X-Idempotency-Key: unique-key-per-event</p>
-                          <p>X-Webhook-Batch: true (if batched)</p>
-                          <p>X-Batch-Size: 10 (if batched)</p>
+                    {/* Stats & Secret Row */}
+                    <div className="flex items-center gap-4 flex-wrap text-xs">
+                      {stats && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">تسليمات:</span>
+                          <span className="text-success">{stats.success} نجح</span>
+                          {stats.failed > 0 && <span className="text-destructive">{stats.failed} فشل</span>}
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                      )}
+                      {wh.last_delivery_at && (
+                        <div className="flex items-center gap-1.5">
+                          {wh.last_error ? (
+                            <AlertCircle className="h-3 w-3 text-destructive" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3 text-success" />
+                          )}
+                          <span className="text-muted-foreground">
+                            آخر تسليم: {new Date(wh.last_delivery_at).toLocaleDateString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      )}
+                      {wh.secret && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">Secret:</span>
+                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[10px]">
+                            {secretVisible ? wh.secret : "••••••••"}
+                          </code>
+                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setVisibleSecrets((p) => ({ ...p, [wh.id]: !p[wh.id] }))}>
+                            {secretVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { navigator.clipboard.writeText(wh.secret!); toast.success("تم النسخ"); }}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -263,119 +361,135 @@ export default function Webhooks() {
           </div>
         )}
 
+        {/* Numbers Overview */}
+        {waNumbers && waNumbers.length > 0 && (
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                الأرقام المتاحة للويب هوك
+              </h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الرقم</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">ويب هوك مرتبطة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {waNumbers.map((num) => {
+                      const linkedCount = webhooks?.filter(
+                        (w) => w.is_active && ((w.numbers_filter as string[])?.length === 0 || (w.numbers_filter as string[])?.includes(num.id))
+                      ).length ?? 0;
+                      return (
+                        <TableRow key={num.id}>
+                          <TableCell className="font-mono text-sm" dir="ltr">
+                            {num.display_phone_number || num.phone_e164}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={num.status === "active" ? "default" : "secondary"} className="text-xs">
+                              {num.status === "active" ? "نشط" : "معلق"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {linkedCount} ويب هوك
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Create Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) resetForm(); else setDialogOpen(true); }}>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" dir="rtl">
             <DialogHeader>
-              <DialogTitle>إضافة Webhook Endpoint</DialogTitle>
-              <DialogDescription>استقبل تحديثات فورية لأحداث واتساب</DialogDescription>
+              <DialogTitle>إنشاء ويب هوك جديد</DialogTitle>
+              <DialogDescription>استقبل إشعارات فورية لرسائل أرقامك عبر HTTP</DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {/* Webhook Type */}
-              <div className="space-y-2">
-                <Label>نوع الويب هوك</Label>
-                <Select value={formData.webhookType} onValueChange={(v) => setFormData((p) => ({ ...p, webhookType: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {WEBHOOK_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {WEBHOOK_TYPES.find((t) => t.value === formData.webhookType)?.description}
-                </p>
+            <div className="space-y-5">
+              {/* Name */}
+              <div className="space-y-1.5">
+                <Label>الاسم</Label>
+                <Input placeholder="مثل: إشعارات الصيانة" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
 
-              {/* Endpoint URL */}
-              <div className="space-y-2">
-                <Label>Endpoint URL</Label>
-                <Input
-                  placeholder="https://api.example.com/webhooks/whatsapp"
-                  value={formData.url}
-                  onChange={(e) => setFormData((p) => ({ ...p, url: e.target.value }))}
-                  dir="ltr"
-                />
+              {/* URL */}
+              <div className="space-y-1.5">
+                <Label>رابط نقطة النهاية (Endpoint URL)</Label>
+                <Input placeholder="https://api.example.com/webhook" value={url} onChange={(e) => setUrl(e.target.value)} dir="ltr" />
               </div>
 
-              {/* Advanced Settings */}
-              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between px-0 font-medium">
-                    إعدادات متقدمة
-                    {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-2">
-                  {formData.webhookType === "kapso" && (
-                    <div className="space-y-2">
-                      <Label>Payload version</Label>
-                      <Select value={formData.payloadVersion} onValueChange={(v) => setFormData((p) => ({ ...p, payloadVersion: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="v2">v2 (recommended)</SelectItem>
-                          <SelectItem value="v1">v1</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">اختر نسخة payload المرسلة مع كل تسليم</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label>Signing secret (اختياري)</Label>
-                    <Input
-                      placeholder="اتركه فارغاً للتوليد التلقائي"
-                      value={formData.secret}
-                      onChange={(e) => setFormData((p) => ({ ...p, secret: e.target.value }))}
-                      dir="ltr"
-                    />
-                    <p className="text-xs text-muted-foreground">يستخدم لحساب X-Webhook-Signature للتسليمات الصادرة</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Custom Headers (JSON)</Label>
-                    <Textarea
-                      placeholder="{}"
-                      value={formData.customHeaders}
-                      onChange={(e) => setFormData((p) => ({ ...p, customHeaders: e.target.value }))}
-                      className="font-mono text-sm"
-                      rows={3}
-                      dir="ltr"
-                    />
-                    <p className="text-xs text-muted-foreground">اختياري. أضف headers مخصصة كـ key/value pairs</p>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Events (only for Kapso type) */}
-              {formData.webhookType === "kapso" && (
-                <div className="space-y-3">
-                  <Label>الأحداث</Label>
-                  <div className="space-y-2">
-                    {EVENT_OPTIONS.map((ev) => (
-                      <label key={ev.value} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+              {/* Numbers Selection */}
+              <div className="space-y-2">
+                <Label>الأرقام</Label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={allNumbers} onCheckedChange={(c) => { setAllNumbers(!!c); if (c) setSelectedNumbers([]); }} />
+                  <span className="text-sm">جميع الأرقام ({waNumbers?.length ?? 0})</span>
+                </label>
+                {!allNumbers && waNumbers && (
+                  <div className="space-y-1.5 mr-6 mt-1">
+                    {waNumbers.map((num) => (
+                      <label key={num.id} className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-muted/50">
                         <Checkbox
-                          checked={formData.selectedEvents.includes(ev.value)}
-                          onCheckedChange={() => toggleEvent(ev.value)}
-                          className="mt-0.5"
+                          checked={selectedNumbers.includes(num.id)}
+                          onCheckedChange={() => toggleNumber(num.id)}
                         />
-                        <div>
-                          <p className="text-sm font-medium">{ev.label}</p>
-                          <p className="text-xs text-muted-foreground">{ev.description}</p>
-                        </div>
+                        <span className="text-sm font-mono" dir="ltr">{num.display_phone_number || num.phone_e164}</span>
+                        {num.status !== "active" && <Badge variant="secondary" className="text-[10px]">معلق</Badge>}
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">اختر حدثاً واحداً على الأقل للاستقبال</p>
+                )}
+              </div>
+
+              {/* Events */}
+              <div className="space-y-2">
+                <Label>الأحداث المراد استقبالها</Label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {EVENT_OPTIONS.map((ev) => (
+                    <label key={ev.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer border border-transparent has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">
+                      <Checkbox
+                        checked={selectedEvents.includes(ev.value)}
+                        onCheckedChange={() => toggleEvent(ev.value)}
+                      />
+                      <span className="text-xs">{ev.icon}</span>
+                      <span className="text-sm">{ev.label}</span>
+                    </label>
+                  ))}
                 </div>
-              )}
+              </div>
+
+              {/* Secret */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between px-0 text-sm">
+                    إعدادات متقدمة <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label>Signing Secret (اختياري)</Label>
+                    <Input placeholder="للتحقق من صحة الإشعارات" value={secret} onChange={(e) => setSecret(e.target.value)} dir="ltr" />
+                    <p className="text-xs text-muted-foreground">يُرسل في هيدر X-Webhook-Signature</p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
 
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={resetForm}>إلغاء</Button>
               <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "جاري الإنشاء..." : "إنشاء Webhook"}
+                {createMutation.isPending ? "جاري الإنشاء..." : "إنشاء"}
               </Button>
             </DialogFooter>
           </DialogContent>
