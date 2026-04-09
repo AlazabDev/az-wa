@@ -142,7 +142,7 @@ export default function Webhooks() {
   const getEventLabel = (val: string) => EVENT_OPTIONS.find((e) => e.value === val)?.label ?? val;
 
   return (
-    <AppLayout>
+    <AppLayout title="الويب هوك" subtitle="إدارة نقاط استقبال الأحداث">
       <div className="space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex items-center justify-between">
