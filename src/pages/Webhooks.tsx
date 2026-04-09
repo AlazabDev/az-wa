@@ -142,19 +142,13 @@ export default function Webhooks() {
   const getEventLabel = (val: string) => EVENT_OPTIONS.find((e) => e.value === val)?.label ?? val;
 
   return (
-    <AppLayout title="الويب هوك" subtitle="إدارة نقاط استقبال الأحداث">
+    <AppLayout title="الويب هوك" subtitle="استقبل تحديثات فورية عند وصول الرسائل أو بدء المحادثات" actions={
+      <Button onClick={() => setDialogOpen(true)} className="gap-2">
+        <Plus className="h-4 w-4" />
+        إضافة ويب هوك
+      </Button>
+    }>
       <div className="space-y-6" dir="rtl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">الويب هوك</h1>
-            <p className="text-muted-foreground text-sm">استقبل تحديثات فورية عند وصول الرسائل أو بدء المحادثات</p>
-          </div>
-          <Button onClick={() => setDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            إضافة ويب هوك
-          </Button>
-        </div>
 
         {/* Webhook List */}
         {isLoading ? (
