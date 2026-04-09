@@ -380,7 +380,7 @@ export default function Webhooks() {
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-              <Button onClick={handleSubmit} disabled={createMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={handleSubmit} disabled={createMutation.isPending}>
                 {createMutation.isPending ? "جاري الإنشاء..." : "إنشاء Webhook"}
               </Button>
             </DialogFooter>
