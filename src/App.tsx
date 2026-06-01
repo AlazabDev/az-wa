@@ -37,6 +37,7 @@ const App = () => (
           <Route path="/flows/new" element={<FlowBuilder />} />
           <Route path="/webhooks" element={<Webhooks />} />
           <Route path="/inbox" element={<Inbox />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
