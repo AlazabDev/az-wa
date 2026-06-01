@@ -13,6 +13,7 @@ import Clients from "./pages/Clients";
 import Maintenance from "./pages/Maintenance";
 import Teams from "./pages/Teams";
 import Webhooks from "./pages/Webhooks";
+import Inbox from "./pages/Inbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
