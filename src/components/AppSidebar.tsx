@@ -23,6 +23,7 @@ const mainItems = [
 ];
 
 const messagingItems = [
+  { title: "صندوق الوارد", url: "/inbox", icon: MessageCircle },
   { title: "القوالب", url: "/templates", icon: FileText },
   { title: "التدفقات", url: "/flows", icon: GitBranch },
   { title: "الويب هوك", url: "/webhooks", icon: Webhook },
