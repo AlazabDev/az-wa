@@ -14,6 +14,7 @@ import Maintenance from "./pages/Maintenance";
 import Teams from "./pages/Teams";
 import Webhooks from "./pages/Webhooks";
 import Inbox from "./pages/Inbox";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
