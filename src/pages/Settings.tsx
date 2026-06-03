@@ -54,6 +54,23 @@ export default function Settings() {
   const [showSecret, setShowSecret] = useState(false);
   const [testing, setTesting] = useState(false);
 
+  // Test send state
+  const [testOpen, setTestOpen] = useState(false);
+  const [testNumberId, setTestNumberId] = useState<string>("");
+  const [testTo, setTestTo] = useState("");
+  const [testText, setTestText] = useState("رسالة تجريبية من نظام الإدارة ✅");
+  const [sending, setSending] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message_id?: string;
+    error?: string;
+    details?: any;
+    status?: string;
+    delivered_at?: string | null;
+    read_at?: string | null;
+    sent_at?: string | null;
+  } | null>(null);
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["wa_health"],
     queryFn: async () => {
@@ -64,11 +81,69 @@ export default function Settings() {
     refetchInterval: 60000,
   });
 
+  // Default selected number once health loads
+  useEffect(() => {
+    if (!testNumberId && data?.numbers?.length) {
+      const firstOk = data.numbers.find((n) => n.ok) ?? data.numbers[0];
+      setTestNumberId(firstOk.id);
+    }
+  }, [data, testNumberId]);
+
+  // Poll delivery status after sending
+  useEffect(() => {
+    if (!testResult?.ok || !testResult.message_id) return;
+    let cancelled = false;
+    const poll = async () => {
+      for (let i = 0; i < 20 && !cancelled; i++) {
+        const { data: m } = await supabase
+          .from("messages")
+          .select("status, sent_at, delivered_at, read_at")
+          .eq("provider_message_id", testResult.message_id!)
+          .maybeSingle();
+        if (m && !cancelled) {
+          setTestResult((r) => r && { ...r, status: m.status, sent_at: m.sent_at, delivered_at: m.delivered_at, read_at: m.read_at });
+          if (m.read_at || m.delivered_at) break;
+        }
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [testResult?.message_id, testResult?.ok]);
+
   const runTest = async () => {
     setTesting(true);
     try { await refetch(); toast.success("تم تحديث حالة الاتصال"); }
     catch (e: any) { toast.error("فشل: " + e.message); }
     finally { setTesting(false); }
+  };
+
+  const sendTest = async () => {
+    if (!testNumberId || !testTo.trim() || !testText.trim()) {
+      toast.error("اختر رقم المرسل وأدخل رقم المستلم والنص");
+      return;
+    }
+    setSending(true);
+    setTestResult(null);
+    try {
+      const phone = testTo.replace(/[^0-9]/g, "");
+      const { data: resp, error } = await supabase.functions.invoke("wa-send", {
+        body: { wa_number_id: testNumberId, to: phone, type: "text", text: testText },
+      });
+      if (error) throw error;
+      if ((resp as any)?.error) {
+        setTestResult({ ok: false, error: (resp as any).error, details: (resp as any).details });
+        toast.error("فشل الإرسال");
+      } else {
+        setTestResult({ ok: true, message_id: (resp as any).message_id, status: "sent" });
+        toast.success("تم الإرسال بنجاح");
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, error: e.message ?? "خطأ غير معروف" });
+      toast.error("فشل: " + (e.message ?? ""));
+    } finally {
+      setSending(false);
+    }
   };
 
   const copyToClipboard = (text: string, label: string) => {
