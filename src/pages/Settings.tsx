@@ -160,10 +160,127 @@ export default function Settings() {
       title="الإعدادات"
       subtitle="إعداد الأرقام والمتغيرات والويب هوك مع مؤشرات الاتصال"
       actions={
-        <Button onClick={runTest} disabled={testing || isLoading} className="gap-2">
-          <RefreshCw className={cn("h-4 w-4", (testing || isLoading) && "animate-spin")} />
-          اختبار الاتصال
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={testOpen} onOpenChange={(o) => { setTestOpen(o); if (!o) setTestResult(null); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Send className="h-4 w-4" />
+                اختبار إرسال تجريبي
+              </Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl" className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5 text-primary" />
+                  إرسال رسالة تجريبية
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">الرقم المرسل</Label>
+                  <Select value={testNumberId} onValueChange={setTestNumberId}>
+                    <SelectTrigger><SelectValue placeholder="اختر رقم..." /></SelectTrigger>
+                    <SelectContent>
+                      {data?.numbers.map((n) => (
+                        <SelectItem key={n.id} value={n.id}>
+                          <span className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", n.ok ? "bg-success" : "bg-destructive")} />
+                            <span dir="ltr" className="font-mono">{n.phone}</span>
+                            {n.verified_name && <span className="text-muted-foreground text-xs">• {n.verified_name}</span>}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">رقم المستلم (مع رمز الدولة)</Label>
+                  <Input
+                    dir="ltr"
+                    placeholder="9665XXXXXXXX"
+                    value={testTo}
+                    onChange={(e) => setTestTo(e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">نص الرسالة</Label>
+                  <Textarea rows={3} value={testText} onChange={(e) => setTestText(e.target.value)} />
+                </div>
+
+                {testResult && (
+                  <div className={cn("rounded-lg border p-3 space-y-2",
+                    testResult.ok ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5")}>
+                    <div className="flex items-center gap-2">
+                      {testResult.ok ? (
+                        <CheckCircle2 className="h-5 w-5 text-success" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      )}
+                      <span className="font-semibold text-sm">
+                        {testResult.ok ? "تم الإرسال بنجاح" : "فشل الإرسال"}
+                      </span>
+                    </div>
+                    {testResult.ok ? (
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">معرف الرسالة:</span>
+                          <code className="font-mono" dir="ltr">{testResult.message_id?.slice(-20)}</code>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">الحالة:</span>
+                          <Badge variant={testResult.read_at ? "default" : "secondary"} className="text-[10px]">
+                            {testResult.read_at ? "مقروءة ✓✓" :
+                             testResult.delivered_at ? "تم التسليم ✓✓" :
+                             testResult.sent_at || testResult.status === "sent" ? "تم الإرسال ✓" : "قيد الانتظار..."}
+                          </Badge>
+                        </div>
+                        {testResult.delivered_at && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">سُلّمت في:</span>
+                            <span dir="ltr">{new Date(testResult.delivered_at).toLocaleTimeString("ar-EG")}</span>
+                          </div>
+                        )}
+                        {testResult.read_at && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">قُرئت في:</span>
+                            <span dir="ltr">{new Date(testResult.read_at).toLocaleTimeString("ar-EG")}</span>
+                          </div>
+                        )}
+                        {!testResult.delivered_at && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            جاري متابعة حالة التسليم...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs space-y-1">
+                        <p className="text-destructive">{testResult.error}</p>
+                        {testResult.details && (
+                          <pre className="bg-background/60 rounded p-2 overflow-auto text-[10px] max-h-32" dir="ltr">
+{JSON.stringify(testResult.details, null, 2)}
+                          </pre>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setTestOpen(false)}>إغلاق</Button>
+                <Button onClick={sendTest} disabled={sending} className="gap-2">
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {sending ? "جاري الإرسال..." : "إرسال الآن"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={runTest} disabled={testing || isLoading} className="gap-2">
+            <RefreshCw className={cn("h-4 w-4", (testing || isLoading) && "animate-spin")} />
+            اختبار الاتصال
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6" dir="rtl">
