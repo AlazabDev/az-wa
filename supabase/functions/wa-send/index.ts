@@ -1,5 +1,11 @@
 // Send a WhatsApp message via Meta Cloud API.
-// Authenticated. Body: { wa_number_id, to, type: 'text'|'template', text?, template? }
+// Authenticated. Body: {
+//   wa_number_id, to,
+//   type: 'text'|'template'|'image'|'video'|'audio'|'document'|'sticker'|'reaction',
+//   text?, template?, media?: { link, caption?, filename? },
+//   reaction?: { message_id, emoji },
+//   context?: { message_id }  // reply-to (provider_message_id)
+// }
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -13,6 +19,8 @@ const WA_VERSION = Deno.env.get("WA_API_VERSION") ?? "v21.0";
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+const MEDIA_TYPES = new Set(["image", "video", "audio", "document", "sticker"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -43,14 +51,13 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: corsHeaders });
   }
-  const { wa_number_id, to, type = "text", text, template } = body;
+  const { wa_number_id, to, type = "text", text, template, media, reaction, context } = body;
   if (!wa_number_id || !to) {
     return new Response(JSON.stringify({ error: "wa_number_id and to required" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  // Look up number + verify membership
   const { data: num } = await admin.from("wa_numbers")
     .select("id,phone_number_id,tenant_id").eq("id", wa_number_id).maybeSingle();
   if (!num) {
@@ -67,18 +74,26 @@ Deno.serve(async (req) => {
   }
 
   const toPhone = String(to).replace(/[^0-9]/g, "");
-  let waPayload: any;
-  if (type === "template") {
-    waPayload = {
-      messaging_product: "whatsapp", to: toPhone, type: "template",
-      template: template ?? { name: "hello_world", language: { code: "en_US" } },
-    };
+  let waPayload: any = { messaging_product: "whatsapp", to: toPhone, type };
+
+  if (type === "text") {
+    waPayload.text = { body: String(text ?? ""), preview_url: true };
+  } else if (type === "template") {
+    waPayload.template = template ?? { name: "hello_world", language: { code: "en_US" } };
+  } else if (type === "reaction") {
+    waPayload.reaction = { message_id: reaction?.message_id, emoji: reaction?.emoji ?? "" };
+  } else if (MEDIA_TYPES.has(type)) {
+    const m: any = { link: media?.link };
+    if (media?.caption && type !== "audio" && type !== "sticker") m.caption = media.caption;
+    if (type === "document" && media?.filename) m.filename = media.filename;
+    waPayload[type] = m;
   } else {
-    waPayload = {
-      messaging_product: "whatsapp", to: toPhone, type: "text",
-      text: { body: String(text ?? ""), preview_url: false },
-    };
+    return new Response(JSON.stringify({ error: "Unsupported type" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
+
+  if (context?.message_id) waPayload.context = { message_id: context.message_id };
 
   const waResp = await fetch(`https://graph.facebook.com/${WA_VERSION}/${num.phone_number_id}/messages`, {
     method: "POST",
@@ -93,7 +108,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Upsert contact + conversation
   const phoneE164 = "+" + toPhone;
   let { data: contact } = await admin.from("contacts")
     .select("id").eq("tenant_id", num.tenant_id).eq("phone_e164", phoneE164).maybeSingle();
@@ -114,12 +128,18 @@ Deno.serve(async (req) => {
   }
 
   const wamId = waJson.messages?.[0]?.id;
+  const textValue =
+    type === "text" ? String(text ?? "")
+    : type === "reaction" ? (reaction?.emoji ?? "")
+    : (media?.caption ?? null);
+
   await admin.from("messages").insert({
     tenant_id: num.tenant_id, conversation_id: conv!.id,
     direction: "outbound", status: "sent",
-    type, text: type === "text" ? String(text ?? "") : null,
+    type, text: textValue,
     provider_message_id: wamId, chat_id: toPhone,
     timestamp: new Date().toISOString(), sent_at: new Date().toISOString(),
+    media_filename: media?.filename ?? null,
     raw_payload: waPayload,
   });
 
