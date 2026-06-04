@@ -139,7 +139,6 @@ Deno.serve(async (req) => {
     type, text: textValue,
     provider_message_id: wamId, chat_id: toPhone,
     timestamp: new Date().toISOString(), sent_at: new Date().toISOString(),
-    media_url: media?.link ?? null,
     media_filename: media?.filename ?? null,
     raw_payload: waPayload,
   });
