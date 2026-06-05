@@ -2,11 +2,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -14,11 +12,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
-  Send, Phone, MessageCircle, Search, CheckCheck, Check, Clock, AlertCircle,
-  Smile, Paperclip, Image as ImageIcon, FileText, Reply, X, Mic, File,
-  CornerUpLeft, MoreVertical,
+  Send, MessageCircle, Search, CheckCheck, Check, Clock, AlertCircle,
+  Smile, Paperclip, Image as ImageIcon, FileText, X, Mic, File,
+  CornerUpLeft, MoreVertical, Phone, Video, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +29,8 @@ interface Conversation {
   last_message_at: string | null;
   contacts: { id: string; phone_e164: string; display_name: string | null; wa_id: string | null };
   wa_numbers: { id: string; phone_number_id: string; display_phone_number: string | null };
+  last_text?: string | null;
+  unread?: number;
 }
 
 interface Message {
@@ -54,29 +55,63 @@ interface Message {
 
 const QUICK_EMOJIS = ["👍","❤️","😂","😮","😢","🙏","🔥","🎉","✅","👏","💯","🙌","🤝","👌","😍","😊"];
 
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-600",
+  "bg-emerald-100 text-emerald-600",
+  "bg-amber-100 text-amber-600",
+  "bg-rose-100 text-rose-600",
+  "bg-violet-100 text-violet-600",
+  "bg-cyan-100 text-cyan-600",
+  "bg-orange-100 text-orange-600",
+];
+
+function avatarFor(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function formatListTime(iso: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (sameDay) return d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === y.toDateString()) return "أمس";
+  return d.toLocaleDateString("ar-EG", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
+function dateLabel(d: Date) {
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "اليوم";
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return "أمس";
+  return d.toLocaleDateString("ar-EG", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+}
+
 function StatusIndicator({ m }: { m: Message }) {
-  // outbound only
-  let icon, label, color = "";
+  let icon, label, color = "text-slate-500";
   if (m.status === "failed" || m.failed_at) {
     icon = <AlertCircle className="h-3.5 w-3.5" />;
     label = "فشل الإرسال" + (m.error_payload ? `: ${JSON.stringify(m.error_payload).slice(0,120)}` : "");
     color = "text-destructive";
   } else if (m.read_at) {
-    icon = <CheckCheck className="h-3.5 w-3.5" />;
+    icon = <CheckCheck className="h-4 w-4" />;
     label = `تمت القراءة • ${new Date(m.read_at).toLocaleString("ar-EG")}`;
-    color = "text-sky-400";
+    color = "text-sky-500";
   } else if (m.delivered_at) {
-    icon = <CheckCheck className="h-3.5 w-3.5" />;
+    icon = <CheckCheck className="h-4 w-4" />;
     label = `تم التسليم • ${new Date(m.delivered_at).toLocaleString("ar-EG")}`;
-    color = "opacity-80";
+    color = "text-slate-500";
   } else if (m.sent_at) {
-    icon = <Check className="h-3.5 w-3.5" />;
+    icon = <Check className="h-4 w-4" />;
     label = `تم الإرسال • ${new Date(m.sent_at).toLocaleString("ar-EG")}`;
-    color = "opacity-70";
+    color = "text-slate-500";
   } else {
     icon = <Clock className="h-3.5 w-3.5" />;
     label = "بانتظار الإرسال";
-    color = "opacity-60";
+    color = "text-slate-400";
   }
   return (
     <TooltipProvider><Tooltip>
@@ -92,31 +127,28 @@ function MessageBody({ m }: { m: Message }) {
     return (
       <div className="space-y-1">
         <img src={link} alt="" className="rounded-lg max-h-64 object-cover" />
-        {m.text && <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>}
+        {m.text && <p className="text-sm whitespace-pre-wrap break-words mt-1">{m.text}</p>}
       </div>
     );
   }
-  if (m.type === "video" && link) {
-    return <video src={link} controls className="rounded-lg max-h-64" />;
-  }
-  if (m.type === "audio" && link) {
-    return <audio src={link} controls className="w-56" />;
-  }
+  if (m.type === "video" && link) return <video src={link} controls className="rounded-lg max-h-64" />;
+  if (m.type === "audio" && link) return <audio src={link} controls className="w-56" />;
   if (m.type === "document") {
     return (
-      <a href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline">
-        <File className="h-4 w-4" />
-        <span className="text-sm">{m.media_filename || "مستند"}</span>
+      <a href={link} target="_blank" rel="noreferrer" className="flex items-center gap-3 bg-black/5 dark:bg-white/5 rounded-lg p-2.5 hover:bg-black/10 transition-colors">
+        <div className="w-10 h-10 bg-rose-100 rounded flex items-center justify-center shrink-0">
+          <File className="h-5 w-5 text-rose-500" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-bold truncate max-w-[200px]">{m.media_filename || "مستند"}</div>
+          <div className="text-[10px] opacity-60">{m.media_mime || "FILE"}</div>
+        </div>
       </a>
     );
   }
-  if (m.type === "reaction") {
-    return <span className="text-2xl">{m.text}</span>;
-  }
-  if (m.type === "template") {
-    return <p className="text-sm italic opacity-90">[قالب] {m.text}</p>;
-  }
-  return <p className="text-sm whitespace-pre-wrap break-words">{m.text || `[${m.type}]`}</p>;
+  if (m.type === "reaction") return <span className="text-2xl">{m.text}</span>;
+  if (m.type === "template") return <p className="text-sm italic opacity-90">[قالب] {m.text}</p>;
+  return <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.text || `[${m.type}]`}</p>;
 }
 
 export default function Inbox() {
@@ -133,7 +165,7 @@ export default function Inbox() {
   const [attachCaption, setAttachCaption] = useState("");
   const [attachFilename, setAttachFilename] = useState("");
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: waNumbers } = useQuery({
@@ -194,7 +226,7 @@ export default function Inbox() {
   });
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages?.length, selectedId]);
 
   useEffect(() => {
@@ -284,210 +316,370 @@ export default function Inbox() {
     return !t || c.contacts.phone_e164.includes(t) || c.contacts.display_name?.toLowerCase().includes(t);
   });
 
+  // Group messages by date
+  const groupedMessages = useMemo(() => {
+    if (!messages?.length) return [] as Array<{ date: string; items: Message[] }>;
+    const groups: Array<{ date: string; items: Message[] }> = [];
+    for (const m of messages) {
+      const label = dateLabel(new Date(m.created_at));
+      const last = groups[groups.length - 1];
+      if (last?.date === label) last.items.push(m);
+      else groups.push({ date: label, items: [m] });
+    }
+    return groups;
+  }, [messages]);
+
   return (
-    <AppLayout title="صندوق الوارد" subtitle="محادثات واتساب المتزامنة عبر جميع الحسابات">
-      <div className="grid grid-cols-12 gap-4 h-[calc(100vh-12rem)]" dir="rtl">
-        {/* Conversations list */}
-        <Card className="col-span-4 flex flex-col overflow-hidden">
-          <div className="p-3 border-b space-y-2">
-            <Select value={filterNumber} onValueChange={setFilterNumber}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأرقام</SelectItem>
-                {waNumbers?.map((n) => (
-                  <SelectItem key={n.id} value={n.id}>{n.display_phone_number || n.phone_e164}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="relative">
-              <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="بحث..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-8" />
-            </div>
-          </div>
-          <ScrollArea className="flex-1">
-            {!filtered?.length ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">
-                <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                لا توجد محادثات
-              </div>
-            ) : filtered.map((c) => (
-              <button key={c.id} onClick={() => { setSelectedId(c.id); setReplyTo(null); }}
-                className={cn("w-full text-right p-3 border-b hover:bg-muted/50 transition-colors",
-                  selectedId === c.id && "bg-primary/10")}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm truncate">{c.contacts.display_name || c.contacts.phone_e164}</span>
-                  {c.last_message_at && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(c.last_message_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  )}
+    <AppLayout title="صندوق الوارد" subtitle="محادثات واتساب الحية">
+      <div className="-m-6 h-[calc(100vh-3.5rem)] bg-[#f0f2f5]" dir="rtl">
+        <div className="h-full flex bg-white overflow-hidden">
+          {/* ============ SIDEBAR: Conversations ============ */}
+          <aside className="w-[360px] flex flex-col border-l border-slate-200 bg-white shrink-0">
+            {/* Sidebar header */}
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <MessageCircle className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Phone className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-mono" dir="ltr">{c.contacts.phone_e164}</span>
-                </div>
-              </button>
-            ))}
-          </ScrollArea>
-        </Card>
-
-        {/* Chat panel */}
-        <Card className="col-span-8 flex flex-col overflow-hidden">
-          {!selected ? (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <MessageCircle className="h-16 w-16 mx-auto mb-3 opacity-30" />
-                <p>اختر محادثة للبدء</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="p-4 border-b flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">{selected.contacts.display_name || selected.contacts.phone_e164}</h3>
-                  <p className="text-xs text-muted-foreground font-mono" dir="ltr">{selected.contacts.phone_e164}</p>
+                  <h2 className="text-sm font-bold text-slate-800">المحادثات</h2>
+                  <p className="text-[11px] text-slate-500">{filtered?.length ?? 0} محادثة</p>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono" dir="ltr">
-                  من: {selected.wa_numbers.display_phone_number || selected.wa_numbers.phone_number_id}
-                </Badge>
               </div>
+              <div className="flex gap-1 text-slate-500">
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                  <Plus className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
 
-              <ScrollArea className="flex-1 p-4 bg-muted/20" ref={scrollRef as any}>
-                <div className="space-y-2">
-                  {messages?.map((m) => {
-                    const isOut = m.direction === "outbound";
-                    const ctxId = m.raw_payload?.context?.id || m.raw_payload?.context?.message_id;
-                    const quoted = ctxId ? messages?.find((x) => x.provider_message_id === ctxId) : null;
-                    return (
-                      <div key={m.id} className={cn("flex group", isOut ? "justify-start" : "justify-end")}>
-                        <div className={cn("max-w-[70%] rounded-2xl px-3 py-2 shadow-sm relative",
-                          isOut ? "bg-primary text-primary-foreground" : "bg-card border")}>
-                          {quoted && (
-                            <div className={cn("text-[11px] border-r-2 pr-2 mb-1 opacity-80",
-                              isOut ? "border-primary-foreground/60" : "border-primary/60")}>
-                              <div className="font-medium">{quoted.direction === "outbound" ? "أنت" : "ردًا"}</div>
-                              <div className="truncate max-w-[260px]">{quoted.text || `[${quoted.type}]`}</div>
-                            </div>
-                          )}
-                          <MessageBody m={m} />
-                          <div className="flex items-center gap-1 justify-end mt-1 text-[10px] opacity-80">
-                            <span>{new Date(m.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}</span>
-                            {isOut && <StatusIndicator m={m} />}
-                          </div>
+            {/* Filter + search */}
+            <div className="p-3 space-y-2 border-b border-slate-100">
+              <Select value={filterNumber} onValueChange={setFilterNumber}>
+                <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الأرقام</SelectItem>
+                  {waNumbers?.map((n) => (
+                    <SelectItem key={n.id} value={n.id}>
+                      {n.display_phone_number || n.phone_e164}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative bg-slate-100 rounded-lg flex items-center px-3">
+                <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                <Input
+                  placeholder="البحث في الدردشات"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-9 text-sm"
+                />
+              </div>
+            </div>
 
-                          {/* hover actions */}
-                          <div className={cn("absolute -top-3 opacity-0 group-hover:opacity-100 transition flex gap-1",
-                            isOut ? "left-2" : "right-2")}>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full">
-                                  <Smile className="h-3 w-3" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" align="center">
-                                <div className="grid grid-cols-8 gap-1">
-                                  {QUICK_EMOJIS.map((e) => (
-                                    <button key={e} onClick={() => handleReact(m, e)}
-                                      className="text-xl hover:bg-muted rounded p-1">{e}</button>
-                                  ))}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                            <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full"
-                              onClick={() => setReplyTo(m)}>
-                              <CornerUpLeft className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+            {/* Conversations list */}
+            <div className="flex-1 overflow-y-auto">
+              {!filtered?.length ? (
+                <div className="p-12 text-center text-slate-400 text-sm">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  لا توجد محادثات بعد
                 </div>
-              </ScrollArea>
+              ) : filtered.map((c) => {
+                const name = c.contacts.display_name || c.contacts.phone_e164;
+                const initial = (name || "?").trim().charAt(0).toUpperCase();
+                const isActive = selectedId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => { setSelectedId(c.id); setReplyTo(null); }}
+                    className={cn(
+                      "w-full text-right flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
+                      isActive ? "bg-slate-100" : "hover:bg-slate-50"
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <div className={cn("w-12 h-12 rounded-full flex items-center justify-center font-bold text-base", avatarFor(c.contact_id))}>
+                        {initial}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 border-b border-slate-100 pb-3 -mb-3">
+                      <div className="flex justify-between items-center mb-0.5 gap-2">
+                        <span className="font-semibold text-slate-800 truncate text-sm">{name}</span>
+                        <span className="text-[11px] text-slate-400 shrink-0">{formatListTime(c.last_message_at)}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-xs text-slate-500 truncate font-mono" dir="ltr">{c.contacts.phone_e164}</p>
+                        {c.wa_numbers?.display_phone_number && (
+                          <span className="text-[9px] text-slate-400 font-mono shrink-0" dir="ltr">
+                            ← {c.wa_numbers.display_phone_number}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
 
-              {/* Reply banner */}
-              {replyTo && (
-                <div className="px-3 py-2 border-t bg-muted/40 flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Reply className="h-4 w-4 text-primary shrink-0" />
+          {/* ============ MAIN: Chat panel ============ */}
+          <main className="flex-1 flex flex-col bg-[#efeae2] relative min-w-0">
+            {/* Background pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.06] pointer-events-none"
+              style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}
+            />
+
+            {!selected ? (
+              <div className="flex-1 flex items-center justify-center text-slate-500 relative z-10">
+                <div className="text-center max-w-md px-6">
+                  <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-white/60 flex items-center justify-center shadow-sm">
+                    <MessageCircle className="h-16 w-16 text-emerald-500/70" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-700 mb-2">دردشة واتساب الأعمال</h3>
+                  <p className="text-sm text-slate-500">
+                    اختر محادثة من القائمة على اليمين لعرض الرسائل والرد عليها. كل الرسائل متزامنة لحظياً عبر حساباتك المتصلة.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Chat header */}
+                <header className="relative z-10 px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0", avatarFor(selected.contact_id))}>
+                      {(selected.contacts.display_name || selected.contacts.phone_e164).trim().charAt(0).toUpperCase()}
+                    </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-medium">رد على {replyTo.direction === "outbound" ? "رسالتك" : "العميل"}</div>
-                      <div className="text-xs text-muted-foreground truncate">{replyTo.text || `[${replyTo.type}]`}</div>
+                      <h3 className="font-bold text-slate-800 text-sm truncate">
+                        {selected.contacts.display_name || selected.contacts.phone_e164}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-mono truncate" dir="ltr">
+                        {selected.contacts.phone_e164}
+                      </p>
                     </div>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setReplyTo(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Composer */}
-              <div className="p-3 border-t flex items-end gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button size="icon" variant="ghost" type="button" title="رموز تعبيرية">
-                      <Smile className="h-5 w-5" />
+                  <div className="flex items-center gap-2 text-slate-500 shrink-0">
+                    <Badge variant="outline" className="text-[10px] font-mono bg-white" dir="ltr">
+                      {selected.wa_numbers.display_phone_number || selected.wa_numbers.phone_number_id}
+                    </Badge>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                      <Search className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2" align="start">
-                    <div className="grid grid-cols-8 gap-1">
-                      {QUICK_EMOJIS.map((e) => (
-                        <button key={e} onClick={() => insertEmoji(e)}
-                          className="text-xl hover:bg-muted rounded p-1">{e}</button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button size="icon" variant="ghost" type="button" title="مرفقات">
-                      <Paperclip className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-44 p-1" align="start">
-                    {([
-                      { t: "image", label: "صورة", icon: ImageIcon },
-                      { t: "video", label: "فيديو", icon: ImageIcon },
-                      { t: "audio", label: "صوت", icon: Mic },
-                      { t: "document", label: "مستند", icon: FileText },
-                    ] as const).map((x) => (
-                      <button key={x.t} className="w-full flex items-center gap-2 p-2 hover:bg-muted rounded text-sm"
-                        onClick={() => { setAttachType(x.t); setAttachOpen(true); }}>
-                        <x.icon className="h-4 w-4" /> {x.label}
-                      </button>
+                  </div>
+                </header>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto relative z-10 px-6 py-4">
+                  <div className="max-w-3xl mx-auto flex flex-col gap-2">
+                    {groupedMessages.map((group) => (
+                      <div key={group.date} className="flex flex-col gap-2">
+                        <div className="flex justify-center my-3">
+                          <span className="bg-white/90 text-[11px] text-slate-600 px-3 py-1 rounded-md shadow-sm font-medium">
+                            {group.date}
+                          </span>
+                        </div>
+                        {group.items.map((m) => {
+                          const isOut = m.direction === "outbound";
+                          const ctxId = m.raw_payload?.context?.id || m.raw_payload?.context?.message_id;
+                          const quoted = ctxId ? messages?.find((x) => x.provider_message_id === ctxId) : null;
+                          return (
+                            <div key={m.id} className={cn("flex group", isOut ? "justify-end" : "justify-start")}>
+                              <div
+                                className={cn(
+                                  "max-w-[70%] rounded-lg px-2.5 py-1.5 shadow-sm relative",
+                                  isOut ? "bg-[#d9fdd3] text-slate-800" : "bg-white text-slate-800"
+                                )}
+                              >
+                                {/* tail */}
+                                <div
+                                  className={cn(
+                                    "absolute top-0 w-0 h-0 border-[6px] border-transparent",
+                                    isOut
+                                      ? "-left-[6px] border-t-[#d9fdd3]"
+                                      : "-right-[6px] border-t-white"
+                                  )}
+                                />
+                                {quoted && (
+                                  <div className={cn(
+                                    "text-[11px] border-r-4 pr-2 py-1 mb-1 rounded bg-black/5",
+                                    isOut ? "border-emerald-500" : "border-sky-500"
+                                  )}>
+                                    <div className="font-bold text-[10px] opacity-80">
+                                      {quoted.direction === "outbound" ? "أنت" : "العميل"}
+                                    </div>
+                                    <div className="truncate max-w-[260px] opacity-80">
+                                      {quoted.text || `[${quoted.type}]`}
+                                    </div>
+                                  </div>
+                                )}
+                                <MessageBody m={m} />
+                                <div className="flex items-center gap-1 justify-end mt-0.5 text-[10px] text-slate-500">
+                                  <span>{new Date(m.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}</span>
+                                  {isOut && <StatusIndicator m={m} />}
+                                </div>
+
+                                {/* hover actions */}
+                                <div className={cn(
+                                  "absolute -top-3 opacity-0 group-hover:opacity-100 transition flex gap-1 z-10",
+                                  isOut ? "left-2" : "right-2"
+                                )}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full shadow">
+                                        <Smile className="h-3 w-3" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" align="center">
+                                      <div className="grid grid-cols-8 gap-1">
+                                        {QUICK_EMOJIS.map((e) => (
+                                          <button
+                                            key={e}
+                                            onClick={() => handleReact(m, e)}
+                                            className="text-xl hover:bg-muted rounded p-1"
+                                          >
+                                            {e}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <Button
+                                    size="icon"
+                                    variant="secondary"
+                                    className="h-6 w-6 rounded-full shadow"
+                                    onClick={() => setReplyTo(m)}
+                                  >
+                                    <CornerUpLeft className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     ))}
-                  </PopoverContent>
-                </Popover>
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
 
-                <Button size="icon" variant="ghost" type="button" title="القوالب" onClick={() => setTemplatesOpen(true)}>
-                  <FileText className="h-5 w-5" />
-                </Button>
+                {/* Reply banner */}
+                {replyTo && (
+                  <div className="relative z-10 px-4 py-2 border-t bg-slate-50 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-1 h-10 bg-emerald-500 rounded" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-emerald-700">
+                          رد على {replyTo.direction === "outbound" ? "رسالتك" : "العميل"}
+                        </div>
+                        <div className="text-xs text-slate-600 truncate max-w-md">
+                          {replyTo.text || `[${replyTo.type}]`}
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setReplyTo(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
 
-                <Textarea
-                  ref={textareaRef}
-                  placeholder="اكتب رسالة..."
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendText(); } }}
-                  disabled={sending}
-                  rows={1}
-                  className="min-h-[40px] max-h-32 resize-none"
-                />
-                <Button onClick={handleSendText} disabled={sending || !draft.trim()} className="gap-2">
-                  <Send className="h-4 w-4" /> إرسال
-                </Button>
-              </div>
-            </>
-          )}
-        </Card>
+                {/* Composer */}
+                <footer className="relative z-10 px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-end gap-2 shrink-0">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="icon" variant="ghost" type="button" className="h-10 w-10 rounded-full text-slate-500 shrink-0" title="رموز تعبيرية">
+                        <Smile className="h-6 w-6" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <div className="grid grid-cols-8 gap-1">
+                        {QUICK_EMOJIS.map((e) => (
+                          <button key={e} onClick={() => insertEmoji(e)} className="text-xl hover:bg-muted rounded p-1">
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="icon" variant="ghost" type="button" className="h-10 w-10 rounded-full text-slate-500 shrink-0" title="مرفقات">
+                        <Paperclip className="h-6 w-6" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-1" align="start">
+                      {([
+                        { t: "image", label: "صورة", icon: ImageIcon },
+                        { t: "video", label: "فيديو", icon: Video },
+                        { t: "audio", label: "صوت", icon: Mic },
+                        { t: "document", label: "مستند", icon: FileText },
+                      ] as const).map((x) => (
+                        <button
+                          key={x.t}
+                          className="w-full flex items-center gap-3 p-2.5 hover:bg-slate-100 rounded text-sm"
+                          onClick={() => { setAttachType(x.t); setAttachOpen(true); }}
+                        >
+                          <x.icon className="h-4 w-4 text-slate-500" /> {x.label}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    type="button"
+                    className="h-10 w-10 rounded-full text-slate-500 shrink-0"
+                    title="القوالب"
+                    onClick={() => setTemplatesOpen(true)}
+                  >
+                    <FileText className="h-5 w-5" />
+                  </Button>
+
+                  <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm px-3 py-1.5 flex items-end">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder="اكتب رسالة..."
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendText(); } }}
+                      disabled={sending}
+                      rows={1}
+                      className="min-h-[28px] max-h-32 resize-none border-0 shadow-none focus-visible:ring-0 px-1 py-1 text-sm bg-transparent"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleSendText}
+                    disabled={sending || !draft.trim()}
+                    size="icon"
+                    className="h-10 w-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shrink-0"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </footer>
+              </>
+            )}
+          </main>
+        </div>
       </div>
 
       {/* Attach dialog */}
       <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
         <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>إرسال {attachType === "image" ? "صورة" : attachType === "video" ? "فيديو" : attachType === "audio" ? "ملف صوتي" : "مستند"}</DialogTitle>
+            <DialogTitle>
+              إرسال {attachType === "image" ? "صورة" : attachType === "video" ? "فيديو" : attachType === "audio" ? "ملف صوتي" : "مستند"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -526,14 +718,20 @@ export default function Inbox() {
             </TabsList>
             <TabsContent value="approved">
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {!templates?.length && <p className="text-sm text-muted-foreground p-4 text-center">لا توجد قوالب معتمدة</p>}
+                {!templates?.length && (
+                  <p className="text-sm text-muted-foreground p-4 text-center">لا توجد قوالب معتمدة</p>
+                )}
                 {templates?.map((t: any) => (
                   <Card key={t.id} className="p-3 flex items-center justify-between">
                     <div className="min-w-0">
-                      <div className="font-medium">{t.name} <Badge variant="outline" className="ms-2 text-xs">{t.language}</Badge></div>
+                      <div className="font-medium">
+                        {t.name} <Badge variant="outline" className="ms-2 text-xs">{t.language}</Badge>
+                      </div>
                       <div className="text-xs text-muted-foreground truncate max-w-md">{t.body}</div>
                     </div>
-                    <Button size="sm" onClick={() => handleSendTemplate(t)} disabled={sending}>إرسال</Button>
+                    <Button size="sm" onClick={() => handleSendTemplate(t)} disabled={sending}>
+                      إرسال
+                    </Button>
                   </Card>
                 ))}
               </div>
@@ -541,15 +739,6 @@ export default function Inbox() {
           </Tabs>
         </DialogContent>
       </Dialog>
-
-      {/* Indicators legend */}
-      <Card className="p-3 mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground" dir="rtl">
-        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> بانتظار</span>
-        <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" /> أُرسلت</span>
-        <span className="flex items-center gap-1"><CheckCheck className="h-3.5 w-3.5" /> تم التسليم</span>
-        <span className="flex items-center gap-1"><CheckCheck className="h-3.5 w-3.5 text-sky-400" /> تمت القراءة</span>
-        <span className="flex items-center gap-1"><AlertCircle className="h-3.5 w-3.5 text-destructive" /> فشل</span>
-      </Card>
     </AppLayout>
   );
 }
