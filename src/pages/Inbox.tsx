@@ -193,7 +193,7 @@ export default function Inbox() {
   });
 
   const { data: conversations } = useQuery({
-    queryKey: ["conversations", filterNumber],
+    queryKey: ["conversations", filterNumber, selectedId],
     queryFn: async () => {
       let q = supabase
         .from("conversations")
@@ -203,7 +203,31 @@ export default function Inbox() {
       if (filterNumber !== "all") q = q.eq("wa_number_id", filterNumber);
       const { data, error } = await q;
       if (error) throw error;
-      return data as unknown as Conversation[];
+      const convs = (data ?? []) as unknown as Conversation[];
+      // enrich with last text + unread count
+      const ids = convs.map((c) => c.id);
+      if (ids.length) {
+        const { data: lastMsgs } = await supabase
+          .from("messages")
+          .select("conversation_id, text, type, direction, read_at, created_at")
+          .in("conversation_id", ids)
+          .order("created_at", { ascending: false })
+          .limit(500);
+        const lastByConv = new Map<string, any>();
+        const unreadByConv = new Map<string, number>();
+        for (const m of lastMsgs ?? []) {
+          if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
+          if (m.direction === "inbound" && !m.read_at && m.conversation_id !== selectedId) {
+            unreadByConv.set(m.conversation_id, (unreadByConv.get(m.conversation_id) ?? 0) + 1);
+          }
+        }
+        for (const c of convs) {
+          const last = lastByConv.get(c.id);
+          c.last_text = last ? (last.text || `[${last.type}]`) : null;
+          c.unread = unreadByConv.get(c.id) ?? 0;
+        }
+      }
+      return convs;
     },
     refetchInterval: 10000,
   });
