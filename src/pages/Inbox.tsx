@@ -546,6 +546,7 @@ export default function Inbox() {
                                   fill="currentColor"
                                 >
                                   <path d="M8 0 L0 0 Q4 0 8 6 Z" />
+                                </svg>
                                 {quoted && (
                                   <div className={cn(
                                     "text-[11px] border-r-4 pr-2 py-1 mb-1 rounded bg-black/5",
