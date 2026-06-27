@@ -434,15 +434,23 @@ export default function Inbox() {
                     <div className="flex-1 min-w-0 border-b border-slate-100 pb-3 -mb-3">
                       <div className="flex justify-between items-center mb-0.5 gap-2">
                         <span className="font-semibold text-slate-800 truncate text-sm">{name}</span>
-                        <span className="text-[11px] text-slate-400 shrink-0">{formatListTime(c.last_message_at)}</span>
+                        <span className={cn("text-[11px] shrink-0", c.unread ? "text-emerald-600 font-bold" : "text-slate-400")}>
+                          {formatListTime(c.last_message_at)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center gap-2">
-                        <p className="text-xs text-slate-500 truncate font-mono" dir="ltr">{c.contacts.phone_e164}</p>
-                        {c.wa_numbers?.display_phone_number && (
+                        <p className="text-xs text-slate-500 truncate flex-1">
+                          {c.last_text ?? <span className="font-mono" dir="ltr">{c.contacts.phone_e164}</span>}
+                        </p>
+                        {c.unread ? (
+                          <span className="bg-emerald-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center font-bold shrink-0">
+                            {c.unread}
+                          </span>
+                        ) : c.wa_numbers?.display_phone_number ? (
                           <span className="text-[9px] text-slate-400 font-mono shrink-0" dir="ltr">
                             ← {c.wa_numbers.display_phone_number}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </button>
