@@ -484,8 +484,11 @@ export default function Inbox() {
                 {/* Chat header */}
                 <header className="relative z-10 px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0", avatarFor(selected.contact_id))}>
-                      {(selected.contacts.display_name || selected.contacts.phone_e164).trim().charAt(0).toUpperCase()}
+                    <div className="relative shrink-0">
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold", avatarFor(selected.contact_id))}>
+                        {(selected.contacts.display_name || selected.contacts.phone_e164).trim().charAt(0).toUpperCase()}
+                      </div>
+                      <span className="absolute bottom-0 left-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-50" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-slate-800 text-sm truncate">
