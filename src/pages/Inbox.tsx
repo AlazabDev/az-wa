@@ -193,7 +193,7 @@ export default function Inbox() {
   });
 
   const { data: conversations } = useQuery({
-    queryKey: ["conversations", filterNumber],
+    queryKey: ["conversations", filterNumber, selectedId],
     queryFn: async () => {
       let q = supabase
         .from("conversations")
@@ -203,7 +203,31 @@ export default function Inbox() {
       if (filterNumber !== "all") q = q.eq("wa_number_id", filterNumber);
       const { data, error } = await q;
       if (error) throw error;
-      return data as unknown as Conversation[];
+      const convs = (data ?? []) as unknown as Conversation[];
+      // enrich with last text + unread count
+      const ids = convs.map((c) => c.id);
+      if (ids.length) {
+        const { data: lastMsgs } = await supabase
+          .from("messages")
+          .select("conversation_id, text, type, direction, read_at, created_at")
+          .in("conversation_id", ids)
+          .order("created_at", { ascending: false })
+          .limit(500);
+        const lastByConv = new Map<string, any>();
+        const unreadByConv = new Map<string, number>();
+        for (const m of lastMsgs ?? []) {
+          if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
+          if (m.direction === "inbound" && !m.read_at && m.conversation_id !== selectedId) {
+            unreadByConv.set(m.conversation_id, (unreadByConv.get(m.conversation_id) ?? 0) + 1);
+          }
+        }
+        for (const c of convs) {
+          const last = lastByConv.get(c.id);
+          c.last_text = last ? (last.text || `[${last.type}]`) : null;
+          c.unread = unreadByConv.get(c.id) ?? 0;
+        }
+      }
+      return convs;
     },
     refetchInterval: 10000,
   });
@@ -410,15 +434,23 @@ export default function Inbox() {
                     <div className="flex-1 min-w-0 border-b border-slate-100 pb-3 -mb-3">
                       <div className="flex justify-between items-center mb-0.5 gap-2">
                         <span className="font-semibold text-slate-800 truncate text-sm">{name}</span>
-                        <span className="text-[11px] text-slate-400 shrink-0">{formatListTime(c.last_message_at)}</span>
+                        <span className={cn("text-[11px] shrink-0", c.unread ? "text-emerald-600 font-bold" : "text-slate-400")}>
+                          {formatListTime(c.last_message_at)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center gap-2">
-                        <p className="text-xs text-slate-500 truncate font-mono" dir="ltr">{c.contacts.phone_e164}</p>
-                        {c.wa_numbers?.display_phone_number && (
+                        <p className="text-xs text-slate-500 truncate flex-1">
+                          {c.last_text ?? <span className="font-mono" dir="ltr">{c.contacts.phone_e164}</span>}
+                        </p>
+                        {c.unread ? (
+                          <span className="bg-emerald-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center font-bold shrink-0">
+                            {c.unread}
+                          </span>
+                        ) : c.wa_numbers?.display_phone_number ? (
                           <span className="text-[9px] text-slate-400 font-mono shrink-0" dir="ltr">
                             ← {c.wa_numbers.display_phone_number}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -452,8 +484,11 @@ export default function Inbox() {
                 {/* Chat header */}
                 <header className="relative z-10 px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0", avatarFor(selected.contact_id))}>
-                      {(selected.contacts.display_name || selected.contacts.phone_e164).trim().charAt(0).toUpperCase()}
+                    <div className="relative shrink-0">
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold", avatarFor(selected.contact_id))}>
+                        {(selected.contacts.display_name || selected.contacts.phone_e164).trim().charAt(0).toUpperCase()}
+                      </div>
+                      <span className="absolute bottom-0 left-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-50" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-slate-800 text-sm truncate">
@@ -495,19 +530,23 @@ export default function Inbox() {
                             <div key={m.id} className={cn("flex group", isOut ? "justify-end" : "justify-start")}>
                               <div
                                 className={cn(
-                                  "max-w-[70%] rounded-lg px-2.5 py-1.5 shadow-sm relative",
-                                  isOut ? "bg-[#d9fdd3] text-slate-800" : "bg-white text-slate-800"
+                                  "max-w-[70%] px-2.5 py-1.5 shadow-sm relative rounded-lg",
+                                  isOut
+                                    ? "bg-[#d9fdd3] text-slate-800 rounded-tl-none"
+                                    : "bg-white text-slate-800 rounded-tr-none"
                                 )}
                               >
                                 {/* tail */}
-                                <div
+                                <svg
+                                  viewBox="0 0 8 13"
                                   className={cn(
-                                    "absolute top-0 w-0 h-0 border-[6px] border-transparent",
-                                    isOut
-                                      ? "-left-[6px] border-t-[#d9fdd3]"
-                                      : "-right-[6px] border-t-white"
+                                    "absolute top-0 w-2 h-3",
+                                    isOut ? "-left-2 text-[#d9fdd3]" : "-right-2 text-white scale-x-[-1]"
                                   )}
-                                />
+                                  fill="currentColor"
+                                >
+                                  <path d="M8 0 L0 0 Q4 0 8 6 Z" />
+                                </svg>
                                 {quoted && (
                                   <div className={cn(
                                     "text-[11px] border-r-4 pr-2 py-1 mb-1 rounded bg-black/5",
