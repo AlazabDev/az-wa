@@ -530,19 +530,22 @@ export default function Inbox() {
                             <div key={m.id} className={cn("flex group", isOut ? "justify-end" : "justify-start")}>
                               <div
                                 className={cn(
-                                  "max-w-[70%] rounded-lg px-2.5 py-1.5 shadow-sm relative",
-                                  isOut ? "bg-[#d9fdd3] text-slate-800" : "bg-white text-slate-800"
+                                  "max-w-[70%] px-2.5 py-1.5 shadow-sm relative rounded-lg",
+                                  isOut
+                                    ? "bg-[#d9fdd3] text-slate-800 rounded-tl-none"
+                                    : "bg-white text-slate-800 rounded-tr-none"
                                 )}
                               >
                                 {/* tail */}
-                                <div
+                                <svg
+                                  viewBox="0 0 8 13"
                                   className={cn(
-                                    "absolute top-0 w-0 h-0 border-[6px] border-transparent",
-                                    isOut
-                                      ? "-left-[6px] border-t-[#d9fdd3]"
-                                      : "-right-[6px] border-t-white"
+                                    "absolute top-0 w-2 h-3",
+                                    isOut ? "-left-2 text-[#d9fdd3]" : "-right-2 text-white scale-x-[-1]"
                                   )}
-                                />
+                                  fill="currentColor"
+                                >
+                                  <path d="M8 0 L0 0 Q4 0 8 6 Z" />
                                 {quoted && (
                                   <div className={cn(
                                     "text-[11px] border-r-4 pr-2 py-1 mb-1 rounded bg-black/5",
