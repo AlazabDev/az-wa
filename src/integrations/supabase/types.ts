@@ -605,6 +605,229 @@ export type Database = {
           },
         ]
       }
+      finance_batches: {
+        Row: {
+          created_at: string
+          currency: string | null
+          failed_documents: number
+          id: string
+          name: string
+          processed_documents: number
+          source_phone: string | null
+          status: string
+          tenant_id: string
+          total_amount: number
+          total_documents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          failed_documents?: number
+          id?: string
+          name: string
+          processed_documents?: number
+          source_phone?: string | null
+          status?: string
+          tenant_id: string
+          total_amount?: number
+          total_documents?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          failed_documents?: number
+          id?: string
+          name?: string
+          processed_documents?: number
+          source_phone?: string | null
+          status?: string
+          tenant_id?: string
+          total_amount?: number
+          total_documents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_batches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_documents: {
+        Row: {
+          agent_result: Json
+          attempts: number
+          batch_id: string | null
+          confidence: number | null
+          created_at: string
+          currency: string | null
+          doc_type: string | null
+          error_message: string | null
+          file_name: string | null
+          from_phone: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          locked_at: string | null
+          media_wa_id: string | null
+          message_id: string | null
+          mime: string | null
+          object_key: string | null
+          ocr_text: string | null
+          processed_at: string | null
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          storage_bucket: string | null
+          storage_provider: string
+          tax_amount: number | null
+          tenant_id: string
+          total_amount: number | null
+          updated_at: string
+          vendor: string | null
+          vision_result: Json
+          wa_number_id: string | null
+        }
+        Insert: {
+          agent_result?: Json
+          attempts?: number
+          batch_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          doc_type?: string | null
+          error_message?: string | null
+          file_name?: string | null
+          from_phone?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          locked_at?: string | null
+          media_wa_id?: string | null
+          message_id?: string | null
+          mime?: string | null
+          object_key?: string | null
+          ocr_text?: string | null
+          processed_at?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_provider?: string
+          tax_amount?: number | null
+          tenant_id: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor?: string | null
+          vision_result?: Json
+          wa_number_id?: string | null
+        }
+        Update: {
+          agent_result?: Json
+          attempts?: number
+          batch_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          doc_type?: string | null
+          error_message?: string | null
+          file_name?: string | null
+          from_phone?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          locked_at?: string | null
+          media_wa_id?: string | null
+          message_id?: string | null
+          mime?: string | null
+          object_key?: string | null
+          ocr_text?: string | null
+          processed_at?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_provider?: string
+          tax_amount?: number | null
+          tenant_id?: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor?: string | null
+          vision_result?: Json
+          wa_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_worker_state: {
+        Row: {
+          created_at: string
+          id: string
+          is_paused: boolean
+          last_error: string | null
+          last_run_at: string | null
+          lease_until: string | null
+          paused_reason: string | null
+          processed_total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_paused?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          lease_until?: string | null
+          paused_reason?: string | null
+          processed_total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_paused?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          lease_until?: string | null
+          paused_reason?: string | null
+          processed_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hub_deliveries: {
         Row: {
           attempt: number
@@ -1909,6 +2132,49 @@ export type Database = {
           requested_permission: Database["public"]["Enums"]["app_permission"]
         }
         Returns: boolean
+      }
+      claim_finance_documents: {
+        Args: { _lease_seconds?: number; _limit?: number }
+        Returns: {
+          agent_result: Json
+          attempts: number
+          batch_id: string | null
+          confidence: number | null
+          created_at: string
+          currency: string | null
+          doc_type: string | null
+          error_message: string | null
+          file_name: string | null
+          from_phone: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          locked_at: string | null
+          media_wa_id: string | null
+          message_id: string | null
+          mime: string | null
+          object_key: string | null
+          ocr_text: string | null
+          processed_at: string | null
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          storage_bucket: string | null
+          storage_provider: string
+          tax_amount: number | null
+          tenant_id: string
+          total_amount: number | null
+          updated_at: string
+          vendor: string | null
+          vision_result: Json
+          wa_number_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "finance_documents"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_user_role: { Args: { p_user_id: string }; Returns: string }
