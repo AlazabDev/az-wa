@@ -1,15 +1,24 @@
 // Microsoft Foundry finance extraction.
-// Financial data must not silently leave the approved provider boundary.
+// Prefers Entra OAuth2 client credentials. API key is retained only as compatibility fallback.
 
 const PROJECT_ENDPOINT = (Deno.env.get("FOUNDRY_PROJECT_ENDPOINT") ?? "").replace(/\/+$/, "");
 const AGENT_ID = Deno.env.get("FOUNDRY_AGENT_ID") ?? "";
 const API_VERSION = Deno.env.get("FOUNDRY_API_VERSION") ?? "v1";
 const API_KEY = Deno.env.get("FOUNDRY_API_KEY") ?? "";
+const AZURE_TENANT_ID = Deno.env.get("AZURE_TENANT_ID") ?? "";
+const AZURE_CLIENT_ID = Deno.env.get("FOUNDRY_CLIENT_ID") ?? Deno.env.get("AZURE_CLIENT_ID") ?? "";
+const AZURE_CLIENT_SECRET = Deno.env.get("FOUNDRY_CLIENT_SECRET") ?? Deno.env.get("AZURE_CLIENT_SECRET") ?? "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const ALLOW_FALLBACK = (Deno.env.get("FINANCE_ALLOW_AI_FALLBACK") ?? "false") === "true";
 
+let cachedToken: { value: string; expiresAt: number } | null = null;
+
+function entraConfigured() {
+  return Boolean(AZURE_TENANT_ID && AZURE_CLIENT_ID && AZURE_CLIENT_SECRET);
+}
+
 export function foundryConfigured() {
-  return Boolean(PROJECT_ENDPOINT && AGENT_ID && API_KEY);
+  return Boolean(PROJECT_ENDPOINT && AGENT_ID && (entraConfigured() || API_KEY));
 }
 
 export interface FinanceExtraction {
@@ -63,15 +72,38 @@ function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceEx
   };
 }
 
-function foundryHeaders() {
-  // Kept compatible with the currently configured Foundry project. Production deployments
-  // should replace FOUNDRY_API_KEY with an Entra token provider when available.
-  return { "api-key": API_KEY, "Content-Type": "application/json" };
+async function getEntraToken() {
+  if (!entraConfigured()) throw new Error("Foundry Entra credentials not configured");
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
+
+  const form = new URLSearchParams({
+    client_id: AZURE_CLIENT_ID,
+    client_secret: AZURE_CLIENT_SECRET,
+    scope: "https://ai.azure.com/.default",
+    grant_type: "client_credentials",
+  });
+  const res = await fetch(`https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.access_token) throw new Error(`Entra token ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
+  cachedToken = { value: json.access_token, expiresAt: Date.now() + (Number(json.expires_in ?? 3600) * 1000) };
+  return cachedToken.value;
+}
+
+async function foundryHeaders(): Promise<Record<string, string>> {
+  if (entraConfigured()) {
+    return { Authorization: `Bearer ${await getEntraToken()}`, "Content-Type": "application/json" };
+  }
+  if (API_KEY) return { "api-key": API_KEY, "Content-Type": "application/json" };
+  throw new Error("Foundry authentication is not configured");
 }
 
 async function runFoundryAgent(prompt: string): Promise<FinanceExtraction> {
   if (!foundryConfigured()) throw new Error("Foundry finance agent is not configured");
-  const headers = foundryHeaders();
+  const headers = await foundryHeaders();
   const qs = `?api-version=${API_VERSION}`;
   const threadRes = await fetch(`${PROJECT_ENDPOINT}/threads${qs}`, { method: "POST", headers, body: "{}" });
   if (!threadRes.ok) throw new Error(`Foundry thread ${threadRes.status}: ${(await threadRes.text()).slice(0, 300)}`);
