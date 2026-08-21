@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import Finance from "./pages/Finance";
 import Accounts from "./pages/Accounts";
 import Templates from "./pages/Templates";
 import Flows from "./pages/Flows";
@@ -39,16 +40,19 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/inbox" element={<Inbox />} />
+              <Route path="/finance" element={<Finance />} />
               <Route path="/webhooks" element={<Webhooks />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/accounts" element={<Accounts />} />
-              <Route path="/templates" element={<Templates />} />
-              <Route path="/flows" element={<Flows />} />
-              <Route path="/flows/new" element={<FlowBuilder />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/maintenance" element={<Maintenance />} />
-              <Route path="/teams" element={<Teams />} />
+              {import.meta.env.DEV && <>
+                <Route path="/accounts" element={<Accounts />} />
+                <Route path="/templates" element={<Templates />} />
+                <Route path="/flows" element={<Flows />} />
+                <Route path="/flows/new" element={<FlowBuilder />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/teams" element={<Teams />} />
+              </>}
             </Route>
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
