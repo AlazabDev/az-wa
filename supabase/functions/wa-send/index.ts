@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
   const toPhone = String(to).replace(/[^0-9]/g, "");
   if (!/^\d{8,15}$/.test(toPhone)) return json({ error: "Invalid destination phone" }, 400);
-  let waPayload: any = { messaging_product: "whatsapp", to: toPhone, type };
+  const waPayload: any = { messaging_product: "whatsapp", to: toPhone, type };
 
   if (type === "text") {
     const value = String(text ?? "").trim();

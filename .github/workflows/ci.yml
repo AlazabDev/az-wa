@@ -2,92 +2,93 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/production-readiness]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Typecheck
-        run: pnpm run typecheck
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Unit tests
-        run: pnpm run test
-
-      - name: Production build
-        run: pnpm run buildname: CI
-
-on:
-  push:
-    branches: [main, feat/production-readiness]
-  pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
+    name: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+    timeout-minutes: 20
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # .env is intentionally tracked in this project.
+      # It contains public VITE_* build configuration.
+      # Actual secrets belong in .env.local and must never be committed.
+      - name: Validate Vite environment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f ".env" ]; then
+            echo "::error::.env is missing. This project requires the tracked Vite environment file."
+            exit 1
+          fi
+
+          required_vars=(
+            "VITE_SUPABASE_PROJECT_ID"
+            "VITE_SUPABASE_URL"
+            "VITE_SUPABASE_PUBLISHABLE_KEY"
+          )
+
+          for var in "${required_vars[@]}"; do
+            if ! grep -Eq "^${var}=" .env; then
+              echo "::error::Missing ${var} in .env"
+              exit 1
+            fi
+          done
+
+          echo "Vite environment configuration found."
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
-        run: pnpm run typecheck
+        run: npm run typecheck
 
       - name: Lint
-        run: pnpm run lint
+        run: npm run lint
 
       - name: Unit tests
-        run: pnpm run test
+        run: npm run test
 
       - name: Production build
-        run: pnpm run build
+        run: npm run build
+
+      - name: Verify production build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "dist" ]; then
+            echo "::error::dist directory was not generated"
+            exit 1
+          fi
+
+          if [ ! -f "dist/index.html" ]; then
+            echo "::error::dist/index.html was not generated"
+            exit 1
+          fi
+
+          echo "Production build verified successfully."

@@ -57,7 +57,7 @@ function parseJson(text: string): Partial<FinanceExtraction> {
 function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceExtraction {
   const num = (v: unknown) => {
     if (v === null || v === undefined || v === "") return null;
-    const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.\-]/g, "")) : Number(v);
+    const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.-]/g, "")) : Number(v);
     return Number.isFinite(n) ? n : null;
   };
   const str = (v: unknown) => typeof v === "string" && v.trim() ? v.trim() : null;
