@@ -1,14 +1,15 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
-Allow: /
+Allow: /$
+Disallow: /inbox
+Disallow: /finance
+Disallow: /settings
+Disallow: /accounts
+Disallow: /webhooks
+Disallow: /teams
+Disallow: /projects
+Disallow: /clients
+Disallow: /maintenance
+Disallow: /flows
+Disallow: /templates
+
+Sitemap: https://wa.alazab.cloud/sitemap.xml
