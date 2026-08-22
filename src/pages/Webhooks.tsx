@@ -45,7 +45,7 @@ interface WebhookTarget {
   name: string;
   url: string;
   is_active: boolean;
-  secret: string | null;
+  has_secret: boolean | null;
   events_filter: string[];
   numbers_filter: string[];
   timeout_ms: number;
@@ -59,7 +59,6 @@ interface WebhookTarget {
 export default function Webhooks() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
 
   // Form state
   const [name, setName] = useState("");
@@ -72,14 +71,16 @@ export default function Webhooks() {
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ["webhooks"],
     queryFn: async () => {
+      // The signing secret is write-only: it is never selected into the client.
       const { data, error } = await supabase
         .from("hub_dispatch_targets")
-        .select("*")
+        .select("id,name,url,is_active,has_secret,events_filter,numbers_filter,timeout_ms,retry_count,success_rate,last_delivery_at,last_error,created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as WebhookTarget[];
     },
   });
+
 
   const { data: waNumbers } = useQuery({
     queryKey: ["wa_numbers_webhook"],
