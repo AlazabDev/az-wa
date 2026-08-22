@@ -13,9 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
-  Plus, ChevronDown, Eye, EyeOff, Copy, MoreVertical,
-  Webhook, Trash2, AlertCircle, Phone, Activity, CheckCircle2
+  Plus, ChevronDown, Copy, MoreVertical,
+  Webhook, Trash2, AlertCircle, Phone, Activity, CheckCircle2, ShieldCheck
 } from "lucide-react";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
