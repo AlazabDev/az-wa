@@ -101,3 +101,35 @@ Validate in this order:
 ## 7. Release gate
 
 Do not merge/deploy unless GitHub CI passes `typecheck`, `lint`, `test`, and `build` and the database preflight is clean.
+
+## 8. النشر على السيرفر الخاص (wa.alazab.cloud)
+
+المتطلبات على السيرفر: Docker + Docker Compose plugin + Nginx + certbot، و DNS سجل `A` لـ `wa.alazab.cloud` يشير لـ IP السيرفر.
+
+```bash
+git clone <repo-url> /opt/az-wa && cd /opt/az-wa
+cp .env.production.example .env.production   # ثم املأ VITE_SUPABASE_PUBLISHABLE_KEY
+./deploy/deploy.sh
+```
+
+الحاوية تستمع على `127.0.0.1:8085` فقط، و Nginx على المضيف ينهي TLS:
+
+```bash
+sudo cp deploy/wa.alazab.cloud.conf /etc/nginx/sites-available/wa.alazab.cloud
+sudo ln -sf /etc/nginx/sites-available/wa.alazab.cloud /etc/nginx/sites-enabled/
+sudo certbot --nginx -d wa.alazab.cloud
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+فحوصات ما بعد النشر:
+
+```bash
+curl -sf https://wa.alazab.cloud/healthz     # يجب أن يرجع ok
+curl -sI https://wa.alazab.cloud/inbox       # يجب 200 (SPA fallback)
+```
+
+لأي تحديث لاحق: `cd /opt/az-wa && ./deploy/deploy.sh` (يسحب الكود، يبني، يعيد التشغيل، ويتحقق من الصحة).
+
+### روابط ثابتة يجب ألا تتغير
+- Meta webhook: `https://uwkdtbodoglbptiediea.supabase.co/functions/v1/wa-webhook`
+- واجهة الويب: `https://wa.alazab.cloud`
