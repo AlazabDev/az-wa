@@ -252,7 +252,7 @@ export default function Webhooks() {
               const events = (wh.events_filter as string[]) || [];
               const numbers = (wh.numbers_filter as string[]) || [];
               const stats = deliveryStats?.[wh.id];
-              const secretVisible = visibleSecrets[wh.id];
+              
 
               return (
                 <Card key={wh.id} className="shadow-card">
@@ -340,20 +340,17 @@ export default function Webhooks() {
                           </span>
                         </div>
                       )}
-                      {wh.secret && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Secret:</span>
-                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[10px]">
-                            {secretVisible ? wh.secret : "••••••••"}
-                          </code>
-                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setVisibleSecrets((p) => ({ ...p, [wh.id]: !p[wh.id] }))}>
-                            {secretVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { navigator.clipboard.writeText(wh.secret!); toast.success("تم النسخ"); }}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Secret:</span>
+                        {wh.has_secret ? (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            <ShieldCheck className="h-3 w-3 text-success" /> مضبوط (مخزّن على الخادم)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">غير مضبوط</Badge>
+                        )}
+                      </div>
+
                     </div>
                   </CardContent>
                 </Card>
