@@ -13,9 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
-  Plus, ChevronDown, Eye, EyeOff, Copy, MoreVertical,
-  Webhook, Trash2, AlertCircle, Phone, Activity, CheckCircle2
+  Plus, ChevronDown, Copy, MoreVertical,
+  Webhook, Trash2, AlertCircle, Phone, Activity, CheckCircle2, ShieldCheck
 } from "lucide-react";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -45,7 +46,7 @@ interface WebhookTarget {
   name: string;
   url: string;
   is_active: boolean;
-  secret: string | null;
+  has_secret: boolean | null;
   events_filter: string[];
   numbers_filter: string[];
   timeout_ms: number;
@@ -59,7 +60,6 @@ interface WebhookTarget {
 export default function Webhooks() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
 
   // Form state
   const [name, setName] = useState("");
@@ -72,14 +72,16 @@ export default function Webhooks() {
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ["webhooks"],
     queryFn: async () => {
+      // The signing secret is write-only: it is never selected into the client.
       const { data, error } = await supabase
         .from("hub_dispatch_targets")
-        .select("*")
+        .select("id,name,url,is_active,has_secret,events_filter,numbers_filter,timeout_ms,retry_count,success_rate,last_delivery_at,last_error,created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as WebhookTarget[];
     },
   });
+
 
   const { data: waNumbers } = useQuery({
     queryKey: ["wa_numbers_webhook"],
@@ -251,7 +253,7 @@ export default function Webhooks() {
               const events = (wh.events_filter as string[]) || [];
               const numbers = (wh.numbers_filter as string[]) || [];
               const stats = deliveryStats?.[wh.id];
-              const secretVisible = visibleSecrets[wh.id];
+              
 
               return (
                 <Card key={wh.id} className="shadow-card">
@@ -339,20 +341,17 @@ export default function Webhooks() {
                           </span>
                         </div>
                       )}
-                      {wh.secret && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Secret:</span>
-                          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[10px]">
-                            {secretVisible ? wh.secret : "••••••••"}
-                          </code>
-                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setVisibleSecrets((p) => ({ ...p, [wh.id]: !p[wh.id] }))}>
-                            {secretVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { navigator.clipboard.writeText(wh.secret!); toast.success("تم النسخ"); }}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Secret:</span>
+                        {wh.has_secret ? (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            <ShieldCheck className="h-3 w-3 text-success" /> مضبوط (مخزّن على الخادم)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">غير مضبوط</Badge>
+                        )}
+                      </div>
+
                     </div>
                   </CardContent>
                 </Card>

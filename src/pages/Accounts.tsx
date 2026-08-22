@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,27 +17,28 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Plus, Phone, MoreVertical, CheckCircle, XCircle, Globe, Settings as SettingsIcon,
-  Trash2, Save, KeyRound, Webhook, Bell, Shield, RefreshCw, X,
+  Trash2, Save, KeyRound, Webhook, Bell, Shield, RefreshCw, X, Loader2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-interface PhoneEntry { number: string; verifiedName: string; quality: string; status: string; }
-interface Account {
-  id: string; name: string; phones: PhoneEntry[]; wabaId: string;
-  status: string; templates: number; currency: string; apps: string[];
+interface PhoneEntry {
+  id: string;
+  number: string;
+  verifiedName: string;
+  quality: string;
+  status: string;
 }
-
-const initialAccounts: Account[] = [
-  { id: "3773448776290331", name: "Mohamed Azab", phones: [{ number: "+20 10 04006620", verifiedName: "Mohamed Azab", quality: "GREEN", status: "CONNECTED" }], wabaId: "3773448776290331", status: "connected", templates: 4, currency: "USD", apps: ["BizWeb", "ASW"] },
-  { id: "1485981793093019", name: "Mohamed Azab", phones: [{ number: "+20 10 26762988", verifiedName: "Alazab", quality: "GREEN", status: "CONNECTED" }], wabaId: "1485981793093019", status: "connected", templates: 4, currency: "USD", apps: ["ElevenLabs Agents"] },
-  { id: "2144651456337012", name: "Mohamed Azab", phones: [{ number: "+1 205-460-5650", verifiedName: "Mohamed Azab", quality: "GREEN", status: "CONNECTED" }], wabaId: "2144651456337012", status: "connected", templates: 9, currency: "USD", apps: ["ASW", "Kapso"] },
-  { id: "1458856398934130", name: "Mohamed Azab", phones: [{ number: "+1 206-479-5608", verifiedName: "Mohamed Azab", quality: "GREEN", status: "CONNECTED" }, { number: "+1 208-379-9564", verifiedName: "Mohamed Azab", quality: "UNKNOWN", status: "CONNECTED" }], wabaId: "1458856398934130", status: "connected", templates: 20, currency: "USD", apps: ["ASW"] },
-  { id: "459851797218855", name: "alazab", phones: [{ number: "+1 555-728-5727", verifiedName: "alazabfix", quality: "GREEN", status: "CONNECTED" }, { number: "+1 555-724-5001", verifiedName: "alazab", quality: "GREEN", status: "CONNECTED" }], wabaId: "459851797218855", status: "connected", templates: 34, currency: "USD", apps: ["ASW"] },
-  { id: "946737044675791", name: "UberFix", phones: [], wabaId: "946737044675791", status: "disconnected", templates: 0, currency: "USD", apps: [] },
-  { id: "1198849982358674", name: "UberFix", phones: [], wabaId: "1198849982358674", status: "disconnected", templates: 5, currency: "USD", apps: ["ASW", "Jotform Agent"] },
-  { id: "1329792992522819", name: "Mohamed Azab", phones: [], wabaId: "1329792992522819", status: "disconnected", templates: 0, currency: "USD", apps: [] },
-];
+interface Account {
+  id: string;
+  name: string;
+  phones: PhoneEntry[];
+  wabaId: string;
+  status: string;
+  templates: number;
+  currency: string;
+  apps: string[];
+}
 
 const qualityColors: Record<string, string> = {
   GREEN: "bg-success/10 text-success",
@@ -43,8 +47,13 @@ const qualityColors: Record<string, string> = {
   UNKNOWN: "bg-muted text-muted-foreground",
 };
 
+const WEBHOOK_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-webhook`;
+
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
+  const qc = useQueryClient();
+  const { currentTenantId, currentRole } = useAuth();
+  const canManage = currentRole === "operator" || currentRole === "admin";
+
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Account | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -55,54 +64,119 @@ export default function Accounts() {
   const [autoReconnect, setAutoReconnect] = useState(true);
   const [newApp, setNewApp] = useState("");
 
-  const connectedCount = accounts.filter(a => a.status === "connected").length;
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ["wa-accounts", currentTenantId],
+    enabled: Boolean(currentTenantId),
+    queryFn: async (): Promise<Account[]> => {
+      const [accRes, numRes, tmplRes] = await Promise.all([
+        supabase.from("wa_accounts")
+          .select("id,label,waba_id,currency,app_bindings")
+          .eq("tenant_id", currentTenantId!).order("label"),
+        supabase.from("wa_numbers")
+          .select("id,wa_account_id,display_phone_number,phone_e164,verified_name,quality_rating,status")
+          .eq("tenant_id", currentTenantId!),
+        supabase.from("templates")
+          .select("id,wa_account_id").eq("tenant_id", currentTenantId!),
+      ]);
+      if (accRes.error) throw accRes.error;
+      if (numRes.error) throw numRes.error;
+      if (tmplRes.error) throw tmplRes.error;
+
+      return (accRes.data ?? []).map((acc) => {
+        const phones = (numRes.data ?? [])
+          .filter((n) => n.wa_account_id === acc.id)
+          .map((n) => ({
+            id: n.id,
+            number: n.display_phone_number || n.phone_e164,
+            verifiedName: n.verified_name || "",
+            quality: (n.quality_rating || "UNKNOWN").toUpperCase(),
+            status: (n.status || "CONNECTED").toUpperCase(),
+          }));
+        const bindings = Array.isArray(acc.app_bindings) ? (acc.app_bindings as unknown[]) : [];
+        return {
+          id: acc.id,
+          name: acc.label,
+          wabaId: acc.waba_id,
+          currency: acc.currency || "USD",
+          phones,
+          status: phones.some((p) => p.status === "CONNECTED") ? "connected" : "disconnected",
+          templates: (tmplRes.data ?? []).filter((t) => t.wa_account_id === acc.id).length,
+          apps: bindings.map((b) => (typeof b === "string" ? b : String((b as { name?: string })?.name ?? ""))).filter(Boolean),
+        };
+      });
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (account: Account) => {
+      if (!canManage) throw new Error("تحتاج صلاحية operator أو admin");
+      const { error } = await supabase.from("wa_accounts").update({
+        label: account.name,
+        currency: account.currency,
+        app_bindings: account.apps,
+      }).eq("id", account.id);
+      if (error) throw error;
+
+      for (const phone of account.phones) {
+        const { error: phoneError } = await supabase.from("wa_numbers").update({
+          display_phone_number: phone.number,
+          verified_name: phone.verifiedName,
+          quality_rating: phone.quality,
+          status: phone.status,
+        }).eq("id", phone.id);
+        if (phoneError) throw phoneError;
+      }
+    },
+    onSuccess: () => {
+      toast.success("تم حفظ إعدادات الحساب");
+      qc.invalidateQueries({ queryKey: ["wa-accounts"] });
+      closeEdit();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      if (!canManage) throw new Error("تحتاج صلاحية operator أو admin");
+      const { error } = await supabase.from("wa_accounts").delete().eq("id", accountId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حذف الحساب");
+      qc.invalidateQueries({ queryKey: ["wa-accounts"] });
+      closeEdit();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const connectedCount = accounts.filter((a) => a.status === "connected").length;
   const totalPhones = accounts.reduce((sum, a) => sum + a.phones.length, 0);
   const totalTemplates = accounts.reduce((sum, a) => sum + a.templates, 0);
 
   const openEdit = (acc: Account) => {
     setEditId(acc.id);
-    setDraft({ ...acc, phones: acc.phones.map(p => ({ ...p })), apps: [...acc.apps] });
-    setWebhookUrl(`https://uwkdtbodoglbptiediea.supabase.co/functions/v1/wa-webhook?waba=${acc.wabaId}`);
+    setDraft({ ...acc, phones: acc.phones.map((p) => ({ ...p })), apps: [...acc.apps] });
+    setWebhookUrl(`${WEBHOOK_BASE}?waba=${acc.wabaId}`);
     setAccessToken("");
   };
   const closeEdit = () => { setEditId(null); setDraft(null); };
 
-  const saveEdit = () => {
-    if (!draft) return;
-    setAccounts(prev => prev.map(a => a.id === draft.id ? { ...draft } : a));
-    toast.success("تم حفظ إعدادات الحساب");
-    closeEdit();
-  };
-
-  const removeAccount = () => {
-    if (!draft) return;
-    setAccounts(prev => prev.filter(a => a.id !== draft.id));
-    toast.success("تم حذف الحساب");
-    closeEdit();
-  };
-
   const updatePhone = (idx: number, patch: Partial<PhoneEntry>) => {
     if (!draft) return;
-    const phones = draft.phones.map((p, i) => i === idx ? { ...p, ...patch } : p);
-    setDraft({ ...draft, phones });
+    setDraft({ ...draft, phones: draft.phones.map((p, i) => (i === idx ? { ...p, ...patch } : p)) });
   };
   const removePhone = (idx: number) => {
     if (!draft) return;
     setDraft({ ...draft, phones: draft.phones.filter((_, i) => i !== idx) });
   };
-  const addPhone = () => {
-    if (!draft) return;
-    setDraft({ ...draft, phones: [...draft.phones, { number: "", verifiedName: "", quality: "UNKNOWN", status: "CONNECTED" }] });
-  };
   const addApp = () => {
-    if (!draft || !newApp.trim()) return;
-    if (draft.apps.includes(newApp.trim())) return;
+    if (!draft || !newApp.trim() || draft.apps.includes(newApp.trim())) return;
     setDraft({ ...draft, apps: [...draft.apps, newApp.trim()] });
     setNewApp("");
   };
   const removeApp = (app: string) => {
     if (!draft) return;
-    setDraft({ ...draft, apps: draft.apps.filter(a => a !== app) });
+    setDraft({ ...draft, apps: draft.apps.filter((a) => a !== app) });
   };
 
   return (
@@ -110,7 +184,7 @@ export default function Accounts() {
       title="الحسابات"
       subtitle={`إدارة حسابات واتساب الأعمال — ${connectedCount} متصل من ${accounts.length}`}
       actions={
-        <Button size="sm" className="gradient-primary text-primary-foreground">
+        <Button size="sm" className="gradient-primary text-primary-foreground" disabled={!canManage}>
           <Plus className="h-4 w-4 ml-1" />
           إضافة حساب
         </Button>
@@ -123,6 +197,13 @@ export default function Accounts() {
           <Card className="shadow-card"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-info">{totalTemplates}</p><p className="text-xs text-muted-foreground">إجمالي القوالب</p></CardContent></Card>
         </div>
 
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+        ) : accounts.length === 0 ? (
+          <Card className="shadow-card"><CardContent className="p-8 text-center text-sm text-muted-foreground">
+            لا توجد حسابات WABA مرتبطة بهذا الـ Tenant بعد.
+          </CardContent></Card>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {accounts.map((account) => (
             <Card key={account.id} className="shadow-card hover:shadow-card-hover transition-shadow">
@@ -149,10 +230,11 @@ export default function Accounts() {
                         <DropdownMenuItem onClick={() => openEdit(account)}>
                           <SettingsIcon className="h-4 w-4 ml-2" /> تعديل
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast.success("تم بدء إعادة الاتصال")}>
-                          <RefreshCw className="h-4 w-4 ml-2" /> إعادة الاتصال
+                        <DropdownMenuItem onClick={() => qc.invalidateQueries({ queryKey: ["wa-accounts"] })}>
+                          <RefreshCw className="h-4 w-4 ml-2" /> تحديث الحالة
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => setAccounts(p => p.filter(a => a.id !== account.id))}>
+                        <DropdownMenuItem className="text-destructive" disabled={!canManage}
+                          onClick={() => deleteMutation.mutate(account.id)}>
                           <Trash2 className="h-4 w-4 ml-2" /> حذف
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -162,14 +244,14 @@ export default function Accounts() {
 
                 {account.phones.length > 0 && (
                   <div className="mt-3 space-y-1.5">
-                    {account.phones.map((phone, idx) => (
-                      <div key={idx} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-1.5">
+                    {account.phones.map((phone) => (
+                      <div key={phone.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-1.5">
                         <div className="flex items-center gap-2">
                           <Phone className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs" dir="ltr">{phone.number}</span>
-                          <span className="text-xs text-muted-foreground">({phone.verifiedName})</span>
+                          {phone.verifiedName && <span className="text-xs text-muted-foreground">({phone.verifiedName})</span>}
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality]}`}>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality] ?? qualityColors.UNKNOWN}`}>
                           {phone.quality === "GREEN" ? "جودة عالية" : phone.quality === "UNKNOWN" ? "غير محدد" : phone.quality}
                         </span>
                       </div>
@@ -198,6 +280,7 @@ export default function Accounts() {
             </Card>
           ))}
         </div>
+        )}
       </div>
 
       {/* Edit Account Settings Dialog */}
@@ -231,7 +314,7 @@ export default function Accounts() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">WABA ID</Label>
-                    <Input value={draft.wabaId} dir="ltr" className="font-mono" onChange={(e) => setDraft({ ...draft, wabaId: e.target.value })} />
+                    <Input value={draft.wabaId} dir="ltr" className="font-mono" readOnly />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">العملة</Label>
@@ -244,13 +327,7 @@ export default function Accounts() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">الحالة</Label>
-                    <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="connected">متصل</SelectItem>
-                        <SelectItem value="disconnected">غير متصل</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input value={draft.status === "connected" ? "متصل" : "غير متصل"} readOnly />
                   </div>
                 </div>
                 <Separator />
@@ -267,11 +344,11 @@ export default function Accounts() {
               <TabsContent value="phones" className="space-y-3 mt-4">
                 {draft.phones.length === 0 && (
                   <p className="text-center text-sm text-muted-foreground py-6 rounded-lg bg-muted/30">
-                    لا توجد أرقام — أضف رقماً جديداً
+                    لا توجد أرقام مرتبطة بهذا الحساب
                   </p>
                 )}
                 {draft.phones.map((p, idx) => (
-                  <div key={idx} className="rounded-lg border p-3 space-y-2.5">
+                  <div key={p.id} className="rounded-lg border p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold">رقم #{idx + 1}</Label>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removePhone(idx)}>
@@ -301,9 +378,6 @@ export default function Accounts() {
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" className="w-full gap-2" onClick={addPhone}>
-                  <Plus className="h-4 w-4" /> إضافة رقم
-                </Button>
               </TabsContent>
 
               {/* Integrations */}
@@ -316,7 +390,7 @@ export default function Accounts() {
                 <div className="space-y-1.5">
                   <Label className="text-xs flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" /> Access Token جديد (اختياري)</Label>
                   <Input dir="ltr" type="password" placeholder="EAAG..." value={accessToken} onChange={(e) => setAccessToken(e.target.value)} />
-                  <p className="text-[11px] text-muted-foreground">سيتم تخزينه بشكل آمن في إعدادات الخادم</p>
+                  <p className="text-[11px] text-muted-foreground">لا يتم تخزين التوكن في المتصفح — يُضبط في أسرار Supabase على الخادم</p>
                 </div>
                 <Separator />
                 <div className="space-y-2">
@@ -361,12 +435,13 @@ export default function Accounts() {
           )}
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="destructive" onClick={removeAccount} className="gap-2 ml-auto">
+            <Button variant="destructive" disabled={!canManage || !draft || deleteMutation.isPending}
+              onClick={() => draft && deleteMutation.mutate(draft.id)} className="gap-2 ml-auto">
               <Trash2 className="h-4 w-4" /> حذف الحساب
             </Button>
             <Button variant="outline" onClick={closeEdit}>إلغاء</Button>
-            <Button onClick={saveEdit} className="gap-2">
-              <Save className="h-4 w-4" /> حفظ التغييرات
+            <Button onClick={() => draft && saveMutation.mutate(draft)} disabled={!canManage || saveMutation.isPending} className="gap-2">
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ التغييرات
             </Button>
           </DialogFooter>
         </DialogContent>

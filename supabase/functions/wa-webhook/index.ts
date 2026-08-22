@@ -3,6 +3,8 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { assertPublicWebhookUrl } from "../_shared/ssrf.ts";
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -136,11 +138,25 @@ async function dispatchToTargets(tenantId: string, eventType: string, payload: u
     }
 
     const startedAt = Date.now();
+
+    // SSRF guard: re-validate the tenant-supplied URL on every dispatch.
+    const check = await assertPublicWebhookUrl(t.url);
+    if (!check.ok) {
+      const message = `blocked webhook target (${check.reason})`;
+      await admin.from("hub_deliveries").insert({
+        tenant_id: tenantId, target_id: t.id, status: "failed",
+        error_message: message, response_time_ms: Date.now() - startedAt,
+      });
+      await admin.from("hub_dispatch_targets").update({ last_error: message }).eq("id", t.id);
+      continue;
+    }
+
     try {
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), t.timeout_ms ?? 5000);
-      const resp = await fetch(t.url, { method: "POST", headers, body, signal: ctl.signal });
+      const resp = await fetch(t.url, { method: "POST", headers, body, signal: ctl.signal, redirect: "manual" });
       clearTimeout(timer);
+
       await admin.from("hub_deliveries").insert({
         tenant_id: tenantId, target_id: t.id, event_id: null,
         status: resp.ok ? "delivered" : "failed", http_status: resp.status,

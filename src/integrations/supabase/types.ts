@@ -902,6 +902,7 @@ export type Database = {
         Row: {
           created_at: string
           events_filter: Json
+          has_secret: boolean | null
           id: string
           is_active: boolean
           last_delivery_at: string | null
@@ -919,6 +920,7 @@ export type Database = {
         Insert: {
           created_at?: string
           events_filter?: Json
+          has_secret?: boolean | null
           id?: string
           is_active?: boolean
           last_delivery_at?: string | null
@@ -936,6 +938,7 @@ export type Database = {
         Update: {
           created_at?: string
           events_filter?: Json
+          has_secret?: boolean | null
           id?: string
           is_active?: boolean
           last_delivery_at?: string | null
