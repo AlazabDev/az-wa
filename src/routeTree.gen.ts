@@ -13,12 +13,15 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedApiLogsRouteImport } from './routes/_authenticated/api-logs'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
@@ -40,6 +43,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
   id: '/api-logs',
   path: '/api-logs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCredentialsRoute =
@@ -74,6 +82,16 @@ const AuthenticatedQueuesRoute = AuthenticatedQueuesRouteImport.update({
   path: '/queues',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWabasRoute = AuthenticatedWabasRouteImport.update({
   id: '/wabas',
   path: '/wabas',
@@ -95,12 +113,15 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -109,12 +130,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -125,12 +149,15 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/api-logs': typeof AuthenticatedApiLogsRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -141,12 +168,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/api-logs'
+    | '/audit'
     | '/credentials'
     | '/dashboard'
     | '/health'
     | '/infrastructure'
     | '/numbers'
     | '/queues'
+    | '/settings'
+    | '/users'
     | '/wabas'
     | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -155,12 +185,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/api-logs'
+    | '/audit'
     | '/credentials'
     | '/dashboard'
     | '/health'
     | '/infrastructure'
     | '/numbers'
     | '/queues'
+    | '/settings'
+    | '/users'
     | '/wabas'
     | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -170,12 +203,15 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/api-logs'
+    | '/_authenticated/audit'
     | '/_authenticated/credentials'
     | '/_authenticated/dashboard'
     | '/_authenticated/health'
     | '/_authenticated/infrastructure'
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
+    | '/_authenticated/settings'
+    | '/_authenticated/users'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -216,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/api-logs'
       fullPath: '/api-logs'
       preLoaderRoute: typeof AuthenticatedApiLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/credentials': {
@@ -260,6 +303,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQueuesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wabas': {
       id: '/_authenticated/wabas'
       path: '/wabas'
@@ -286,24 +343,30 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApiLogsRoute: typeof AuthenticatedApiLogsRoute
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
   AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApiLogsRoute: AuthenticatedApiLogsRoute,
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
   AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
 }
