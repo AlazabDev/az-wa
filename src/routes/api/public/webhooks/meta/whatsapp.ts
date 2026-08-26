@@ -85,7 +85,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                   meta_phone_number_id: metaPhoneId,
                   event_type: change.field ?? "unknown",
                   message_id: messageId,
-                  payload: change as unknown as Record<string, unknown>,
+                  payload: JSON.parse(JSON.stringify(change)),
                   signature_valid: signatureOk,
                   deduplication_key: dedupKey,
                   status: number ? "queued" : "unmapped",
@@ -116,7 +116,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                   meta_phone_number_id: metaPhoneId,
                   meta_waba_id: metaWabaId,
                   display_phone_number: change.value?.metadata?.display_phone_number ?? null,
-                  payload: change as unknown as Record<string, unknown>,
+                  payload: JSON.parse(JSON.stringify(change)),
                 });
                 await supabaseAdmin.from("alerts").insert({
                   type: "unknown_phone_number",
