@@ -16,6 +16,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
+import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const AuthenticatedWabasRoute = AuthenticatedWabasRouteImport.update({
   path: '/wabas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicWebhooksMetaWhatsappRoute =
   ApiPublicWebhooksMetaWhatsappRouteImport.update({
     id: '/api/public/webhooks/meta/whatsapp',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/wabas': typeof AuthenticatedWabasRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/wabas': typeof AuthenticatedWabasRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesById {
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
+  '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/infrastructure'
     | '/numbers'
     | '/wabas'
+    | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/infrastructure'
     | '/numbers'
     | '/wabas'
+    | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   id:
     | '__root__'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/infrastructure'
     | '/_authenticated/numbers'
     | '/_authenticated/wabas'
+    | '/_authenticated/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -178,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWabasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/webhooks': {
+      id: '/_authenticated/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/webhooks/meta/whatsapp': {
       id: '/api/public/webhooks/meta/whatsapp'
       path: '/api/public/webhooks/meta/whatsapp'
@@ -193,6 +212,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
+  AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -200,6 +220,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
+  AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
