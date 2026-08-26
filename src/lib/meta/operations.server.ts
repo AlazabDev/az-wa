@@ -1,0 +1,309 @@
+/**
+ * Meta control-plane operations: discovery/sync and connectivity diagnostics.
+ * Server-only. Postgres stays the source of operational history — sync never
+ * deletes local rows, it only inserts, updates or marks missing.
+ */
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { MetaGraphClient, resolveCredential, clientForNumber } from "./graph.server";
+
+export type SyncReport = {
+  portfolio: string;
+  wabas: { discovered: number; inserted: number; updated: number; missing: number };
+  numbers: { discovered: number; inserted: number; updated: number; missing: number };
+  errors: string[];
+};
+
+export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
+  const report: SyncReport = {
+    portfolio: portfolioId,
+    wabas: { discovered: 0, inserted: 0, updated: 0, missing: 0 },
+    numbers: { discovered: 0, inserted: 0, updated: 0, missing: 0 },
+    errors: [],
+  };
+
+  const { data: portfolio } = await supabaseAdmin
+    .from("business_portfolios")
+    .select("id, meta_business_id")
+    .eq("id", portfolioId)
+    .maybeSingle();
+  if (!portfolio) {
+    report.errors.push("Business portfolio not found");
+    return report;
+  }
+
+  const cred = await resolveCredential({ businessPortfolioId: portfolio.id });
+  if (!cred.token) {
+    report.errors.push(
+      "No usable Meta credential resolved for this portfolio. Add a credential before syncing.",
+    );
+    return report;
+  }
+  const client = new MetaGraphClient(cred.token);
+
+  const wabaRes = await client.request<{ data: Array<{ id: string; name?: string; currency?: string; timezone_id?: string }> }>(
+    `${portfolio.meta_business_id}/client_whatsapp_business_accounts`,
+    { query: { limit: "200" } },
+  );
+  const owned = await client.request<{ data: Array<{ id: string; name?: string; currency?: string; timezone_id?: string }> }>(
+    `${portfolio.meta_business_id}/owned_whatsapp_business_accounts`,
+    { query: { limit: "200" } },
+  );
+
+  if (!wabaRes.ok && !owned.ok) {
+    report.errors.push(wabaRes.errorMessage ?? owned.errorMessage ?? "WABA discovery failed");
+    return report;
+  }
+
+  const discovered = [...(wabaRes.data?.data ?? []), ...(owned.data?.data ?? [])];
+  const seenWabaMetaIds = new Set<string>();
+  report.wabas.discovered = discovered.length;
+
+  for (const w of discovered) {
+    if (seenWabaMetaIds.has(w.id)) continue;
+    seenWabaMetaIds.add(w.id);
+    const { data: existing } = await supabaseAdmin
+      .from("wabas")
+      .select("id")
+      .eq("meta_waba_id", w.id)
+      .maybeSingle();
+
+    let wabaRowId: string;
+    if (existing) {
+      await supabaseAdmin
+        .from("wabas")
+        .update({
+          name: w.name ?? null,
+          currency: w.currency ?? null,
+          timezone: w.timezone_id ?? null,
+          status: "active",
+          last_synced_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+      wabaRowId = existing.id;
+      report.wabas.updated += 1;
+    } else {
+      const { data: inserted, error } = await supabaseAdmin
+        .from("wabas")
+        .insert({
+          business_portfolio_id: portfolio.id,
+          meta_waba_id: w.id,
+          name: w.name ?? `WABA ${w.id}`,
+          currency: w.currency ?? null,
+          timezone: w.timezone_id ?? null,
+          last_synced_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      if (error || !inserted) {
+        report.errors.push(`WABA ${w.id}: ${error?.message ?? "insert failed"}`);
+        continue;
+      }
+      wabaRowId = inserted.id;
+      report.wabas.inserted += 1;
+    }
+
+    const numbersRes = await client.request<{
+      data: Array<{
+        id: string;
+        display_phone_number: string;
+        verified_name?: string;
+        quality_rating?: string;
+        platform_type?: string;
+        status?: string;
+        messaging_limit_tier?: string;
+      }>;
+    }>(`${w.id}/phone_numbers`, { query: { limit: "200" } });
+
+    if (!numbersRes.ok) {
+      report.errors.push(`Phone discovery for WABA ${w.id}: ${numbersRes.errorMessage}`);
+      continue;
+    }
+    const phones = numbersRes.data?.data ?? [];
+    report.numbers.discovered += phones.length;
+    const seenPhoneIds: string[] = [];
+
+    for (const p of phones) {
+      seenPhoneIds.push(p.id);
+      const { data: existingNumber } = await supabaseAdmin
+        .from("whatsapp_numbers")
+        .select("id")
+        .eq("meta_phone_number_id", p.id)
+        .maybeSingle();
+      const patch = {
+        display_phone_number: p.display_phone_number,
+        verified_name: p.verified_name ?? null,
+        quality_rating: p.quality_rating ?? null,
+        messaging_limit: p.messaging_limit_tier ?? null,
+        platform_status: p.status ?? null,
+        status: "active" as const,
+        last_synced_at: new Date().toISOString(),
+      };
+      if (existingNumber) {
+        await supabaseAdmin
+          .from("whatsapp_numbers")
+          .update({ ...patch, waba_id: wabaRowId, business_portfolio_id: portfolio.id })
+          .eq("id", existingNumber.id);
+        report.numbers.updated += 1;
+      } else {
+        const { error } = await supabaseAdmin.from("whatsapp_numbers").insert({
+          ...patch,
+          business_portfolio_id: portfolio.id,
+          waba_id: wabaRowId,
+          meta_phone_number_id: p.id,
+        });
+        if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
+        else report.numbers.inserted += 1;
+      }
+    }
+
+    // Mark local numbers that Meta no longer returns — never delete history.
+    const { data: localNumbers } = await supabaseAdmin
+      .from("whatsapp_numbers")
+      .select("id, meta_phone_number_id")
+      .eq("waba_id", wabaRowId);
+    for (const local of localNumbers ?? []) {
+      if (!seenPhoneIds.includes(local.meta_phone_number_id)) {
+        await supabaseAdmin.from("whatsapp_numbers").update({ status: "missing" }).eq("id", local.id);
+        report.numbers.missing += 1;
+      }
+    }
+  }
+
+  await supabaseAdmin
+    .from("business_portfolios")
+    .update({ last_synced_at: new Date().toISOString() })
+    .eq("id", portfolio.id);
+
+  return report;
+}
+
+export type TestResult = { name: string; status: "PASS" | "WARNING" | "FAIL"; detail: string };
+
+export async function runNumberDiagnostics(numberId: string): Promise<TestResult[]> {
+  const results: TestResult[] = [];
+  const { data: number } = await supabaseAdmin
+    .from("whatsapp_numbers")
+    .select(
+      "id, meta_phone_number_id, display_phone_number, waba_id, business_portfolio_id, enabled, last_incoming_at, last_outgoing_at, wabas(meta_waba_id)",
+    )
+    .eq("id", numberId)
+    .maybeSingle();
+
+  if (!number) return [{ name: "Number Mapping", status: "FAIL", detail: "Number not found" }];
+
+  results.push({
+    name: "WABA Mapping",
+    status: number.waba_id ? "PASS" : "FAIL",
+    detail: number.wabas?.meta_waba_id
+      ? `Mapped to WABA ${number.wabas.meta_waba_id}`
+      : "No WABA mapping",
+  });
+  results.push({
+    name: "Phone Number Mapping",
+    status: "PASS",
+    detail: `Phone Number ID ${number.meta_phone_number_id}`,
+  });
+
+  const { client, source } = await clientForNumber(numberId);
+  if (!client) {
+    results.push({
+      name: "Credential",
+      status: "FAIL",
+      detail: "No active credential resolved for this number",
+    });
+    results.push({ name: "Meta Connectivity", status: "FAIL", detail: "Skipped — no credential" });
+    results.push({ name: "Send Capability", status: "FAIL", detail: "Skipped — no credential" });
+    results.push({ name: "Media Capability", status: "FAIL", detail: "Skipped — no credential" });
+  } else {
+    results.push({ name: "Credential", status: "PASS", detail: `Resolved at ${source} level` });
+
+    const probe = await client.request<{
+      id: string;
+      display_phone_number?: string;
+      verified_name?: string;
+      quality_rating?: string;
+      throughput?: { level?: string };
+    }>(number.meta_phone_number_id, {
+      query: { fields: "id,display_phone_number,verified_name,quality_rating,throughput" },
+    });
+
+    if (probe.ok && probe.data) {
+      results.push({
+        name: "Meta Connectivity",
+        status: "PASS",
+        detail: `${probe.data.verified_name ?? probe.data.display_phone_number ?? "OK"} (${probe.durationMs}ms)`,
+      });
+      results.push({
+        name: "Send Capability",
+        status: number.enabled ? "PASS" : "WARNING",
+        detail: number.enabled
+          ? "Number enabled and reachable via Graph API"
+          : "Number disabled in AzWA",
+      });
+      await supabaseAdmin
+        .from("whatsapp_numbers")
+        .update({
+          api_health: "healthy",
+          verified_name: probe.data.verified_name ?? null,
+          quality_rating: probe.data.quality_rating ?? null,
+        })
+        .eq("id", numberId);
+    } else {
+      results.push({
+        name: "Meta Connectivity",
+        status: "FAIL",
+        detail: `${probe.errorCode ?? "error"}: ${probe.errorMessage ?? "unknown"}`,
+      });
+      results.push({ name: "Send Capability", status: "FAIL", detail: "Graph API unreachable" });
+      await supabaseAdmin.from("whatsapp_numbers").update({ api_health: "critical" }).eq("id", numberId);
+    }
+
+    const media = await client.request<{ url?: string }>(`${number.meta_phone_number_id}/media`, {
+      query: { limit: "1" },
+    });
+    results.push({
+      name: "Media Capability",
+      status: media.status === 400 || media.ok ? "PASS" : "WARNING",
+      detail: media.ok ? "Media endpoint reachable" : (media.errorMessage ?? "Endpoint reachable"),
+    });
+  }
+
+  const { count: webhookCount } = await supabaseAdmin
+    .from("webhook_events")
+    .select("id", { count: "exact", head: true })
+    .eq("whatsapp_number_id", numberId);
+  results.push({
+    name: "Webhook",
+    status: (webhookCount ?? 0) > 0 ? "PASS" : "WARNING",
+    detail:
+      (webhookCount ?? 0) > 0
+        ? `${webhookCount} webhook events received`
+        : "No webhook events received yet for this number",
+  });
+  results.push({
+    name: "Receive Capability",
+    status: number.last_incoming_at ? "PASS" : "WARNING",
+    detail: number.last_incoming_at
+      ? `Last inbound ${new Date(number.last_incoming_at).toISOString()}`
+      : "No inbound message recorded yet",
+  });
+
+  for (const r of results) {
+    await supabaseAdmin.from("health_checks").insert({
+      scope_type: "whatsapp_number",
+      scope_id: numberId,
+      check_name: r.name,
+      status: r.status === "PASS" ? "healthy" : r.status === "WARNING" ? "warning" : "critical",
+      detail: r.detail,
+    });
+  }
+
+  const worst = results.some((r) => r.status === "FAIL")
+    ? "critical"
+    : results.some((r) => r.status === "WARNING")
+      ? "warning"
+      : "healthy";
+  await supabaseAdmin.from("whatsapp_numbers").update({ health: worst }).eq("id", numberId);
+
+  return results;
+}
