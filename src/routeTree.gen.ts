@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedApiLogsRouteImport } from './routes/_authenticated/api-logs'
+import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
@@ -41,6 +42,12 @@ const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
   path: '/api-logs',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCredentialsRoute =
+  AuthenticatedCredentialsRouteImport.update({
+    id: '/credentials',
+    path: '/credentials',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -101,6 +109,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -116,6 +125,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/api-logs': typeof AuthenticatedApiLogsRoute
+  '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/api-logs'
+    | '/credentials'
     | '/dashboard'
     | '/health'
     | '/infrastructure'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/api-logs'
+    | '/credentials'
     | '/dashboard'
     | '/health'
     | '/infrastructure'
@@ -158,6 +170,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/api-logs'
+    | '/_authenticated/credentials'
     | '/_authenticated/dashboard'
     | '/_authenticated/health'
     | '/_authenticated/infrastructure'
@@ -203,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/api-logs'
       fullPath: '/api-logs'
       preLoaderRoute: typeof AuthenticatedApiLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/credentials': {
+      id: '/_authenticated/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof AuthenticatedCredentialsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -266,6 +286,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApiLogsRoute: typeof AuthenticatedApiLogsRoute
+  AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
@@ -277,6 +298,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApiLogsRoute: AuthenticatedApiLogsRoute,
+  AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
