@@ -10,33 +10,218 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedApiLogsRouteImport } from './routes/_authenticated/api-logs'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
+import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
+import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
+import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
+import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
+import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
+  id: '/api-logs',
+  path: '/api-logs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCredentialsRoute =
+  AuthenticatedCredentialsRouteImport.update({
+    id: '/credentials',
+    path: '/credentials',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInfrastructureRoute =
+  AuthenticatedInfrastructureRouteImport.update({
+    id: '/infrastructure',
+    path: '/infrastructure',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
+  id: '/numbers',
+  path: '/numbers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQueuesRoute = AuthenticatedQueuesRouteImport.update({
+  id: '/queues',
+  path: '/queues',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWabasRoute = AuthenticatedWabasRouteImport.update({
+  id: '/wabas',
+  path: '/wabas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicWebhooksMetaWhatsappRoute =
+  ApiPublicWebhooksMetaWhatsappRouteImport.update({
+    id: '/api/public/webhooks/meta/whatsapp',
+    path: '/api/public/webhooks/meta/whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/audit': typeof AuthenticatedAuditRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/health': typeof AuthenticatedHealthRoute
+  '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
+  '/queues': typeof AuthenticatedQueuesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/wabas': typeof AuthenticatedWabasRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/audit': typeof AuthenticatedAuditRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/health': typeof AuthenticatedHealthRoute
+  '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
+  '/queues': typeof AuthenticatedQueuesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/wabas': typeof AuthenticatedWabasRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/api-logs': typeof AuthenticatedApiLogsRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
+  '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/health': typeof AuthenticatedHealthRoute
+  '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
+  '/_authenticated/queues': typeof AuthenticatedQueuesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/wabas': typeof AuthenticatedWabasRoute
+  '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/api-logs'
+    | '/audit'
+    | '/credentials'
+    | '/dashboard'
+    | '/health'
+    | '/infrastructure'
+    | '/numbers'
+    | '/queues'
+    | '/settings'
+    | '/users'
+    | '/wabas'
+    | '/webhooks'
+    | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/api-logs'
+    | '/audit'
+    | '/credentials'
+    | '/dashboard'
+    | '/health'
+    | '/infrastructure'
+    | '/numbers'
+    | '/queues'
+    | '/settings'
+    | '/users'
+    | '/wabas'
+    | '/webhooks'
+    | '/api/public/webhooks/meta/whatsapp'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/api-logs'
+    | '/_authenticated/audit'
+    | '/_authenticated/credentials'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/health'
+    | '/_authenticated/infrastructure'
+    | '/_authenticated/numbers'
+    | '/_authenticated/queues'
+    | '/_authenticated/settings'
+    | '/_authenticated/users'
+    | '/_authenticated/wabas'
+    | '/_authenticated/webhooks'
+    | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +233,152 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/api-logs': {
+      id: '/_authenticated/api-logs'
+      path: '/api-logs'
+      fullPath: '/api-logs'
+      preLoaderRoute: typeof AuthenticatedApiLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/credentials': {
+      id: '/_authenticated/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof AuthenticatedCredentialsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/health': {
+      id: '/_authenticated/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthenticatedHealthRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/infrastructure': {
+      id: '/_authenticated/infrastructure'
+      path: '/infrastructure'
+      fullPath: '/infrastructure'
+      preLoaderRoute: typeof AuthenticatedInfrastructureRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/numbers': {
+      id: '/_authenticated/numbers'
+      path: '/numbers'
+      fullPath: '/numbers'
+      preLoaderRoute: typeof AuthenticatedNumbersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/queues': {
+      id: '/_authenticated/queues'
+      path: '/queues'
+      fullPath: '/queues'
+      preLoaderRoute: typeof AuthenticatedQueuesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/wabas': {
+      id: '/_authenticated/wabas'
+      path: '/wabas'
+      fullPath: '/wabas'
+      preLoaderRoute: typeof AuthenticatedWabasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/webhooks': {
+      id: '/_authenticated/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/webhooks/meta/whatsapp': {
+      id: '/api/public/webhooks/meta/whatsapp'
+      path: '/api/public/webhooks/meta/whatsapp'
+      fullPath: '/api/public/webhooks/meta/whatsapp'
+      preLoaderRoute: typeof ApiPublicWebhooksMetaWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApiLogsRoute: typeof AuthenticatedApiLogsRoute
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
+  AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
+  AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
+  AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
+  AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
+  AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApiLogsRoute: AuthenticatedApiLogsRoute,
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
+  AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHealthRoute: AuthenticatedHealthRoute,
+  AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
+  AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
+  AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedWabasRoute: AuthenticatedWabasRoute,
+  AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
