@@ -63,13 +63,13 @@ export function RecordTable({
         .order(orderBy, { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []) as Row[];
+      return (data ?? []) as unknown as Row[];
     },
     refetchInterval: 30_000,
   });
 
   return (
-    <Panel title={title}>
+    <Panel {...(title ? { title } : {})}>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
