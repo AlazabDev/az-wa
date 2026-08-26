@@ -39,6 +39,11 @@ jobs:
         continue-on-error: true
         run: bun run lint > lint.log 2>&1
 
+      - name: Typecheck
+        id: typecheck
+        continue-on-error: true
+        run: bun run typecheck > typecheck.log 2>&1
+
       - name: Build
         id: build
         continue-on-error: true
@@ -51,15 +56,18 @@ jobs:
           name: development-ci-diagnostics
           path: |
             lint.log
+            typecheck.log
             build.log
           if-no-files-found: warn
           retention-days: 3
 
       - name: Validation gate
-        if: steps.lint.outcome != 'success' || steps.build.outcome != 'success'
+        if: steps.lint.outcome != 'success' || steps.typecheck.outcome != 'success' || steps.build.outcome != 'success'
         run: |
           echo '=== LINT ==='
           cat lint.log || true
+          echo '=== TYPECHECK ==='
+          cat typecheck.log || true
           echo '=== BUILD ==='
           cat build.log || true
           exit 1
