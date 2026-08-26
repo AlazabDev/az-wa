@@ -1,0 +1,49 @@
+name: Development CI
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_SUPABASE_PROJECT_ID: ci-project
+      VITE_SUPABASE_URL: https://ci-project.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+      SUPABASE_PROJECT_ID: ci-project
+      SUPABASE_URL: https://ci-project.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+      SUPABASE_SERVICE_ROLE_KEY: sb_secret_ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
