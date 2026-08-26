@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
+import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
@@ -42,6 +43,11 @@ const AuthenticatedInfrastructureRoute =
     path: '/infrastructure',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
+  id: '/numbers',
+  path: '/numbers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWabasRoute = AuthenticatedWabasRouteImport.update({
   id: '/wabas',
   path: '/wabas',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/infrastructure'
+    | '/numbers'
     | '/wabas'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/infrastructure'
+    | '/numbers'
     | '/wabas'
     | '/api/public/webhooks/meta/whatsapp'
   id:
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/infrastructure'
+    | '/_authenticated/numbers'
     | '/_authenticated/wabas'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
@@ -152,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInfrastructureRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/numbers': {
+      id: '/_authenticated/numbers'
+      path: '/numbers'
+      fullPath: '/numbers'
+      preLoaderRoute: typeof AuthenticatedNumbersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wabas': {
       id: '/_authenticated/wabas'
       path: '/wabas'
@@ -172,12 +191,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
+  AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
+  AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
 }
 
