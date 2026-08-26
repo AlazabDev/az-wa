@@ -1,1 +1,10 @@
 project_id = "pmhuylckjwrongxlrgrx"
+
+[functions.azwa-webhook]
+verify_jwt = false
+
+[functions.azwa-worker]
+verify_jwt = false
+
+[functions.azwa-api]
+verify_jwt = true

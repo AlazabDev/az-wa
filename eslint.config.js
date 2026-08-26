@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", ".output", ".vinxi", "src/routeTree.gen.ts"],
+    ignores: ["dist", ".output", ".vinxi", "src/routeTree.gen.ts", "supabase/functions/**"],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -40,22 +40,18 @@ export default tseslint.config(
   },
   eslintPluginPrettier,
   {
-    // Lovable/Supabase integration scaffolding is generated upstream.
-    // Keep semantic linting enabled, but do not force repository Prettier style onto generated files.
     files: ["src/integrations/**/*.{ts,tsx}"],
     rules: {
       "prettier/prettier": "off",
     },
   },
   {
-    // Auto-generated preview auth transport intentionally uses deferred timer assignment.
     files: ["src/integrations/supabase/previewAuthStorage.ts"],
     rules: {
       "prefer-const": "off",
     },
   },
   {
-    // shadcn/ui modules intentionally export component variants/helpers beside components.
     files: ["src/components/ui/**/*.{ts,tsx}"],
     rules: {
       "react-refresh/only-export-components": "off",
