@@ -1,0 +1,106 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+import { PageHeader, Panel } from "@/components/azwa/page-header";
+import { RecordTable } from "@/components/azwa/record-table";
+
+const WEBHOOK_URL = "/api/public/webhooks/meta/whatsapp";
+
+export const Route = createFileRoute("/_authenticated/webhooks")({
+  head: () => ({
+    meta: [
+      { title: "Webhooks — AzWA" },
+      {
+        name: "description",
+        content:
+          "Central webhook gateway: verification endpoint, signature validation, raw event log, deduplication and unmapped-number alerts.",
+      },
+      { property: "og:title", content: "Webhooks — AzWA" },
+      { property: "og:description", content: "One webhook endpoint for every WABA and number." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: WebhooksPage,
+});
+
+function WebhooksPage() {
+  return (
+    <>
+      <PageHeader
+        title="Webhook Gateway"
+        description="A single endpoint receives events for every WABA and number. Events are stored raw, signature-verified, deduplicated, then processed asynchronously."
+      />
+
+      <Panel title="Endpoint configuration">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Callback URL
+            </dt>
+            <dd className="mt-1 font-mono text-xs break-all">
+              {typeof window !== "undefined" ? window.location.origin : ""}
+              {WEBHOOK_URL}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Verify token
+            </dt>
+            <dd className="mt-1 text-xs text-muted-foreground">
+              Stored server-side as META_WEBHOOK_VERIFY_TOKEN.
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Signature
+            </dt>
+            <dd className="mt-1 text-xs text-muted-foreground">
+              X-Hub-Signature-256 validated with META_APP_SECRET on every request.
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Subscribed fields
+            </dt>
+            <dd className="mt-1 text-xs text-muted-foreground">
+              messages, message_template_status_update, phone_number_quality_update,
+              account_update, message_echoes
+            </dd>
+          </div>
+        </dl>
+      </Panel>
+
+      <div className="mt-6 space-y-6">
+        <RecordTable
+          title="Recent webhook events"
+          table="webhook_events"
+          orderBy="received_at"
+          columns={[
+            { key: "received_at", label: "Received", kind: "date" },
+            { key: "event_type", label: "Type" },
+            { key: "field", label: "Field" },
+            { key: "meta_phone_number_id", label: "Phone Number ID", kind: "mono" },
+            { key: "meta_waba_id", label: "WABA ID", kind: "mono" },
+            { key: "signature_valid", label: "Signature", kind: "bool" },
+            { key: "status", label: "Status", kind: "status" },
+            { key: "error_message", label: "Error" },
+          ]}
+        />
+
+        <RecordTable
+          title="Unmapped number events"
+          table="unmapped_number_events"
+          orderBy="received_at"
+          emptyLabel="No events received for unknown numbers. Good."
+          columns={[
+            { key: "received_at", label: "Received", kind: "date" },
+            { key: "meta_phone_number_id", label: "Phone Number ID", kind: "mono" },
+            { key: "display_phone_number", label: "Number" },
+            { key: "meta_waba_id", label: "WABA ID", kind: "mono" },
+            { key: "resolved", label: "Resolved", kind: "bool" },
+          ]}
+        />
+      </div>
+    </>
+  );
+}
