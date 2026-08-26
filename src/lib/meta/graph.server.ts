@@ -106,7 +106,7 @@ export class MetaGraphClient {
           Authorization: `Bearer ${this.token}`,
           "Content-Type": "application/json",
         },
-        body: init.body ? JSON.stringify(init.body) : undefined,
+        body: init.body ? JSON.stringify(init.body) : null,
       });
       status = res.status;
       payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
