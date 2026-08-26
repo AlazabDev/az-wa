@@ -3,13 +3,13 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Stethoscope } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
 import { useNumbers, usePortfolios, useWabas } from "@/lib/azwa-data";
 import { syncBusinessPortfolio, testWhatsappNumber } from "@/lib/meta/meta.functions";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/infrastructure")({
   head: () => ({
@@ -50,14 +50,14 @@ function Infrastructure() {
     setBusy(portfolioId);
     try {
       const report = await sync({ data: { portfolioId } });
-      if (report.errors.length) toast.error(report.errors[0]);
-      else
-        toast.success(
-          `Sync complete: ${report.wabas.inserted} new WABAs, ${report.numbers.inserted} new numbers`,
-        );
-      queryClient.invalidateQueries();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sync failed");
+      if (report.status === "queued") {
+        toast.success(`Meta sync queued${report.job_id ? ` · job ${report.job_id}` : ""}`);
+      } else {
+        toast.success("Meta sync accepted");
+      }
+      window.setTimeout(() => queryClient.invalidateQueries(), 1500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Sync failed");
     } finally {
       setBusy(null);
     }
@@ -69,15 +69,15 @@ function Infrastructure() {
       const res = await test({ data: { numberId } });
       setResults((prev) => ({ ...prev, [numberId]: res.results as TestResult[] }));
       queryClient.invalidateQueries({ queryKey: ["whatsapp_numbers"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Diagnostics failed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Diagnostics failed");
     } finally {
       setBusy(null);
     }
   }
 
   async function runAll() {
-    for (const n of numbers) await runTest(n.id);
+    for (const number of numbers) await runTest(number.id);
   }
 
   return (
@@ -93,70 +93,78 @@ function Infrastructure() {
       />
 
       <div className="space-y-6">
-        {portfolios.map((p) => {
-          const portfolioWabas = wabas.filter((w) => w.business_portfolio_id === p.id);
+        {portfolios.map((portfolio) => {
+          const portfolioWabas = wabas.filter(
+            (waba) => waba.business_portfolio_id === portfolio.id,
+          );
           return (
             <Panel
-              key={p.id}
-              title={`${p.name} · ${p.meta_business_id}`}
+              key={portfolio.id}
+              title={`${portfolio.name ?? "Business Portfolio"} · ${portfolio.meta_business_id}`}
               actions={
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
-                    {p.last_synced_at
-                      ? `Last sync ${new Date(p.last_synced_at).toLocaleString()}`
+                    {portfolio.last_synced_at
+                      ? `Last sync ${new Date(portfolio.last_synced_at).toLocaleString()}`
                       : "Never synced"}
                   </span>
-                  <Button size="sm" onClick={() => runSync(p.id)} disabled={busy !== null}>
+                  <Button
+                    size="sm"
+                    onClick={() => runSync(portfolio.id)}
+                    disabled={busy !== null}
+                  >
                     <RefreshCw className="size-3.5" /> Sync from Meta
                   </Button>
                 </div>
               }
             >
               <div className="space-y-4">
-                {portfolioWabas.map((w) => {
-                  const wabaNumbers = numbers.filter((n) => n.waba_id === w.id);
+                {portfolioWabas.map((waba) => {
+                  const wabaNumbers = numbers.filter((number) => number.waba_id === waba.id);
                   return (
-                    <div key={w.id} className="rounded-md border border-border">
+                    <div key={waba.id} className="rounded-md border border-border">
                       <div className="flex flex-wrap items-center gap-3 border-b border-border bg-muted/40 px-3 py-2">
-                        <span className="font-mono text-xs font-semibold">{w.meta_waba_id}</span>
-                        <span className="text-xs text-muted-foreground">{w.name}</span>
-                        <StatusBadge value={w.status} />
+                        <span className="font-mono text-xs font-semibold">{waba.meta_waba_id}</span>
+                        <span className="text-xs text-muted-foreground">{waba.name}</span>
+                        <StatusBadge value={waba.status} />
                         <span className="ml-auto text-xs text-muted-foreground">
                           {wabaNumbers.length} number{wabaNumbers.length === 1 ? "" : "s"}
                         </span>
                       </div>
                       <div className="divide-y divide-border">
-                        {wabaNumbers.map((n) => (
-                          <div key={n.id} className="px-3 py-3">
+                        {wabaNumbers.map((number) => (
+                          <div key={number.id} className="px-3 py-3">
                             <div className="flex flex-wrap items-center gap-3">
-                              <span className="font-medium">{n.display_phone_number}</span>
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {n.meta_phone_number_id}
+                              <span className="font-medium">
+                                {number.display_phone_number ?? "Unassigned"}
                               </span>
-                              <StatusBadge value={n.health} />
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {number.meta_phone_number_id}
+                              </span>
+                              <StatusBadge value={number.health} />
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="ml-auto"
                                 disabled={busy !== null}
-                                onClick={() => runTest(n.id)}
+                                onClick={() => runTest(number.id)}
                               >
-                                {busy === n.id ? "Testing…" : "Run diagnostics"}
+                                {busy === number.id ? "Testing…" : "Run diagnostics"}
                               </Button>
                             </div>
-                            {results[n.id] && (
+                            {results[number.id] && (
                               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                {(results[n.id] ?? []).map((r) => (
+                                {(results[number.id] ?? []).map((result) => (
                                   <div
-                                    key={r.name}
+                                    key={result.name}
                                     className="rounded-md border border-border bg-muted/30 p-2"
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <span className="text-xs font-medium">{r.name}</span>
-                                      <StatusBadge value={r.status} />
+                                      <span className="text-xs font-medium">{result.name}</span>
+                                      <StatusBadge value={result.status} />
                                     </div>
                                     <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                                      {r.detail}
+                                      {result.detail}
                                     </p>
                                   </div>
                                 ))}
