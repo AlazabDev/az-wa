@@ -19,7 +19,6 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
       organization_id: portfolio.organization_id,
       business_portfolio_id: portfolio.id,
       sync_type: "full",
-      immediate: true,
     });
   });
 
@@ -29,16 +28,63 @@ export const testWhatsappNumber = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: number, error } = await context.supabase
       .from("whatsapp_numbers")
-      .select("id, organization_id")
+      .select("id, organization_id, waba_id, meta_phone_number_id, display_phone_number")
       .eq("id", data.numberId)
       .maybeSingle();
 
     if (error || !number) throw new Error("WhatsApp number not found or not accessible");
 
-    return invokeAzwaApi("/numbers/test", {
-      organization_id: number.organization_id,
-      whatsapp_number_id: number.id,
-    });
+    try {
+      const health = await invokeAzwaApi("/numbers/test", {
+        organization_id: number.organization_id,
+        whatsapp_number_id: number.id,
+      });
+      return {
+        numberId: number.id,
+        results: [
+          {
+            name: "Meta Connectivity",
+            status: health?.status === "healthy" ? ("PASS" as const) : ("WARNING" as const),
+            detail: health?.latency_ms != null ? `Meta Graph API reachable (${health.latency_ms}ms)` : "Meta Graph API check completed",
+          },
+          {
+            name: "WABA Mapping",
+            status: number.waba_id ? ("PASS" as const) : ("FAIL" as const),
+            detail: number.waba_id ? "Number is mapped to a WABA" : "Number has no WABA mapping",
+          },
+          {
+            name: "Phone Number Mapping",
+            status: number.meta_phone_number_id ? ("PASS" as const) : ("FAIL" as const),
+            detail: number.meta_phone_number_id
+              ? `Phone Number ID ${number.meta_phone_number_id}`
+              : "Missing Meta Phone Number ID",
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        numberId: number.id,
+        results: [
+          {
+            name: "Meta Connectivity",
+            status: "FAIL" as const,
+            detail: error instanceof Error ? error.message : "Meta Graph API check failed",
+          },
+          {
+            name: "WABA Mapping",
+            status: number.waba_id ? ("PASS" as const) : ("FAIL" as const),
+            detail: number.waba_id ? "Number is mapped to a WABA" : "Number has no WABA mapping",
+          },
+          {
+            name: "Phone Number Mapping",
+            status: number.meta_phone_number_id ? ("PASS" as const) : ("FAIL" as const),
+            detail: number.meta_phone_number_id
+              ? `Phone Number ID ${number.meta_phone_number_id}`
+              : "Missing Meta Phone Number ID",
+          },
+        ],
+      };
+    }
   });
 
 async function invokeAzwaApi(path: string, body: Record<string, unknown>) {
