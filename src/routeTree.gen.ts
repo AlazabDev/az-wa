@@ -16,6 +16,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
+import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
@@ -55,6 +56,11 @@ const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
   path: '/numbers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedQueuesRoute = AuthenticatedQueuesRouteImport.update({
+  id: '/queues',
+  path: '/queues',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWabasRoute = AuthenticatedWabasRouteImport.update({
   id: '/wabas',
   path: '/wabas',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
+  '/queues': typeof AuthenticatedQueuesRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/numbers': typeof AuthenticatedNumbersRoute
+  '/queues': typeof AuthenticatedQueuesRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
+  '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/infrastructure'
     | '/numbers'
+    | '/queues'
     | '/wabas'
     | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/infrastructure'
     | '/numbers'
+    | '/queues'
     | '/wabas'
     | '/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_authenticated/health'
     | '/_authenticated/infrastructure'
     | '/_authenticated/numbers'
+    | '/_authenticated/queues'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNumbersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/queues': {
+      id: '/_authenticated/queues'
+      path: '/queues'
+      fullPath: '/queues'
+      preLoaderRoute: typeof AuthenticatedQueuesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wabas': {
       id: '/_authenticated/wabas'
       path: '/wabas'
@@ -231,6 +250,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
+  AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
   AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
 }
@@ -240,6 +260,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
+  AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
   AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
 }
