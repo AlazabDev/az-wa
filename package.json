@@ -1,9 +1,8 @@
 {
-  "name": "azwa-os",
+  "name": "tanstack_start_ts",
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "packageManager": "pnpm@11.22.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -79,7 +78,7 @@
     "@lovable.dev/vite-tanstack-config": "^2.15.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.5",
+    "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
