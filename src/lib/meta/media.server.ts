@@ -35,10 +35,10 @@ async function logAttempt(
   organizationId: string,
   mediaId: string,
   attemptNo: number,
-  status: string,
+  status: "stored" | "failed",
   httpStatus: number | null,
   error: string | null,
-  durationMs: number,
+  startedAt: string,
 ) {
   await supabaseAdmin.from("media_download_attempts").insert({
     organization_id: organizationId,
@@ -47,7 +47,8 @@ async function logAttempt(
     status,
     http_status: httpStatus,
     error,
-    duration_ms: durationMs,
+    started_at: startedAt,
+    completed_at: new Date().toISOString(),
   });
 }
 
@@ -60,7 +61,7 @@ export type MediaDownloadResult = {
 
 /** Downloads one media row. Idempotent: already-stored rows are skipped. */
 export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadResult> {
-  const started = Date.now();
+  const startedAt = new Date().toISOString();
   const { data: media } = await supabaseAdmin
     .from("media")
     .select(
@@ -91,7 +92,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
       "failed",
       httpStatus,
       message,
-      Date.now() - started,
+      startedAt,
     );
     await supabaseAdmin
       .from("media")
@@ -151,10 +152,10 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     media.organization_id,
     media.id,
     attemptNo,
-    "succeeded",
+    "stored",
     binRes.status,
     null,
-    Date.now() - started,
+    startedAt,
   );
 
   return { mediaId: media.id, status: "downloaded", storagePath: path };
