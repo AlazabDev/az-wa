@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, CircleAlert, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -216,7 +216,7 @@ function MetaAppPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="space-y-1.5">
       <span className="text-xs font-medium text-foreground">{label}</span>
