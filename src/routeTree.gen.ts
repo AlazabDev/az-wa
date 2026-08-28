@@ -18,12 +18,14 @@ import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
+import { Route as AuthenticatedMetaAppRouteImport } from './routes/_authenticated/meta-app'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
+import { Route as ApiPublicJobsMediaRouteImport } from './routes/api/public/jobs/media'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -72,6 +74,11 @@ const AuthenticatedInfrastructureRoute =
     path: '/infrastructure',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMetaAppRoute = AuthenticatedMetaAppRouteImport.update({
+  id: '/meta-app',
+  path: '/meta-app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
   id: '/numbers',
   path: '/numbers',
@@ -102,6 +109,11 @@ const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsMediaRoute = ApiPublicJobsMediaRouteImport.update({
+  id: '/api/public/jobs/media',
+  path: '/api/public/jobs/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMetaWhatsappRoute =
   ApiPublicWebhooksMetaWhatsappRouteImport.update({
     id: '/api/public/webhooks/meta/whatsapp',
@@ -118,12 +130,14 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/meta-app': typeof AuthenticatedMetaAppRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -135,12 +149,14 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/health': typeof AuthenticatedHealthRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/meta-app': typeof AuthenticatedMetaAppRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesById {
@@ -154,12 +170,14 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/_authenticated/meta-app': typeof AuthenticatedMetaAppRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -173,12 +191,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/health'
     | '/infrastructure'
+    | '/meta-app'
     | '/numbers'
     | '/queues'
     | '/settings'
     | '/users'
     | '/wabas'
     | '/webhooks'
+    | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -190,12 +210,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/health'
     | '/infrastructure'
+    | '/meta-app'
     | '/numbers'
     | '/queues'
     | '/settings'
     | '/users'
     | '/wabas'
     | '/webhooks'
+    | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   id:
     | '__root__'
@@ -208,12 +230,14 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/health'
     | '/_authenticated/infrastructure'
+    | '/_authenticated/meta-app'
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
     | '/_authenticated/settings'
     | '/_authenticated/users'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
+    | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -221,6 +245,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
   ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 
@@ -289,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInfrastructureRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/meta-app': {
+      id: '/_authenticated/meta-app'
+      path: '/meta-app'
+      fullPath: '/meta-app'
+      preLoaderRoute: typeof AuthenticatedMetaAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/numbers': {
       id: '/_authenticated/numbers'
       path: '/numbers'
@@ -331,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/media': {
+      id: '/api/public/jobs/media'
+      path: '/api/public/jobs/media'
+      fullPath: '/api/public/jobs/media'
+      preLoaderRoute: typeof ApiPublicJobsMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/meta/whatsapp': {
       id: '/api/public/webhooks/meta/whatsapp'
       path: '/api/public/webhooks/meta/whatsapp'
@@ -348,6 +387,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
+  AuthenticatedMetaAppRoute: typeof AuthenticatedMetaAppRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -363,6 +403,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
+  AuthenticatedMetaAppRoute: AuthenticatedMetaAppRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -378,6 +419,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
   ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }
 export const routeTree = rootRouteImport
