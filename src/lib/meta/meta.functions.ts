@@ -8,6 +8,12 @@ export type MetaAppConfigInput = {
   verifyToken?: string;
   appSecret?: string;
   systemUserToken?: string;
+  
+const { data: portfolio, error } = await context.supabase
+  .from("business_portfolios")
+  .select("id")
+  .eq("id", data.portfolioId)
+  .maybeSingle();
 };
 
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
@@ -20,9 +26,11 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
       .eq("id", data.portfolioId)
       .maybeSingle();
 
-    if (portfolioError || !portfolio) {
-      throw new Error("Business portfolio not found or not accessible");
-    }
+const { data: number, error } = await context.supabase
+  .from("whatsapp_numbers")
+  .select("id, waba_id, meta_phone_number_id, display_phone_number")
+  .eq("id", data.numberId)
+  .maybeSingle();
 
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
