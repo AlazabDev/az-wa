@@ -4,7 +4,8 @@
  * deletes local rows, it only inserts, updates or marks missing.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { MetaGraphClient, resolveCredential, clientForNumber } from "./graph.server";
+
+import { MetaGraphClient, clientForNumber, loadNumberScope, resolveCredential } from "./graph.server";
 
 export type SyncReport = {
   portfolio: string;
@@ -23,7 +24,7 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
 
   const { data: portfolio } = await supabaseAdmin
     .from("business_portfolios")
-    .select("id, meta_business_id")
+    .select("id, organization_id, meta_business_id")
     .eq("id", portfolioId)
     .maybeSingle();
   if (!portfolio) {
@@ -38,13 +39,17 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
     );
     return report;
   }
-  const client = new MetaGraphClient(cred.token);
+  const client = new MetaGraphClient(cred.token, {
+    organizationId: portfolio.organization_id,
+    businessPortfolioId: portfolio.id,
+  });
 
-  const wabaRes = await client.request<{ data: Array<{ id: string; name?: string; currency?: string; timezone_id?: string }> }>(
+  type WabaNode = { id: string; name?: string; currency?: string; timezone_id?: string };
+  const wabaRes = await client.request<{ data: WabaNode[] }>(
     `${portfolio.meta_business_id}/client_whatsapp_business_accounts`,
     { query: { limit: "200" } },
   );
-  const owned = await client.request<{ data: Array<{ id: string; name?: string; currency?: string; timezone_id?: string }> }>(
+  const owned = await client.request<{ data: WabaNode[] }>(
     `${portfolio.meta_business_id}/owned_whatsapp_business_accounts`,
     { query: { limit: "200" } },
   );
@@ -85,6 +90,7 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
       const { data: inserted, error } = await supabaseAdmin
         .from("wabas")
         .insert({
+          organization_id: portfolio.organization_id,
           business_portfolio_id: portfolio.id,
           meta_waba_id: w.id,
           name: w.name ?? `WABA ${w.id}`,
@@ -111,6 +117,7 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
         platform_type?: string;
         status?: string;
         messaging_limit_tier?: string;
+        code_verification_status?: string;
       }>;
     }>(`${w.id}/phone_numbers`, { query: { limit: "200" } });
 
@@ -134,20 +141,21 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
         verified_name: p.verified_name ?? null,
         quality_rating: p.quality_rating ?? null,
         messaging_limit: p.messaging_limit_tier ?? null,
-        platform_status: p.status ?? null,
-        status: "active" as const,
+        platform_type: p.platform_type ?? null,
+        code_verification_status: p.code_verification_status ?? null,
+        status: (p.status ?? "connected").toLowerCase(),
         last_synced_at: new Date().toISOString(),
       };
       if (existingNumber) {
         await supabaseAdmin
           .from("whatsapp_numbers")
-          .update({ ...patch, waba_id: wabaRowId, business_portfolio_id: portfolio.id })
+          .update({ ...patch, waba_id: wabaRowId })
           .eq("id", existingNumber.id);
         report.numbers.updated += 1;
       } else {
         const { error } = await supabaseAdmin.from("whatsapp_numbers").insert({
           ...patch,
-          business_portfolio_id: portfolio.id,
+          organization_id: portfolio.organization_id,
           waba_id: wabaRowId,
           meta_phone_number_id: p.id,
         });
@@ -163,7 +171,10 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
       .eq("waba_id", wabaRowId);
     for (const local of localNumbers ?? []) {
       if (!seenPhoneIds.includes(local.meta_phone_number_id)) {
-        await supabaseAdmin.from("whatsapp_numbers").update({ status: "missing" }).eq("id", local.id);
+        await supabaseAdmin
+          .from("whatsapp_numbers")
+          .update({ status: "missing" })
+          .eq("id", local.id);
         report.numbers.missing += 1;
       }
     }
@@ -181,27 +192,27 @@ export type TestResult = { name: string; status: "PASS" | "WARNING" | "FAIL"; de
 
 export async function runNumberDiagnostics(numberId: string): Promise<TestResult[]> {
   const results: TestResult[] = [];
-  const { data: number } = await supabaseAdmin
+  const scope = await loadNumberScope(numberId);
+  if (!scope) return [{ name: "Number Mapping", status: "FAIL", detail: "Number not found" }];
+
+  const { data: row } = await supabaseAdmin
     .from("whatsapp_numbers")
-    .select(
-      "id, meta_phone_number_id, display_phone_number, waba_id, business_portfolio_id, enabled, last_incoming_at, last_outgoing_at, wabas(meta_waba_id)",
-    )
+    .select("is_enabled, last_incoming_message_at, wabas(meta_waba_id)")
     .eq("id", numberId)
     .maybeSingle();
 
-  if (!number) return [{ name: "Number Mapping", status: "FAIL", detail: "Number not found" }];
+  const metaWabaId = row?.wabas?.meta_waba_id ?? null;
+  const enabled = row?.is_enabled ?? false;
 
   results.push({
     name: "WABA Mapping",
-    status: number.waba_id ? "PASS" : "FAIL",
-    detail: number.wabas?.meta_waba_id
-      ? `Mapped to WABA ${number.wabas.meta_waba_id}`
-      : "No WABA mapping",
+    status: scope.waba_id ? "PASS" : "FAIL",
+    detail: metaWabaId ? `Mapped to WABA ${metaWabaId}` : "No WABA mapping",
   });
   results.push({
     name: "Phone Number Mapping",
     status: "PASS",
-    detail: `Phone Number ID ${number.meta_phone_number_id}`,
+    detail: `Phone Number ID ${scope.meta_phone_number_id}`,
   });
 
   const { client, source } = await clientForNumber(numberId);
@@ -223,7 +234,7 @@ export async function runNumberDiagnostics(numberId: string): Promise<TestResult
       verified_name?: string;
       quality_rating?: string;
       throughput?: { level?: string };
-    }>(number.meta_phone_number_id, {
+    }>(scope.meta_phone_number_id, {
       query: { fields: "id,display_phone_number,verified_name,quality_rating,throughput" },
     });
 
@@ -235,17 +246,16 @@ export async function runNumberDiagnostics(numberId: string): Promise<TestResult
       });
       results.push({
         name: "Send Capability",
-        status: number.enabled ? "PASS" : "WARNING",
-        detail: number.enabled
-          ? "Number enabled and reachable via Graph API"
-          : "Number disabled in AzWA",
+        status: enabled ? "PASS" : "WARNING",
+        detail: enabled ? "Number enabled and reachable via Graph API" : "Number disabled in AzWA",
       });
       await supabaseAdmin
         .from("whatsapp_numbers")
         .update({
-          api_health: "healthy",
+          last_api_success_at: new Date().toISOString(),
           verified_name: probe.data.verified_name ?? null,
           quality_rating: probe.data.quality_rating ?? null,
+          throughput_level: probe.data.throughput?.level ?? null,
         })
         .eq("id", numberId);
     } else {
@@ -255,10 +265,13 @@ export async function runNumberDiagnostics(numberId: string): Promise<TestResult
         detail: `${probe.errorCode ?? "error"}: ${probe.errorMessage ?? "unknown"}`,
       });
       results.push({ name: "Send Capability", status: "FAIL", detail: "Graph API unreachable" });
-      await supabaseAdmin.from("whatsapp_numbers").update({ api_health: "critical" }).eq("id", numberId);
+      await supabaseAdmin
+        .from("whatsapp_numbers")
+        .update({ last_api_failure_at: new Date().toISOString() })
+        .eq("id", numberId);
     }
 
-    const media = await client.request<{ url?: string }>(`${number.meta_phone_number_id}/media`, {
+    const media = await client.request<{ url?: string }>(`${scope.meta_phone_number_id}/media`, {
       query: { limit: "1" },
     });
     results.push({
@@ -280,30 +293,34 @@ export async function runNumberDiagnostics(numberId: string): Promise<TestResult
         ? `${webhookCount} webhook events received`
         : "No webhook events received yet for this number",
   });
+  const lastIncoming = row?.last_incoming_message_at ?? null;
   results.push({
     name: "Receive Capability",
-    status: number.last_incoming_at ? "PASS" : "WARNING",
-    detail: number.last_incoming_at
-      ? `Last inbound ${new Date(number.last_incoming_at).toISOString()}`
+    status: lastIncoming ? "PASS" : "WARNING",
+    detail: lastIncoming
+      ? `Last inbound ${new Date(lastIncoming).toISOString()}`
       : "No inbound message recorded yet",
   });
 
-  for (const r of results) {
-    await supabaseAdmin.from("health_checks").insert({
-      scope_type: "whatsapp_number",
-      scope_id: numberId,
-      check_name: r.name,
+  const checkedAt = new Date().toISOString();
+  await supabaseAdmin.from("health_checks").insert(
+    results.map((r) => ({
+      organization_id: scope.organization_id,
+      whatsapp_number_id: numberId,
+      waba_id: scope.waba_id,
+      business_portfolio_id: scope.business_portfolio_id,
+      component: r.name,
       status: r.status === "PASS" ? "healthy" : r.status === "WARNING" ? "warning" : "critical",
-      detail: r.detail,
-    });
-  }
+      message: r.detail,
+      score: r.status === "PASS" ? 100 : r.status === "WARNING" ? 50 : 0,
+      checked_at: checkedAt,
+    })),
+  );
 
-  const worst = results.some((r) => r.status === "FAIL")
-    ? "critical"
-    : results.some((r) => r.status === "WARNING")
-      ? "warning"
-      : "healthy";
-  await supabaseAdmin.from("whatsapp_numbers").update({ health: worst }).eq("id", numberId);
+  await supabaseAdmin
+    .from("whatsapp_numbers")
+    .update({ webhook_status: (webhookCount ?? 0) > 0 ? "active" : "pending" })
+    .eq("id", numberId);
 
   return results;
 }
