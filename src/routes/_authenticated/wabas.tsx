@@ -36,7 +36,7 @@ function WabasPage() {
     queryFn: async () => {
       const [{ data: templates }, { data: messages }, { data: errors }] = await Promise.all([
         supabase.from("templates").select("waba_id, status"),
-        supabase.from("messages").select("waba_id"),
+        supabase.from("messages").select("whatsapp_number_id"),
         supabase.from("api_errors").select("waba_id").eq("status", "open"),
       ]);
       return { templates: templates ?? [], messages: messages ?? [], errors: errors ?? [] };
@@ -76,6 +76,15 @@ function WabasPage() {
             <tbody>
               {visible.map((w) => {
                 const portfolio = portfolios.find((p) => p.id === w.business_portfolio_id);
+                const wabaNumberIds = new Set(
+                  numbers.filter((n) => n.waba_id === w.id).map((n) => n.id),
+                );
+                const messageCount = (perWaba?.messages ?? []).filter(
+                  (message) =>
+                    message.whatsapp_number_id !== null &&
+                    wabaNumberIds.has(message.whatsapp_number_id),
+                ).length;
+
                 return (
                   <tr key={w.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2 pr-4 font-mono text-xs">{w.meta_waba_id}</td>
@@ -83,15 +92,11 @@ function WabasPage() {
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
                       {portfolio?.meta_business_id ?? "—"}
                     </td>
-                    <td className="py-2 pr-4 tabular-nums">
-                      {numbers.filter((n) => n.waba_id === w.id).length}
-                    </td>
+                    <td className="py-2 pr-4 tabular-nums">{wabaNumberIds.size}</td>
                     <td className="py-2 pr-4 tabular-nums">
                       {(perWaba?.templates ?? []).filter((t) => t.waba_id === w.id).length}
                     </td>
-                    <td className="py-2 pr-4 tabular-nums">
-                      {(perWaba?.messages ?? []).filter((m) => m.waba_id === w.id).length}
-                    </td>
+                    <td className="py-2 pr-4 tabular-nums">{messageCount}</td>
                     <td className="py-2 pr-4 tabular-nums">
                       {(perWaba?.errors ?? []).filter((e) => e.waba_id === w.id).length}
                     </td>
