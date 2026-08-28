@@ -17,47 +17,47 @@ export type GraphResult<T> = {
   durationMs: number;
 };
 
-type LogScope = { whatsappNumberId?: string | null; wabaId?: string | null };
+type LogScope = {
+  organizationId?: string | null;
+  whatsappNumberId?: string | null;
+  wabaId?: string | null;
+  businessPortfolioId?: string | null;
+};
+
+/** The default organization for backend operations (single-tenant install). */
+export async function defaultOrganizationId(): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("organizations")
+    .select("id")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
+}
 
 /**
- * Resolves the most specific credential for a scope.
- * Precedence: phone -> waba -> business -> system user (env fallback).
- * The secret itself never leaves the server: meta_credentials stores only a
- * `secret_reference` (an environment variable name).
+ * Resolves the most specific credential for a scope through the database
+ * (`backend_resolve_meta_token`), which decrypts the secret from Vault.
+ * Precedence: phone -> waba -> business. Falls back to a server env token.
  */
 export async function resolveCredential(scope: {
   whatsappNumberId?: string | null;
   wabaId?: string | null;
   businessPortfolioId?: string | null;
 }): Promise<{ token: string | null; credentialId: string | null; source: string }> {
-  const filters: Array<{ column: string; value: string; source: string }> = [];
-  if (scope.whatsappNumberId)
-    filters.push({ column: "whatsapp_number_id", value: scope.whatsappNumberId, source: "phone" });
-  if (scope.wabaId) filters.push({ column: "waba_id", value: scope.wabaId, source: "waba" });
-  if (scope.businessPortfolioId)
-    filters.push({
-      column: "business_portfolio_id",
-      value: scope.businessPortfolioId,
-      source: "business",
-    });
+  const { data } = await supabaseAdmin.rpc("backend_resolve_meta_token", {
+    p_whatsapp_number_id: scope.whatsappNumberId ?? (null as unknown as string),
+    p_waba_id: scope.wabaId ?? (null as unknown as string),
+    p_business_portfolio_id: scope.businessPortfolioId ?? (null as unknown as string),
+  });
 
-  for (const f of filters) {
-    const { data } = await supabaseAdmin
-      .from("meta_credentials")
-      .select("id, secret_reference, status, expires_at")
-      .eq(f.column, f.value)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (data?.secret_reference) {
-      const token = process.env[data.secret_reference];
-      if (token) return { token, credentialId: data.id, source: f.source };
-    }
+  const row = Array.isArray(data) ? data[0] : null;
+  if (row?.token) {
+    return { token: row.token, credentialId: row.credential_id, source: row.credential_type };
   }
 
   const fallback = process.env["META_SYSTEM_USER_TOKEN"];
-  return { token: fallback ?? null, credentialId: null, source: fallback ? "system_user" : "none" };
+  return { token: fallback ?? null, credentialId: null, source: fallback ? "env" : "none" };
 }
 
 async function logRequest(
@@ -70,13 +70,17 @@ async function logRequest(
   errorMessage?: string,
 ) {
   // Never log tokens.
+  const organizationId = scope.organizationId ?? (await defaultOrganizationId());
+  if (!organizationId) return;
   await supabaseAdmin.from("api_requests").insert({
+    organization_id: organizationId,
     endpoint,
     method,
     http_status: status,
     duration_ms: durationMs,
     whatsapp_number_id: scope.whatsappNumberId ?? null,
     waba_id: scope.wabaId ?? null,
+    business_portfolio_id: scope.businessPortfolioId ?? null,
     meta_error_code: errorCode ?? null,
     meta_error_message: errorMessage ?? null,
   });
@@ -143,12 +147,32 @@ export class MetaGraphClient {
   }
 }
 
-export async function clientForNumber(numberId: string) {
-  const { data: number } = await supabaseAdmin
+export type NumberScope = {
+  id: string;
+  organization_id: string;
+  waba_id: string;
+  meta_phone_number_id: string;
+  business_portfolio_id: string | null;
+};
+
+export async function loadNumberScope(numberId: string): Promise<NumberScope | null> {
+  const { data } = await supabaseAdmin
     .from("whatsapp_numbers")
-    .select("id, waba_id, business_portfolio_id, meta_phone_number_id")
+    .select("id, organization_id, waba_id, meta_phone_number_id, wabas(business_portfolio_id)")
     .eq("id", numberId)
     .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    organization_id: data.organization_id,
+    waba_id: data.waba_id,
+    meta_phone_number_id: data.meta_phone_number_id,
+    business_portfolio_id: data.wabas?.business_portfolio_id ?? null,
+  };
+}
+
+export async function clientForNumber(numberId: string) {
+  const number = await loadNumberScope(numberId);
   if (!number) return { client: null as MetaGraphClient | null, number: null, source: "none" };
   const cred = await resolveCredential({
     whatsappNumberId: number.id,
@@ -157,7 +181,12 @@ export async function clientForNumber(numberId: string) {
   });
   return {
     client: cred.token
-      ? new MetaGraphClient(cred.token, { whatsappNumberId: number.id, wabaId: number.waba_id })
+      ? new MetaGraphClient(cred.token, {
+          organizationId: number.organization_id,
+          whatsappNumberId: number.id,
+          wabaId: number.waba_id,
+          businessPortfolioId: number.business_portfolio_id,
+        })
       : null,
     number,
     source: cred.source,
