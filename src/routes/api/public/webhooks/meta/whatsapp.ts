@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 import { drainMediaQueue } from "@/lib/meta/media.server";
 import {
   listWebhookSecrets,
@@ -50,6 +51,14 @@ function deduplicationKey(raw: string, entryIndex: number, changeIndex: number) 
   return createHash("sha256")
     .update(`${raw}:${entryIndex}:${changeIndex}`, "utf8")
     .digest("hex");
+}
+
+function asJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value)) as Json;
+}
+
+function nullableDbString(value: string | null | undefined): string {
+  return value ?? (null as unknown as string);
 }
 
 async function ensureUnknownNumberAlert(
@@ -137,17 +146,17 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
               {
                 p_organization_id: endpoint.organization_id,
                 p_webhook_endpoint_id: endpoint.webhook_endpoint_id,
-                p_meta_app_id: endpoint.meta_app_id,
-                p_meta_waba_id: metaWabaId,
-                p_meta_phone_number_id: metaPhoneId,
+                p_meta_app_id: nullableDbString(endpoint.meta_app_id),
+                p_meta_waba_id: nullableDbString(metaWabaId),
+                p_meta_phone_number_id: nullableDbString(metaPhoneId),
                 p_event_type: change.field ?? "unknown",
-                p_meta_message_id: firstMessageId,
+                p_meta_message_id: nullableDbString(firstMessageId),
                 p_deduplication_key: deduplicationKey(raw, entryIndex, changeIndex),
                 p_signature_valid: true,
-                p_payload: {
+                p_payload: asJson({
                   entry_id: metaWabaId,
                   change,
-                },
+                }),
               },
             );
 
@@ -184,9 +193,9 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 {
                   p_organization_id: endpoint.organization_id,
                   p_meta_phone_number_id: metaPhoneId,
-                  p_contact_wa_id: sender,
-                  p_contact_profile_name: contact?.profile?.name ?? null,
-                  p_message: message,
+                  p_contact_wa_id: nullableDbString(sender),
+                  p_contact_profile_name: nullableDbString(contact?.profile?.name),
+                  p_message: asJson(message),
                 },
               );
 
@@ -216,7 +225,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 {
                   p_organization_id: endpoint.organization_id,
                   p_meta_phone_number_id: metaPhoneId,
-                  p_status: status,
+                  p_status: asJson(status),
                 },
               );
 
