@@ -54,7 +54,7 @@ function Dashboard() {
   const healthy = numbers.filter((n) => n.health === "healthy").length;
   const warning = numbers.filter((n) => n.health === "warning").length;
   const critical = numbers.filter((n) => n.health === "critical").length;
-  const unknown = numbers.filter((n) => n.health === "unknown" || n.health === "offline").length;
+  const unknown = numbers.filter((n) => n.health === "unknown").length;
 
   return (
     <>
