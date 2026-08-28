@@ -10,16 +10,6 @@ export type MetaAppConfigInput = {
   systemUserToken?: string;
 };
 
-async function requireOrganizationPermission(
-  supabase: Parameters<Parameters<typeof createServerFn>[0]>[0] extends never ? never : never,
-  _organizationId: string,
-  _permission: string,
-) {
-  void supabase;
-  void _organizationId;
-  void _permission;
-}
-
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { portfolioId: string }) => input)
