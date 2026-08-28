@@ -253,11 +253,11 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
         p_name: name,
         p_secret: secret,
         p_meta_app_id: metaAppInternalId,
-        p_business_portfolio_id: portfolioId,
-        p_waba_id: null,
-        p_whatsapp_number_id: null,
+        p_business_portfolio_id: portfolioId ?? undefined,
+        p_waba_id: undefined,
+        p_whatsapp_number_id: undefined,
         p_scopes: [],
-        p_expires_at: null,
+        p_expires_at: undefined,
       });
       if (error || !credentialId) {
         throw new Error(error?.message ?? `Unable to store ${credentialType}`);
