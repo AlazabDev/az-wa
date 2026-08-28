@@ -30,6 +30,12 @@ type MetaContact = {
   profile?: { name?: string };
 };
 
+const response = await fetch(target, {
+  method: request.method,
+  headers,
+  ...(request.method === "POST" && { body: await request.arrayBuffer() }),
+});
+
 type Change = {
   field?: string;
   value?: {
