@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+    image: az-wa:latest
+    container_name: az-wa-web
+    restart: unless-stopped
+    ports:
+      # Bind to loopback and terminate TLS with the host reverse proxy (nginx/caddy).
+      - "127.0.0.1:8085:80"

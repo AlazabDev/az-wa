@@ -1,0 +1,2390 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.17"
+  }
+  public: {
+    Tables: {
+      ai_analysis_cache: {
+        Row: {
+          analysis_result: Json
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          image_hash: string
+        }
+        Insert: {
+          analysis_result: Json
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          image_hash: string
+        }
+        Update: {
+          analysis_result?: Json
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          image_hash?: string
+        }
+        Relationships: []
+      }
+      ai_extractions: {
+        Row: {
+          classification: string | null
+          confidence: number | null
+          created_at: string
+          entities: Json
+          error_message: string | null
+          extracted_fields: Json
+          id: string
+          input_mime: string | null
+          media_file_id: string | null
+          message_id: string | null
+          model_used: string | null
+          processed_at: string | null
+          provider: string | null
+          raw_response: Json
+          raw_text: string | null
+          request_fingerprint: string | null
+          source_kind: string | null
+          status: string
+          summary: string | null
+          tags: string[]
+          tenant_id: string
+        }
+        Insert: {
+          classification?: string | null
+          confidence?: number | null
+          created_at?: string
+          entities?: Json
+          error_message?: string | null
+          extracted_fields?: Json
+          id?: string
+          input_mime?: string | null
+          media_file_id?: string | null
+          message_id?: string | null
+          model_used?: string | null
+          processed_at?: string | null
+          provider?: string | null
+          raw_response?: Json
+          raw_text?: string | null
+          request_fingerprint?: string | null
+          source_kind?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string[]
+          tenant_id: string
+        }
+        Update: {
+          classification?: string | null
+          confidence?: number | null
+          created_at?: string
+          entities?: Json
+          error_message?: string | null
+          extracted_fields?: Json
+          id?: string
+          input_mime?: string | null
+          media_file_id?: string | null
+          message_id?: string | null
+          model_used?: string | null
+          processed_at?: string | null
+          provider?: string | null
+          raw_response?: Json
+          raw_text?: string | null
+          request_fingerprint?: string | null
+          source_kind?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string[]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_extractions_media_file_id_fkey"
+            columns: ["media_file_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_extractions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_extractions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          disabled_at: string | null
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          scopes: Json
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          scopes?: Json
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          scopes?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          ip: string | null
+          meta: Json
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcast_messages: {
+        Row: {
+          broadcast_id: string
+          contact_id: string
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          phone_e164: string
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          broadcast_id: string
+          contact_id: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone_e164: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          broadcast_id?: string
+          contact_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone_e164?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_messages_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcasts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          delay_ms: number
+          delivered_count: number
+          failed_count: number
+          id: string
+          max_count: number | null
+          param_mapping: Json
+          phone_number_id: string
+          sent_count: number
+          started_at: string | null
+          status: string
+          template_components: Json
+          template_language: string
+          template_name: string
+          tenant_id: string
+          total_count: number
+          updated_at: string
+          wa_number_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          delay_ms?: number
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          max_count?: number | null
+          param_mapping?: Json
+          phone_number_id: string
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          template_components?: Json
+          template_language?: string
+          template_name: string
+          tenant_id: string
+          total_count?: number
+          updated_at?: string
+          wa_number_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          delay_ms?: number
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          max_count?: number | null
+          param_mapping?: Json
+          phone_number_id?: string
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          template_components?: Json
+          template_language?: string
+          template_name?: string
+          tenant_id?: string
+          total_count?: number
+          updated_at?: string
+          wa_number_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcasts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcasts_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          priority: number
+          response_text: string | null
+          response_type: string
+          template_language: string | null
+          template_name: string | null
+          template_params: Json | null
+          tenant_id: string
+          trigger_type: string
+          trigger_value: string | null
+          updated_at: string
+          wa_number_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          response_text?: string | null
+          response_type: string
+          template_language?: string | null
+          template_name?: string | null
+          template_params?: Json | null
+          tenant_id: string
+          trigger_type: string
+          trigger_value?: string | null
+          updated_at?: string
+          wa_number_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          response_text?: string | null
+          response_type?: string
+          template_language?: string | null
+          template_name?: string | null
+          template_params?: Json | null
+          tenant_id?: string
+          trigger_type?: string
+          trigger_value?: string | null
+          updated_at?: string
+          wa_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_rules_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_tag: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          in_chat: boolean
+          last_message_received_at: string | null
+          phone_e164: string
+          tags: string[] | null
+          tenant_id: string
+          unread_count: number | null
+          updated_at: string
+          wa_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          in_chat?: boolean
+          last_message_received_at?: string | null
+          phone_e164: string
+          tags?: string[] | null
+          tenant_id: string
+          unread_count?: number | null
+          updated_at?: string
+          wa_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          in_chat?: boolean
+          last_message_received_at?: string | null
+          phone_e164?: string
+          tags?: string[] | null
+          tenant_id?: string
+          unread_count?: number | null
+          updated_at?: string
+          wa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_notes: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          note: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          note: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          assigned_to: string | null
+          chatbot_state: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          last_ai_analysis: Json | null
+          last_message_at: string | null
+          status: Database["public"]["Enums"]["conv_status"]
+          tenant_id: string
+          wa_number_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          chatbot_state?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          last_ai_analysis?: Json | null
+          last_message_at?: string | null
+          status?: Database["public"]["Enums"]["conv_status"]
+          tenant_id: string
+          wa_number_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          chatbot_state?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          last_ai_analysis?: Json | null
+          last_message_at?: string | null
+          status?: Database["public"]["Enums"]["conv_status"]
+          tenant_id?: string
+          wa_number_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_batches: {
+        Row: {
+          created_at: string
+          currency: string | null
+          failed_documents: number
+          id: string
+          name: string
+          processed_documents: number
+          source_phone: string | null
+          status: string
+          tenant_id: string
+          total_amount: number
+          total_documents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          failed_documents?: number
+          id?: string
+          name: string
+          processed_documents?: number
+          source_phone?: string | null
+          status?: string
+          tenant_id: string
+          total_amount?: number
+          total_documents?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          failed_documents?: number
+          id?: string
+          name?: string
+          processed_documents?: number
+          source_phone?: string | null
+          status?: string
+          tenant_id?: string
+          total_amount?: number
+          total_documents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_batches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_documents: {
+        Row: {
+          agent_result: Json
+          attempts: number
+          batch_id: string | null
+          confidence: number | null
+          created_at: string
+          currency: string | null
+          doc_type: string | null
+          error_message: string | null
+          file_name: string | null
+          from_phone: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          locked_at: string | null
+          media_wa_id: string | null
+          message_id: string | null
+          mime: string | null
+          object_key: string | null
+          ocr_text: string | null
+          processed_at: string | null
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          storage_bucket: string | null
+          storage_provider: string
+          tax_amount: number | null
+          tenant_id: string
+          total_amount: number | null
+          updated_at: string
+          vendor: string | null
+          vision_result: Json
+          wa_number_id: string | null
+        }
+        Insert: {
+          agent_result?: Json
+          attempts?: number
+          batch_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          doc_type?: string | null
+          error_message?: string | null
+          file_name?: string | null
+          from_phone?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          locked_at?: string | null
+          media_wa_id?: string | null
+          message_id?: string | null
+          mime?: string | null
+          object_key?: string | null
+          ocr_text?: string | null
+          processed_at?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_provider?: string
+          tax_amount?: number | null
+          tenant_id: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor?: string | null
+          vision_result?: Json
+          wa_number_id?: string | null
+        }
+        Update: {
+          agent_result?: Json
+          attempts?: number
+          batch_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          doc_type?: string | null
+          error_message?: string | null
+          file_name?: string | null
+          from_phone?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          locked_at?: string | null
+          media_wa_id?: string | null
+          message_id?: string | null
+          mime?: string | null
+          object_key?: string | null
+          ocr_text?: string | null
+          processed_at?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_provider?: string
+          tax_amount?: number | null
+          tenant_id?: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor?: string | null
+          vision_result?: Json
+          wa_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_worker_state: {
+        Row: {
+          created_at: string
+          id: string
+          is_paused: boolean
+          last_error: string | null
+          last_run_at: string | null
+          lease_until: string | null
+          paused_reason: string | null
+          processed_total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_paused?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          lease_until?: string | null
+          paused_reason?: string | null
+          processed_total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_paused?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          lease_until?: string | null
+          paused_reason?: string | null
+          processed_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hub_deliveries: {
+        Row: {
+          attempt: number
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          event_id: string
+          http_status: number | null
+          id: string
+          next_retry_at: string | null
+          response_body: string | null
+          response_time_ms: number | null
+          status: string
+          target_id: string
+          tenant_id: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_id: string
+          http_status?: number | null
+          id?: string
+          next_retry_at?: string | null
+          response_body?: string | null
+          response_time_ms?: number | null
+          status?: string
+          target_id: string
+          tenant_id: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_id?: string
+          http_status?: number | null
+          id?: string
+          next_retry_at?: string | null
+          response_body?: string | null
+          response_time_ms?: number | null
+          status?: string
+          target_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_deliveries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "hub_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_deliveries_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "hub_dispatch_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_deliveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hub_dispatch_targets: {
+        Row: {
+          created_at: string
+          events_filter: Json
+          has_secret: boolean | null
+          id: string
+          is_active: boolean
+          last_delivery_at: string | null
+          last_error: string | null
+          name: string
+          numbers_filter: Json
+          retry_count: number
+          secret: string | null
+          success_rate: number | null
+          tenant_id: string
+          timeout_ms: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          events_filter?: Json
+          has_secret?: boolean | null
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_error?: string | null
+          name: string
+          numbers_filter?: Json
+          retry_count?: number
+          secret?: string | null
+          success_rate?: number | null
+          tenant_id: string
+          timeout_ms?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          events_filter?: Json
+          has_secret?: boolean | null
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_error?: string | null
+          name?: string
+          numbers_filter?: Json
+          retry_count?: number
+          secret?: string | null
+          success_rate?: number | null
+          tenant_id?: string
+          timeout_ms?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_dispatch_targets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hub_events: {
+        Row: {
+          created_at: string
+          direction: string
+          dispatched_count: number
+          event_type: string
+          from_phone: string | null
+          id: string
+          payload: Json
+          phone_number_id: string
+          processed: boolean
+          processed_at: string | null
+          processing_error: string | null
+          tenant_id: string | null
+          to_phone: string | null
+          wam_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          dispatched_count?: number
+          event_type: string
+          from_phone?: string | null
+          id?: string
+          payload?: Json
+          phone_number_id: string
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          tenant_id?: string | null
+          to_phone?: string | null
+          wam_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          dispatched_count?: number
+          event_type?: string
+          from_phone?: string | null
+          id?: string
+          payload?: Json
+          phone_number_id?: string
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          tenant_id?: string | null
+          to_phone?: string | null
+          wam_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hub_stats_hourly: {
+        Row: {
+          avg_response_ms: number | null
+          deliveries_failed: number
+          deliveries_success: number
+          events_inbound: number
+          events_status: number
+          events_total: number
+          hour_bucket: string
+          id: string
+          phone_number_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          avg_response_ms?: number | null
+          deliveries_failed?: number
+          deliveries_success?: number
+          events_inbound?: number
+          events_status?: number
+          events_total?: number
+          hour_bucket: string
+          id?: string
+          phone_number_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          avg_response_ms?: number | null
+          deliveries_failed?: number
+          deliveries_success?: number
+          events_inbound?: number
+          events_status?: number
+          events_total?: number
+          hour_bucket?: string
+          id?: string
+          phone_number_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_stats_hourly_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hub_webhook_numbers: {
+        Row: {
+          created_at: string
+          display_phone: string | null
+          id: string
+          is_active: boolean
+          last_event_at: string | null
+          meta: Json
+          phone_number_id: string
+          tenant_id: string
+          total_events: number
+          updated_at: string
+          verified_name: string | null
+          wa_number_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_phone?: string | null
+          id?: string
+          is_active?: boolean
+          last_event_at?: string | null
+          meta?: Json
+          phone_number_id: string
+          tenant_id: string
+          total_events?: number
+          updated_at?: string
+          verified_name?: string | null
+          wa_number_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_phone?: string | null
+          id?: string
+          is_active?: boolean
+          last_event_at?: string | null
+          meta?: Json
+          phone_number_id?: string
+          tenant_id?: string
+          total_events?: number
+          updated_at?: string
+          verified_name?: string | null
+          wa_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_webhook_numbers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_webhook_numbers_wa_number_id_fkey"
+            columns: ["wa_number_id"]
+            isOneToOne: false
+            referencedRelation: "wa_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: number
+          job_type: Database["public"]["Enums"]["job_type"]
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          run_after: string
+          tenant_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: number
+          job_type: Database["public"]["Enums"]["job_type"]
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_after?: string
+          tenant_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: number
+          job_type?: Database["public"]["Enums"]["job_type"]
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_after?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_queue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_files: {
+        Row: {
+          ai_last_extraction_id: string | null
+          ai_processed_at: string | null
+          ai_status: string
+          ai_summary: string | null
+          ai_tags: string[]
+          created_at: string
+          deleted_at: string | null
+          file_name: string | null
+          folder_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["media_kind"]
+          message_id: string | null
+          mime: string | null
+          received_at: string
+          sha256: string | null
+          size_bytes: number | null
+          storage_bucket: string
+          storage_key: string | null
+          tenant_id: string
+          wa_media_id: string | null
+        }
+        Insert: {
+          ai_last_extraction_id?: string | null
+          ai_processed_at?: string | null
+          ai_status?: string
+          ai_summary?: string | null
+          ai_tags?: string[]
+          created_at?: string
+          deleted_at?: string | null
+          file_name?: string | null
+          folder_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["media_kind"]
+          message_id?: string | null
+          mime?: string | null
+          received_at?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_key?: string | null
+          tenant_id: string
+          wa_media_id?: string | null
+        }
+        Update: {
+          ai_last_extraction_id?: string | null
+          ai_processed_at?: string | null
+          ai_status?: string
+          ai_summary?: string | null
+          ai_tags?: string[]
+          created_at?: string
+          deleted_at?: string | null
+          file_name?: string | null
+          folder_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["media_kind"]
+          message_id?: string | null
+          mime?: string | null
+          received_at?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_key?: string | null
+          tenant_id?: string
+          wa_media_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_files_ai_last_extraction_id_fkey"
+            columns: ["ai_last_extraction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_extractions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_files_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_folders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_template: {
+        Row: {
+          category: string
+          components: Json
+          created_at: string
+          id: string
+          language: string
+          name: string
+          previous_category: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          components: Json
+          created_at?: string
+          id: string
+          language: string
+          name: string
+          previous_category?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          components?: Json
+          created_at?: string
+          id?: string
+          language?: string
+          name?: string
+          previous_category?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          chat_id: string | null
+          conversation_id: string
+          created_at: string
+          delivered_at: string | null
+          direction: Database["public"]["Enums"]["msg_direction"]
+          error_payload: Json | null
+          failed_at: string | null
+          id: string
+          interactive_payload: Json | null
+          is_ai_generated: boolean
+          is_received: boolean
+          media_filename: string | null
+          media_mime: string | null
+          media_wa_id: string | null
+          meta: Json
+          provider_message_id: string | null
+          raw_payload: Json | null
+          read_at: string | null
+          read_by_user_at: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["msg_status"]
+          tenant_id: string
+          text: string | null
+          timestamp: string | null
+          type: string | null
+          wa_conversation_id: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          conversation_id: string
+          created_at?: string
+          delivered_at?: string | null
+          direction: Database["public"]["Enums"]["msg_direction"]
+          error_payload?: Json | null
+          failed_at?: string | null
+          id?: string
+          interactive_payload?: Json | null
+          is_ai_generated?: boolean
+          is_received?: boolean
+          media_filename?: string | null
+          media_mime?: string | null
+          media_wa_id?: string | null
+          meta?: Json
+          provider_message_id?: string | null
+          raw_payload?: Json | null
+          read_at?: string | null
+          read_by_user_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["msg_status"]
+          tenant_id: string
+          text?: string | null
+          timestamp?: string | null
+          type?: string | null
+          wa_conversation_id?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          direction?: Database["public"]["Enums"]["msg_direction"]
+          error_payload?: Json | null
+          failed_at?: string | null
+          id?: string
+          interactive_payload?: Json | null
+          is_ai_generated?: boolean
+          is_received?: boolean
+          media_filename?: string | null
+          media_mime?: string | null
+          media_wa_id?: string | null
+          meta?: Json
+          provider_message_id?: string | null
+          raw_payload?: Json | null
+          read_at?: string | null
+          read_by_user_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["msg_status"]
+          tenant_id?: string
+          text?: string | null
+          timestamp?: string | null
+          type?: string | null
+          wa_conversation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissions: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          resource: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name: string
+          resource: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          resource?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_updated: string | null
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          last_updated?: string | null
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_updated?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          id: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          id?: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          id?: number
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      setup: {
+        Row: {
+          created_at: string | null
+          display_text: string
+          done_at: string | null
+          id: string
+          in_progress: boolean
+          name: string | null
+          sequence: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_text: string
+          done_at?: string | null
+          id?: string
+          in_progress?: boolean
+          name?: string | null
+          sequence?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          display_text?: string
+          done_at?: string | null
+          id?: string
+          in_progress?: boolean
+          name?: string | null
+          sequence?: number | null
+        }
+        Relationships: []
+      }
+      supcloud_keepalive: {
+        Row: {
+          id: number
+          marker: string
+        }
+        Insert: {
+          id: number
+          marker?: string
+        }
+        Update: {
+          id?: number
+          marker?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          body: string | null
+          category: Database["public"]["Enums"]["tmpl_category"]
+          created_at: string
+          id: string
+          language: string
+          meta: Json
+          name: string
+          status: Database["public"]["Enums"]["tmpl_status"]
+          tenant_id: string
+          updated_at: string
+          variables: Json
+          wa_account_id: string
+        }
+        Insert: {
+          body?: string | null
+          category?: Database["public"]["Enums"]["tmpl_category"]
+          created_at?: string
+          id?: string
+          language?: string
+          meta?: Json
+          name: string
+          status?: Database["public"]["Enums"]["tmpl_status"]
+          tenant_id: string
+          updated_at?: string
+          variables?: Json
+          wa_account_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: Database["public"]["Enums"]["tmpl_category"]
+          created_at?: string
+          id?: string
+          language?: string
+          meta?: Json
+          name?: string
+          status?: Database["public"]["Enums"]["tmpl_status"]
+          tenant_id?: string
+          updated_at?: string
+          variables?: Json
+          wa_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "templates_wa_account_id_fkey"
+            columns: ["wa_account_id"]
+            isOneToOne: false
+            referencedRelation: "wa_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["member_role"]
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["member_role"]
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["member_role"]
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          permission_id: number
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          permission_id: number
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          permission_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          last_login: string | null
+          metadata: Json | null
+          permissions: Json | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          is_active?: boolean | null
+          last_login?: string | null
+          metadata?: Json | null
+          permissions?: Json | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          metadata?: Json | null
+          permissions?: Json | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: number
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wa_accounts: {
+        Row: {
+          app_bindings: Json
+          business_manager_id: string | null
+          business_name: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          label: string
+          meta: Json
+          template_namespace: string | null
+          tenant_id: string
+          timezone_id: string | null
+          waba_id: string
+          webhook_subscriptions: Json
+        }
+        Insert: {
+          app_bindings?: Json
+          business_manager_id?: string | null
+          business_name?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label: string
+          meta?: Json
+          template_namespace?: string | null
+          tenant_id: string
+          timezone_id?: string | null
+          waba_id: string
+          webhook_subscriptions?: Json
+        }
+        Update: {
+          app_bindings?: Json
+          business_manager_id?: string | null
+          business_name?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label?: string
+          meta?: Json
+          template_namespace?: string | null
+          tenant_id?: string
+          timezone_id?: string | null
+          waba_id?: string
+          webhook_subscriptions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_numbers: {
+        Row: {
+          account_mode: string | null
+          created_at: string
+          display_phone_number: string | null
+          id: string
+          last_active_at: string | null
+          meta: Json
+          phone_e164: string
+          phone_number_id: string
+          platform_type: string | null
+          quality_rating: string | null
+          status: string
+          tenant_id: string
+          throughput: Json | null
+          type: Database["public"]["Enums"]["wa_number_type"]
+          verified_name: string | null
+          wa_account_id: string
+        }
+        Insert: {
+          account_mode?: string | null
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          last_active_at?: string | null
+          meta?: Json
+          phone_e164: string
+          phone_number_id: string
+          platform_type?: string | null
+          quality_rating?: string | null
+          status?: string
+          tenant_id: string
+          throughput?: Json | null
+          type?: Database["public"]["Enums"]["wa_number_type"]
+          verified_name?: string | null
+          wa_account_id: string
+        }
+        Update: {
+          account_mode?: string | null
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          last_active_at?: string | null
+          meta?: Json
+          phone_e164?: string
+          phone_number_id?: string
+          platform_type?: string | null
+          quality_rating?: string | null
+          status?: string
+          tenant_id?: string
+          throughput?: Json | null
+          type?: Database["public"]["Enums"]["wa_number_type"]
+          verified_name?: string | null
+          wa_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_numbers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_numbers_wa_account_id_fkey"
+            columns: ["wa_account_id"]
+            isOneToOne: false
+            referencedRelation: "wa_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_deliveries: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string
+          id: string
+          last_error: string | null
+          next_retry_at: string | null
+          payload: Json
+          status_code: number | null
+          success: boolean
+          tenant_id: string
+          webhook_endpoint_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          next_retry_at?: string | null
+          payload?: Json
+          status_code?: number | null
+          success?: boolean
+          tenant_id: string
+          webhook_endpoint_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          next_retry_at?: string | null
+          payload?: Json
+          status_code?: number | null
+          success?: boolean
+          tenant_id?: string
+          webhook_endpoint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_deliveries_webhook_endpoint_id_fkey"
+            columns: ["webhook_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_endpoints: {
+        Row: {
+          created_at: string
+          events: Json
+          fail_count: number
+          id: string
+          is_enabled: boolean
+          last_error: string | null
+          last_ok_at: string | null
+          retry_count: number
+          secret_hash: string | null
+          success_count: number
+          tenant_id: string
+          timeout_ms: number
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          events?: Json
+          fail_count?: number
+          id?: string
+          is_enabled?: boolean
+          last_error?: string | null
+          last_ok_at?: string | null
+          retry_count?: number
+          secret_hash?: string | null
+          success_count?: number
+          tenant_id: string
+          timeout_ms?: number
+          url: string
+        }
+        Update: {
+          created_at?: string
+          events?: Json
+          fail_count?: number
+          id?: string
+          is_enabled?: boolean
+          last_error?: string | null
+          last_ok_at?: string | null
+          retry_count?: number
+          secret_hash?: string | null
+          success_count?: number
+          tenant_id?: string
+          timeout_ms?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_runs: {
+        Row: {
+          created_at: string
+          id: string
+          log: Json
+          status: string
+          tenant_id: string
+          trigger_event: string | null
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log?: Json
+          status?: string
+          tenant_id: string
+          trigger_event?: string | null
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log?: Json
+          status?: string
+          tenant_id?: string
+          trigger_event?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          name: string
+          rules: Json
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          name: string
+          rules?: Json
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          name?: string
+          rules?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      add_delivered_count_to_broadcast: {
+        Args: { b_id: string; delivered_count_to_be_added: number }
+        Returns: undefined
+      }
+      add_failed_count_to_broadcast: {
+        Args: { b_id: string; failed_count_to_be_added: number }
+        Returns: undefined
+      }
+      add_processed_count_to_broadcast: {
+        Args: { b_id: string; processed_count_to_be_added: number }
+        Returns: undefined
+      }
+      add_read_count_to_broadcast: {
+        Args: { b_id: string; read_count_to_be_added: number }
+        Returns: undefined
+      }
+      add_replied_to_broadcast_contact: {
+        Args: { b_id: string; replied_count_to_be_added: number }
+        Returns: undefined
+      }
+      add_sent_count_to_broadcast: {
+        Args: { b_id: string; sent_count_to_be_added: number }
+        Returns: undefined
+      }
+      authorize: {
+        Args: {
+          requested_permission: Database["public"]["Enums"]["app_permission"]
+        }
+        Returns: boolean
+      }
+      claim_finance_documents: {
+        Args: { _lease_seconds?: number; _limit?: number }
+        Returns: {
+          agent_result: Json
+          attempts: number
+          batch_id: string | null
+          confidence: number | null
+          created_at: string
+          currency: string | null
+          doc_type: string | null
+          error_message: string | null
+          file_name: string | null
+          from_phone: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          locked_at: string | null
+          media_wa_id: string | null
+          message_id: string | null
+          mime: string | null
+          object_key: string | null
+          ocr_text: string | null
+          processed_at: string | null
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          storage_bucket: string | null
+          storage_provider: string
+          tax_amount: number | null
+          tenant_id: string
+          total_amount: number | null
+          updated_at: string
+          vendor: string | null
+          vision_result: Json
+          wa_number_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "finance_documents"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      get_user_role: { Args: { p_user_id: string }; Returns: string }
+      has_tenant_role: {
+        Args: {
+          _min_role: Database["public"]["Enums"]["member_role"]
+          _tenant_id: string
+        }
+        Returns: boolean
+      }
+      is_tenant_member: { Args: { _tenant_id: string }; Returns: boolean }
+      pick_next_broadcast_batch: { Args: { b_id: string }; Returns: string }
+      update_conversation_last_message: {
+        Args: { conversation_id: string; last_message_id: string }
+        Returns: undefined
+      }
+      update_message_delivered_status: {
+        Args: { delivered_at_in: string; wam_id_in: string }
+        Returns: boolean
+      }
+      update_message_failed_status: {
+        Args: { failed_at_in: string; wam_id_in: string }
+        Returns: boolean
+      }
+      update_message_read_status: {
+        Args: { read_at_in: string; wam_id_in: string }
+        Returns: boolean
+      }
+      update_message_sent_status: {
+        Args: { sent_at_in: string; wam_id_in: string }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      app_permission:
+        | "contact.read"
+        | "contact.write"
+        | "chat.read"
+        | "chat.write"
+      app_role: "admin" | "agent"
+      conv_status: "open" | "pending" | "closed"
+      job_type:
+        | "WEBHOOK_DELIVERY"
+        | "TEMPLATE_SYNC"
+        | "MEDIA_PROCESS"
+        | "WORKFLOW_RUN"
+        | "SEND_MESSAGE"
+        | "MEDIA_AI_ANALYZE"
+      media_kind: "image" | "video" | "audio" | "document" | "sticker" | "other"
+      member_role: "admin" | "operator" | "viewer"
+      msg_direction: "inbound" | "outbound"
+      msg_status: "queued" | "sent" | "delivered" | "read" | "failed"
+      tmpl_category: "UTILITY" | "MARKETING" | "AUTH"
+      tmpl_status: "APPROVED" | "PENDING" | "REJECTED" | "PAUSED"
+      user_role: "admin" | "manager" | "operator" | "viewer"
+      wa_number_type: "connected" | "digital" | "sandbox"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_permission: [
+        "contact.read",
+        "contact.write",
+        "chat.read",
+        "chat.write",
+      ],
+      app_role: ["admin", "agent"],
+      conv_status: ["open", "pending", "closed"],
+      job_type: [
+        "WEBHOOK_DELIVERY",
+        "TEMPLATE_SYNC",
+        "MEDIA_PROCESS",
+        "WORKFLOW_RUN",
+        "SEND_MESSAGE",
+        "MEDIA_AI_ANALYZE",
+      ],
+      media_kind: ["image", "video", "audio", "document", "sticker", "other"],
+      member_role: ["admin", "operator", "viewer"],
+      msg_direction: ["inbound", "outbound"],
+      msg_status: ["queued", "sent", "delivered", "read", "failed"],
+      tmpl_category: ["UTILITY", "MARKETING", "AUTH"],
+      tmpl_status: ["APPROVED", "PENDING", "REJECTED", "PAUSED"],
+      user_role: ["admin", "manager", "operator", "viewer"],
+      wa_number_type: ["connected", "digital", "sandbox"],
+    },
+  },
+} as const
