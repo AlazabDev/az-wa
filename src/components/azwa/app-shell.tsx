@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
+  AppWindow,
   BarChart3,
   Bell,
   Bot,
@@ -53,6 +54,7 @@ const NAV: Array<{ section?: string; items: NavItem[] }> = [
       { label: "Business Portfolio", to: "/infrastructure", icon: Building2 },
       { label: "WABAs", to: "/wabas", icon: Network },
       { label: "Phone Numbers", to: "/numbers", icon: Phone },
+      { label: "Meta App", to: "/meta-app", icon: AppWindow },
       { label: "Webhooks", to: "/webhooks", icon: Webhook },
       { label: "Credentials", to: "/credentials", icon: KeyRound },
     ],
