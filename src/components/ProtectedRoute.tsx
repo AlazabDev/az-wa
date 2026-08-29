@@ -1,16 +1,16 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function ProtectedRoute() {
+export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading, memberships } = useAuth();
-  const location = useLocation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {
     return <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">جاري التحقق من الجلسة...</div>;
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/legacy/login" search={{ from: pathname }} replace />;
   }
 
   if (memberships.length === 0) {
@@ -22,5 +22,5 @@ export function ProtectedRoute() {
     </div>;
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 }
