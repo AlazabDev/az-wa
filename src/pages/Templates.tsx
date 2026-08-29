@@ -23,7 +23,7 @@ interface TemplateRow {
   bodyText: string;
   hasButtons: boolean;
   buttonTexts: string[];
-  headerType?: string;
+  headerType?: string | undefined;
 }
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -221,7 +221,7 @@ export default function Templates() {
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((template) => {
-            const status = statusMap[template.status] || statusMap.DRAFT;
+            const status = statusMap[template.status] ?? statusMap["DRAFT"]!;
             return (
               <Card key={template.id} className="shadow-card hover:shadow-card-hover transition-shadow">
                 <CardHeader className="pb-2">
