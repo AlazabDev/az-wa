@@ -26,5 +26,21 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": [
+    "src/pages",
+    "src/contexts",
+    "src/test",
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/components/AppLayout.tsx",
+    "src/components/AppSidebar.tsx",
+    "src/components/ErrorBoundary.tsx",
+    "src/components/NavLink.tsx",
+    "src/components/ProtectedRoute.tsx",
+    "src/components/ui/toast.tsx",
+    "src/components/ui/toaster.tsx",
+    "src/components/ui/use-toast.ts",
+    "src/hooks/use-toast.ts"
+  ]
 }
