@@ -8,12 +8,6 @@ export type MetaAppConfigInput = {
   verifyToken?: string;
   appSecret?: string;
   systemUserToken?: string;
-  
-const { data: portfolio, error } = await context.supabase
-  .from("business_portfolios")
-  .select("id")
-  .eq("id", data.portfolioId)
-  .maybeSingle();
 };
 
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
@@ -26,11 +20,9 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
       .eq("id", data.portfolioId)
       .maybeSingle();
 
-const { data: number, error } = await context.supabase
-  .from("whatsapp_numbers")
-  .select("id, waba_id, meta_phone_number_id, display_phone_number")
-  .eq("id", data.numberId)
-  .maybeSingle();
+    if (portfolioError || !portfolio) throw new Error("Portfolio not found or not accessible");
+
+
 
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
@@ -261,11 +253,8 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
         p_name: name,
         p_secret: secret,
         p_meta_app_id: metaAppInternalId,
-        p_business_portfolio_id: portfolioId ?? undefined,
-        p_waba_id: undefined,
-        p_whatsapp_number_id: undefined,
+        ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
         p_scopes: [],
-        p_expires_at: undefined,
       });
       if (error || !credentialId) {
         throw new Error(error?.message ?? `Unable to store ${credentialType}`);
