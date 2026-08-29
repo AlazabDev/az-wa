@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
 
 export type TenantMembership = {
   tenant_id: string;
