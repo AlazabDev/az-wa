@@ -113,7 +113,7 @@ export default function Projects() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((project) => {
-            const status = statusMap[project.status];
+            const status = statusMap[project.status] ?? statusMap["planning"]!;
             return (
               <Card key={project.id} className="shadow-card hover:shadow-card-hover transition-shadow">
                 <CardHeader className="pb-2">

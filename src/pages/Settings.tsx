@@ -85,7 +85,7 @@ export default function Settings() {
   useEffect(() => {
     if (!testNumberId && data?.numbers?.length) {
       const firstOk = data.numbers.find((n) => n.ok) ?? data.numbers[0];
-      setTestNumberId(firstOk.id);
+      if (firstOk) setTestNumberId(firstOk.id);
     }
   }, [data, testNumberId]);
 
@@ -325,9 +325,9 @@ export default function Settings() {
             <div className="flex items-center gap-2">
               <Webhook className="h-5 w-5 text-primary" />
               <h3 className="font-bold">رابط الويب هوك (Webhook URL)</h3>
-              <Badge variant={data?.env.WA_WEBHOOK_VERIFY_TOKEN ? "default" : "destructive"} className="gap-1">
-                {data?.env.WA_WEBHOOK_VERIFY_TOKEN ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                {data?.env.WA_WEBHOOK_VERIFY_TOKEN ? "جاهز" : "Verify Token مفقود"}
+              <Badge variant={data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? "default" : "destructive"} className="gap-1">
+                {data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                {data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? "جاهز" : "Verify Token مفقود"}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">

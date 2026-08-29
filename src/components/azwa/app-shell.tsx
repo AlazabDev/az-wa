@@ -86,6 +86,10 @@ const NAV: Array<{ section?: string; items: NavItem[] }> = [
       { label: "Settings", to: "/settings", icon: Settings },
     ],
   },
+  {
+    section: "Legacy",
+    items: [{ label: "Legacy Hub", to: "/legacy/", icon: Boxes }],
+  },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

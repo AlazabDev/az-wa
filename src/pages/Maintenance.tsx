@@ -106,8 +106,8 @@ export default function Maintenance() {
 
         <div className="space-y-3">
           {filtered.map((req) => {
-            const priority = priorityMap[req.priority];
-            const status = statusMap[req.status];
+            const priority = priorityMap[req.priority] ?? priorityMap["عادي"]!;
+            const status = statusMap[req.status] ?? statusMap["open"]!;
             return (
               <Card key={req.id} className="shadow-card hover:shadow-card-hover transition-shadow">
                 <CardContent className="p-4">

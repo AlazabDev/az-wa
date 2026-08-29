@@ -34,7 +34,7 @@ export default function Flows() {
     >
       <div className="space-y-4">
         {flows.map((flow) => {
-          const status = statusMap[flow.status];
+          const status = statusMap[flow.status] ?? statusMap["draft"]!;
           const StatusIcon = status.icon;
           return (
             <Card key={flow.id} className="shadow-card hover:shadow-card-hover transition-shadow">

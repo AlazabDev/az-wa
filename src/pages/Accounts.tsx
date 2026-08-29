@@ -47,7 +47,7 @@ const qualityColors: Record<string, string> = {
   UNKNOWN: "bg-muted text-muted-foreground",
 };
 
-const WEBHOOK_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-webhook`;
+const WEBHOOK_BASE = `${import.meta.env["VITE_SUPABASE_URL"]}/functions/v1/wa-webhook`;
 
 export default function Accounts() {
   const qc = useQueryClient();
@@ -251,7 +251,7 @@ export default function Accounts() {
                           <span className="text-xs" dir="ltr">{phone.number}</span>
                           {phone.verifiedName && <span className="text-xs text-muted-foreground">({phone.verifiedName})</span>}
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality] ?? qualityColors.UNKNOWN}`}>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality] ?? qualityColors["UNKNOWN"]}`}>
                           {phone.quality === "GREEN" ? "جودة عالية" : phone.quality === "UNKNOWN" ? "غير محدد" : phone.quality}
                         </span>
                       </div>

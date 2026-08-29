@@ -112,10 +112,11 @@ export default function Webhooks() {
       if (error) throw error;
       const stats: Record<string, { total: number; success: number; failed: number }> = {};
       (data || []).forEach((d: any) => {
-        if (!stats[d.target_id]) stats[d.target_id] = { total: 0, success: 0, failed: 0 };
-        stats[d.target_id].total++;
-        if (d.status === "delivered") stats[d.target_id].success++;
-        else if (d.status === "failed") stats[d.target_id].failed++;
+        const targetId = String(d.target_id);
+        const stat = stats[targetId] ?? (stats[targetId] = { total: 0, success: 0, failed: 0 });
+        stat.total++;
+        if (d.status === "delivered") stat.success++;
+        else if (d.status === "failed") stat.failed++;
       });
       return stats;
     },
@@ -173,8 +174,14 @@ export default function Webhooks() {
   };
 
   const handleSubmit = () => {
-    if (!url) return toast.error("يرجى إدخال رابط نقطة النهاية");
-    if (selectedEvents.length === 0) return toast.error("يرجى اختيار حدث واحد على الأقل");
+    if (!url) {
+      toast.error("يرجى إدخال رابط نقطة النهاية");
+      return;
+    }
+    if (selectedEvents.length === 0) {
+      toast.error("يرجى اختيار حدث واحد على الأقل");
+      return;
+    }
     createMutation.mutate();
   };
 
