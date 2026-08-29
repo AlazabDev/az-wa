@@ -8,12 +8,6 @@ export type MetaAppConfigInput = {
   verifyToken?: string;
   appSecret?: string;
   systemUserToken?: string;
-  
-const { data: portfolio, error } = await context.supabase
-  .from("business_portfolios")
-  .select("id")
-  .eq("id", data.portfolioId)
-  .maybeSingle();
 };
 
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
