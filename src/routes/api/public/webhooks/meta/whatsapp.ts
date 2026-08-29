@@ -168,7 +168,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
 
             const ingestStatus =
               ingest && typeof ingest === "object" && "status" in ingest
-                ? String(ingest.status)
+                ? String((ingest as Record<string, unknown>)["status"])
                 : null;
 
             if (ingestStatus === "unmapped_number_event" && metaPhoneId) {
@@ -209,7 +209,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 inbound &&
                 typeof inbound === "object" &&
                 "status" in inbound &&
-                String(inbound.status) === "unmapped_number"
+                String((inbound as Record<string, unknown>)["status"]) === "unmapped_number"
               ) {
                 await ensureUnknownNumberAlert(
                   endpoint.organization_id,
@@ -239,7 +239,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 applied &&
                 typeof applied === "object" &&
                 "status" in applied &&
-                String(applied.status) === "unmapped_number"
+                String((applied as Record<string, unknown>)["status"]) === "unmapped_number"
               ) {
                 await ensureUnknownNumberAlert(
                   endpoint.organization_id,
