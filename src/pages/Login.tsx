@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearch } from "@tanstack/react-router";
 import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,13 @@ import { Building2, Loader2 } from "lucide-react";
 export default function Login() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const search = useSearch({ strict: false }) as { from?: string };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && user) return <Navigate to="/" replace />;
+  if (!loading && user) return <Navigate to="/legacy" replace />;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -29,8 +29,8 @@ export default function Login() {
       setError(signInError.message);
       return;
     }
-    const from = (location.state as { from?: string } | null)?.from ?? "/";
-    navigate(from, { replace: true });
+    const from = search.from ?? "/legacy";
+    navigate({ to: from, replace: true });
   };
 
   return (
