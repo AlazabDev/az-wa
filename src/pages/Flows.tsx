@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, GitBranch, Play, Pause, Copy, Trash2, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 
 const flows = [
   { id: 1, name: "تدفق طلب صيانة جديد", status: "active", triggers: "عند استلام طلب صيانة", steps: 5, description: "إشعار العميل ← تعيين فريق ← جدولة الموعد ← تأكيد ← متابعة" },
@@ -26,7 +26,7 @@ export default function Flows() {
       title="التدفقات"
       subtitle="أتمتة مراسلات المقاولات والصيانة"
       actions={
-        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => navigate("/flows/new")}>
+        <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => navigate({ to: "/legacy/flows/new" })}>
           <Plus className="h-4 w-4 ml-1" />
           تدفق جديد
         </Button>

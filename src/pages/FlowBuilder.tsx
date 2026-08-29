@@ -35,7 +35,7 @@ import {
   Filter,
   ArrowDown,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 type TriggerType = "event" | "schedule" | "manual";
@@ -149,7 +149,7 @@ export default function FlowBuilder() {
       return;
     }
     toast.success(asDraft ? "تم حفظ المسودة بنجاح" : "تم حفظ وتفعيل التدفق بنجاح");
-    navigate("/flows");
+    navigate({ to: "/legacy/flows" });
   };
 
   const renderStepConfig = (step: FlowStep) => {
@@ -359,7 +359,7 @@ export default function FlowBuilder() {
       title="إنشاء تدفق جديد"
       subtitle="بناء سير عمل مؤتمت للمقاولات والصيانة"
       actions={
-        <Button variant="outline" size="sm" onClick={() => navigate("/flows")}>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/legacy/flows" })}>
           <ArrowLeft className="h-4 w-4 ml-1" />
           رجوع
         </Button>
@@ -547,7 +547,7 @@ export default function FlowBuilder() {
 
         {/* Actions */}
         <div className="flex gap-3 justify-end pb-6">
-          <Button variant="outline" onClick={() => navigate("/flows")}>إلغاء</Button>
+          <Button variant="outline" onClick={() => navigate({ to: "/legacy/flows" })}>إلغاء</Button>
           <Button variant="secondary" onClick={() => handleSave(true)}>
             <Save className="h-4 w-4 ml-1" />
             حفظ كمسودة
