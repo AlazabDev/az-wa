@@ -9,6 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { drainMediaQueue } from "@/lib/meta/media.server";
+import { applyTemplateWebhookChange, isTemplateWebhookField } from "@/lib/meta/template-webhook.server";
 import {
   listWebhookSecrets,
   matchSignature,
@@ -33,11 +34,12 @@ type MetaContact = {
 
 type Change = {
   field?: string;
-  value?: {
+  value?: Record<string, unknown> & {
     metadata?: { phone_number_id?: string; display_phone_number?: string };
     contacts?: MetaContact[];
     messages?: MetaMessage[];
     statuses?: MetaStatus[];
+    message_template_id?: string | number;
   };
 };
 
@@ -144,7 +146,11 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
             const value = change.value ?? {};
             const metaPhoneId = value.metadata?.phone_number_id ?? null;
             const metaWabaId = entry.id ?? null;
-            const firstMessageId = value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? null;
+            const templateEventId = value.message_template_id != null
+              ? String(value.message_template_id)
+              : null;
+            const firstMessageId =
+              value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
 
             const { data: ingest, error: ingestError } = await supabaseAdmin.rpc(
               "backend_ingest_webhook_event",
@@ -168,6 +174,20 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
             if (ingestError) {
               console.error("[AzWA webhook] event persistence failed", ingestError.message);
               return new Response("Service Unavailable", { status: 503 });
+            }
+
+            // Template lifecycle events are WABA-scoped and normally do not
+            // include phone_number_id. Apply them before phone-specific logic.
+            if (isTemplateWebhookField(change.field)) {
+              const applied = await applyTemplateWebhookChange({
+                organizationId: endpoint.organization_id,
+                metaWabaId,
+                field: change.field,
+                value,
+              });
+              if (applied.handled && !applied.updated && applied.error) {
+                console.error("[AzWA webhook] template lifecycle update failed", applied.error);
+              }
             }
 
             const ingestStatus =
