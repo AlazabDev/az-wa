@@ -8,7 +8,8 @@ import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
 import { useNumbers, usePortfolios, useWabas } from "@/lib/azwa-data";
-import { syncBusinessPortfolio, testWhatsappNumber } from "@/lib/meta/meta.functions";
+import { testWhatsappNumber } from "@/lib/meta/meta.functions";
+import { syncBusinessPortfolioComplete } from "@/lib/meta/portfolio-sync.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/infrastructure")({
@@ -40,7 +41,7 @@ function Infrastructure() {
   const { data: numbers = [] } = useNumbers();
   const queryClient = useQueryClient();
 
-  const sync = useServerFn(syncBusinessPortfolio);
+  const sync = useServerFn(syncBusinessPortfolioComplete);
   const test = useServerFn(testWhatsappNumber);
 
   const [results, setResults] = useState<Record<string, TestResult[]>>({});
@@ -50,11 +51,14 @@ function Infrastructure() {
     setBusy(portfolioId);
     try {
       const report = await sync({ data: { portfolioId } });
-      if (report.errors.length) toast.error(report.errors[0]);
-      else
+      if (report.errors.length) {
+        toast.error(report.errors[0]);
+      } else {
         toast.success(
-          `Sync complete: ${report.wabas.inserted} new WABAs, ${report.numbers.inserted} new numbers`,
+          `Sync complete: ${report.wabas.discovered} WABAs, ${report.numbers.discovered} numbers, ${report.templates.synced} templates, ${report.subscriptions.verified} webhook subscriptions verified`,
         );
+      }
+      if (report.warnings.length > 0) toast.warning(report.warnings[0]);
       queryClient.invalidateQueries();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sync failed");
@@ -84,7 +88,7 @@ function Infrastructure() {
     <>
       <PageHeader
         title="WhatsApp Infrastructure"
-        description="Live tree of business portfolios, WABAs and phone numbers as stored in the operational database. Sync reconciles it with Meta without deleting local history."
+        description="Live tree of business portfolios, WABAs and phone numbers as stored in the operational database. Sync validates the Meta token, paginates every account, repairs WABA subscriptions, syncs templates and never deletes local history."
         actions={
           <Button variant="outline" onClick={runAll} disabled={busy !== null}>
             <Stethoscope className="size-4" /> Test all numbers
