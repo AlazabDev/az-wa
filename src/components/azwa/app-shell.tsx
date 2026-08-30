@@ -35,8 +35,11 @@ import { useNumbers } from "@/lib/azwa-data";
 import { StatusBadge } from "./status-badge";
 
 type NavItem = { label: string; to?: string; icon: typeof Inbox; phase?: string };
+type NavGroup = { section?: string; items: NavItem[] };
 
-const NAV: Array<{ section?: string; items: NavItem[] }> = [
+const LEGACY_ENABLED = import.meta.env.VITE_ENABLE_LEGACY_UI === "true";
+
+const NAV: NavGroup[] = [
   {
     items: [
       { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
@@ -86,10 +89,14 @@ const NAV: Array<{ section?: string; items: NavItem[] }> = [
       { label: "Settings", to: "/settings", icon: Settings },
     ],
   },
-  {
-    section: "Legacy",
-    items: [{ label: "Legacy Hub", to: "/legacy/", icon: Boxes }],
-  },
+  ...(LEGACY_ENABLED
+    ? [
+        {
+          section: "Legacy",
+          items: [{ label: "Legacy Hub", to: "/legacy/", icon: Boxes }],
+        },
+      ]
+    : []),
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
