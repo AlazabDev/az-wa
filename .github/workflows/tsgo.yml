@@ -31,13 +31,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: TypeScript
-        run: bun run typecheck
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Production build
+      - name: Production build and route generation
         env:
           VITE_SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
@@ -49,3 +43,9 @@ jobs:
           META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/api/public/webhooks/meta/whatsapp
           LOVABLE_CRON_SECRET: ci-cron-placeholder
         run: bun run build
+
+      - name: TypeScript
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
