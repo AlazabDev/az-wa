@@ -23,6 +23,7 @@ import { Route as AuthenticatedMetaAppRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
@@ -113,6 +114,11 @@ const AuthenticatedQueuesRoute = AuthenticatedQueuesRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTemplatesRoute = AuthenticatedTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/numbers'
     | '/queues'
     | '/settings'
+    | '/templates'
     | '/users'
     | '/wabas'
     | '/webhooks'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/numbers'
     | '/queues'
     | '/settings'
+    | '/templates'
     | '/users'
     | '/wabas'
     | '/webhooks'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
     | '/_authenticated/settings'
+    | '/_authenticated/templates'
     | '/_authenticated/users'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
@@ -536,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/templates': {
+      id: '/_authenticated/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthenticatedTemplatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/users': {
@@ -692,6 +711,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
   AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
@@ -708,6 +728,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
   AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
