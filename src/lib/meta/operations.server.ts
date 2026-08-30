@@ -5,12 +5,20 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+import {
+  ensureWabaSubscription,
+  recordMetaHealth,
+  validatePortfolioCredential,
+} from "./connectivity.server";
 import { MetaGraphClient, clientForNumber, loadNumberScope, resolveCredential } from "./graph.server";
 
 export type SyncReport = {
   portfolio: string;
   wabas: { discovered: number; inserted: number; updated: number; missing: number };
   numbers: { discovered: number; inserted: number; updated: number; missing: number };
+  templates: { synced: number; failed: number };
+  subscriptions: { verified: number; repaired: number; failed: number };
+  warnings: string[];
   errors: string[];
 };
 
@@ -29,6 +37,9 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
     portfolio: portfolioId,
     wabas: { discovered: 0, inserted: 0, updated: 0, missing: 0 },
     numbers: { discovered: 0, inserted: 0, updated: 0, missing: 0 },
+    templates: { synced: 0, failed: 0 },
+    subscriptions: { verified: 0, repaired: 0, failed: 0 },
+    warnings: [],
     errors: [],
   };
 
@@ -39,6 +50,25 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
     .maybeSingle();
   if (!portfolio) {
     report.errors.push("Business portfolio not found");
+    return report;
+  }
+
+  const tokenValidation = await validatePortfolioCredential({
+    organizationId: portfolio.organization_id,
+    businessPortfolioId: portfolio.id,
+  });
+  report.warnings.push(...tokenValidation.warnings);
+  await recordMetaHealth({
+    organizationId: portfolio.organization_id,
+    businessPortfolioId: portfolio.id,
+    component: "Meta System User Token",
+    ok: tokenValidation.ok,
+    message: tokenValidation.ok
+      ? `Credential valid via ${tokenValidation.source}; permissions: ${tokenValidation.permissions.join(", ")}`
+      : tokenValidation.errors.join("; "),
+  });
+  if (!tokenValidation.ok) {
+    report.errors.push(...tokenValidation.errors);
     return report;
   }
 
@@ -124,6 +154,34 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
       report.wabas.inserted += 1;
     }
 
+    // A WABA subscription is required once per WABA. It covers all phone
+    // numbers beneath that WABA, so repair it automatically during every sync.
+    const subscription = await ensureWabaSubscription({
+      organizationId: portfolio.organization_id,
+      businessPortfolioId: portfolio.id,
+      wabaId: wabaRowId,
+      metaWabaId: w.id,
+    });
+    if (subscription.ok) {
+      report.subscriptions.verified += 1;
+      if (subscription.changed) report.subscriptions.repaired += 1;
+    } else {
+      report.subscriptions.failed += 1;
+      report.errors.push(`WABA ${w.id} webhook subscription: ${subscription.error}`);
+    }
+    await recordMetaHealth({
+      organizationId: portfolio.organization_id,
+      businessPortfolioId: portfolio.id,
+      wabaId: wabaRowId,
+      component: "Meta Webhook Subscription",
+      ok: subscription.ok,
+      message: subscription.ok
+        ? subscription.changed
+          ? "AzWA app subscription created and verified"
+          : "AzWA app subscription verified"
+        : subscription.error,
+    });
+
     const numbersRes = await client.request<{
       data: Array<{
         id: string;
@@ -139,61 +197,70 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
 
     if (!numbersRes.ok) {
       report.errors.push(`Phone discovery for WABA ${w.id}: ${numbersRes.errorMessage}`);
-      continue;
-    }
-    const phones = numbersRes.data?.data ?? [];
-    report.numbers.discovered += phones.length;
-    const seenPhoneIds: string[] = [];
+    } else {
+      const phones = numbersRes.data?.data ?? [];
+      report.numbers.discovered += phones.length;
+      const seenPhoneIds: string[] = [];
 
-    for (const p of phones) {
-      seenPhoneIds.push(p.id);
-      const { data: existingNumber } = await supabaseAdmin
+      for (const p of phones) {
+        seenPhoneIds.push(p.id);
+        const { data: existingNumber } = await supabaseAdmin
+          .from("whatsapp_numbers")
+          .select("id")
+          .eq("meta_phone_number_id", p.id)
+          .maybeSingle();
+        const patch = {
+          display_phone_number: p.display_phone_number,
+          verified_name: p.verified_name ?? null,
+          quality_rating: p.quality_rating ?? null,
+          messaging_limit: p.messaging_limit_tier ?? null,
+          platform_type: p.platform_type ?? null,
+          code_verification_status: p.code_verification_status ?? null,
+          status: normalizePhoneStatus(p.status),
+          last_synced_at: new Date().toISOString(),
+        };
+        if (existingNumber) {
+          const { error } = await supabaseAdmin
+            .from("whatsapp_numbers")
+            .update({ ...patch, waba_id: wabaRowId })
+            .eq("id", existingNumber.id);
+          if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
+          else report.numbers.updated += 1;
+        } else {
+          const { error } = await supabaseAdmin.from("whatsapp_numbers").insert({
+            ...patch,
+            organization_id: portfolio.organization_id,
+            waba_id: wabaRowId,
+            meta_phone_number_id: p.id,
+          });
+          if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
+          else report.numbers.inserted += 1;
+        }
+      }
+
+      const { data: localNumbers } = await supabaseAdmin
         .from("whatsapp_numbers")
-        .select("id")
-        .eq("meta_phone_number_id", p.id)
-        .maybeSingle();
-      const patch = {
-        display_phone_number: p.display_phone_number,
-        verified_name: p.verified_name ?? null,
-        quality_rating: p.quality_rating ?? null,
-        messaging_limit: p.messaging_limit_tier ?? null,
-        platform_type: p.platform_type ?? null,
-        code_verification_status: p.code_verification_status ?? null,
-        status: normalizePhoneStatus(p.status),
-        last_synced_at: new Date().toISOString(),
-      };
-      if (existingNumber) {
-        const { error } = await supabaseAdmin
-          .from("whatsapp_numbers")
-          .update({ ...patch, waba_id: wabaRowId })
-          .eq("id", existingNumber.id);
-        if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
-        else report.numbers.updated += 1;
-      } else {
-        const { error } = await supabaseAdmin.from("whatsapp_numbers").insert({
-          ...patch,
-          organization_id: portfolio.organization_id,
-          waba_id: wabaRowId,
-          meta_phone_number_id: p.id,
-        });
-        if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
-        else report.numbers.inserted += 1;
+        .select("id, meta_phone_number_id")
+        .eq("waba_id", wabaRowId);
+      for (const local of localNumbers ?? []) {
+        if (!seenPhoneIds.includes(local.meta_phone_number_id)) {
+          const { error } = await supabaseAdmin
+            .from("whatsapp_numbers")
+            .update({ status: "missing_from_meta" })
+            .eq("id", local.id);
+          if (error) report.errors.push(`Number ${local.meta_phone_number_id}: ${error.message}`);
+          else report.numbers.missing += 1;
+        }
       }
     }
 
-    const { data: localNumbers } = await supabaseAdmin
-      .from("whatsapp_numbers")
-      .select("id, meta_phone_number_id")
-      .eq("waba_id", wabaRowId);
-    for (const local of localNumbers ?? []) {
-      if (!seenPhoneIds.includes(local.meta_phone_number_id)) {
-        const { error } = await supabaseAdmin
-          .from("whatsapp_numbers")
-          .update({ status: "missing_from_meta" })
-          .eq("id", local.id);
-        if (error) report.errors.push(`Number ${local.meta_phone_number_id}: ${error.message}`);
-        else report.numbers.missing += 1;
-      }
+    // Keep template state aligned with Meta as part of the same production sync.
+    const { syncWabaTemplates } = await import("./templates.server");
+    const templateSync = await syncWabaTemplates(wabaRowId);
+    if (templateSync.ok) report.templates.synced += templateSync.synced;
+    else {
+      report.templates.failed += 1;
+      report.errors.push(`Template sync for WABA ${w.id}: ${templateSync.error}`);
     }
   }
 
