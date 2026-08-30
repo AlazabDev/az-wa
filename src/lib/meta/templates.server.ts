@@ -7,6 +7,27 @@ import { MetaGraphClient, resolveCredential } from "./graph.server";
 
 export type TemplateComponent = Record<string, unknown>;
 
+const LOCAL_STATUSES = [
+  "draft",
+  "pending",
+  "approved",
+  "rejected",
+  "paused",
+  "disabled",
+  "deleted",
+  "unknown",
+] as const;
+
+/** Meta returns SCREAMING_CASE statuses; the DB check constraint is lowercase. */
+export function normalizeStatus(status: string | undefined | null): string {
+  const s = (status ?? "").toLowerCase();
+  if ((LOCAL_STATUSES as readonly string[]).includes(s)) return s;
+  if (s === "pending_deletion") return "deleted";
+  if (s === "in_appeal") return "pending";
+  if (s === "flagged") return "paused";
+  return "unknown";
+}
+
 export type WabaScope = {
   id: string;
   organization_id: string;
@@ -90,7 +111,7 @@ export async function syncWabaTemplates(wabaId: string) {
     name: t.name,
     category: (t.category ?? "UTILITY").toUpperCase(),
     language: t.language,
-    status: (t.status ?? "PENDING").toUpperCase(),
+    status: normalizeStatus(t.status),
     quality_rating: t.quality_score?.score ?? null,
     components: (t.components ?? []) as unknown as Record<string, unknown>[],
     rejection_reason: t.rejected_reason ?? null,
@@ -153,7 +174,7 @@ export async function createWabaTemplate(input: {
         name: input.name,
         category: (res.data.category ?? input.category).toUpperCase(),
         language: input.language,
-        status: (res.data.status ?? "PENDING").toUpperCase(),
+        status: normalizeStatus(res.data.status ?? "pending"),
         components: input.components as unknown as Record<string, unknown>[],
         last_synced_at: now,
         updated_at: now,
@@ -201,7 +222,7 @@ export async function deleteWabaTemplate(templateId: string) {
 
   await supabaseAdmin
     .from("templates")
-    .update({ status: "DELETED", updated_at: new Date().toISOString() })
+    .update({ status: "deleted", updated_at: new Date().toISOString() })
     .eq("id", templateId);
 
   return { ok: true };
