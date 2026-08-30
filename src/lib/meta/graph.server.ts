@@ -5,7 +5,10 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export const GRAPH_VERSION = "v21.0";
+const configuredGraphVersion = (process.env["META_GRAPH_VERSION"] ?? "v26.0").trim();
+export const GRAPH_VERSION = /^v\d+\.\d+$/.test(configuredGraphVersion)
+  ? configuredGraphVersion
+  : "v26.0";
 export const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
 export type GraphResult<T> = {
