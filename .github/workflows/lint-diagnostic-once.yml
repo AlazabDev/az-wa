@@ -1,0 +1,57 @@
+name: Capture ESLint diagnostics once
+
+on:
+  push:
+    branches:
+      - fix/meta-template-runtime-builder
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/meta-template-runtime-builder
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Capture ESLint JSON
+        shell: bash
+        run: |
+          set +e
+          bunx eslint . -f json > /tmp/eslint-full.json
+          set -e
+          node <<'NODE'
+          const fs = require('fs');
+          const all = JSON.parse(fs.readFileSync('/tmp/eslint-full.json', 'utf8'));
+          const concise = all
+            .filter((entry) => entry.errorCount || entry.warningCount)
+            .map((entry) => ({
+              filePath: entry.filePath.replace(process.cwd() + '/', ''),
+              errorCount: entry.errorCount,
+              warningCount: entry.warningCount,
+              messages: entry.messages.map((m) => ({
+                ruleId: m.ruleId,
+                severity: m.severity,
+                message: m.message,
+                line: m.line,
+                column: m.column,
+                endLine: m.endLine,
+                endColumn: m.endColumn,
+              })),
+            }));
+          fs.writeFileSync('lint-report.json', JSON.stringify(concise, null, 2) + '\n');
+          NODE
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lint-report.json
+          git commit -m "ci: capture ESLint diagnostics"
+          git push origin HEAD:fix/meta-template-runtime-builder
