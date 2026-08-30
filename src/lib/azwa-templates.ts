@@ -51,7 +51,7 @@ export type TemplateRuntimeVariable = {
   componentType: "header" | "body" | "button";
   componentIndex: number;
   buttonIndex?: number;
-  buttonSubtype?: "url" | "flow";
+  buttonSubtype?: "url" | "flow" | "catalog";
   parameterType: "text" | "image" | "video" | "document";
 };
 
@@ -119,7 +119,7 @@ export function placeholdersOf(components: TemplateComponent[]): string[] {
 
 /**
  * Runtime values are component-scoped. Meta does not accept a HEADER variable
- * as a BODY parameter, and URL/Flow buttons have their own runtime components.
+ * as a BODY parameter, and URL/Flow/Catalog buttons have their own runtime components.
  */
 export function runtimeVariablesOf(components: TemplateComponent[]): TemplateRuntimeVariable[] {
   const variables: TemplateRuntimeVariable[] = [];
@@ -194,6 +194,19 @@ export function runtimeVariablesOf(components: TemplateComponent[]): TemplateRun
             parameterType: "text",
           });
         }
+
+        if (buttonType === "CATALOG") {
+          variables.push({
+            id: `button:${componentIndex}:${buttonIndex}:thumbnail_product_retailer_id`,
+            label: `Catalog button ${buttonIndex + 1} thumbnail product retailer ID`,
+            name: "thumbnail_product_retailer_id",
+            componentType: "button",
+            componentIndex,
+            buttonIndex,
+            buttonSubtype: "catalog",
+            parameterType: "text",
+          });
+        }
       });
     }
   });
@@ -265,6 +278,24 @@ export function runtimeComponentsFromValues(
             action: {
               flow_token: flowToken,
               flow_action_data: {},
+            },
+          },
+        ],
+      });
+      continue;
+    }
+
+    if (buttonSubtype === "catalog") {
+      const thumbnailProductRetailerId = (values[buttonVariables[0]?.id ?? ""] ?? "").trim();
+      runtime.push({
+        type: "button",
+        sub_type: "CATALOG",
+        index: buttonIndex,
+        parameters: [
+          {
+            type: "action",
+            action: {
+              thumbnail_product_retailer_id: thumbnailProductRetailerId,
             },
           },
         ],
