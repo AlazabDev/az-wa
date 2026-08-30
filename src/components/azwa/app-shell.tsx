@@ -37,7 +37,7 @@ import { StatusBadge } from "./status-badge";
 type NavItem = { label: string; to?: string; icon: typeof Inbox; phase?: string };
 type NavGroup = { section?: string; items: NavItem[] };
 
-const LEGACY_ENABLED = import.meta.env.VITE_ENABLE_LEGACY_UI === "true";
+const LEGACY_ENABLED = import.meta.env["VITE_ENABLE_LEGACY_UI"] === "true";
 
 const NAV: NavGroup[] = [
   {
