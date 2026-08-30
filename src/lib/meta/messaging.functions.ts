@@ -15,7 +15,7 @@ function normalizeRecipient(value: string) {
 
 export const sendTextMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: SendTextInput) => input)
+  .validator((input: SendTextInput) => input)
   .handler(async ({ data, context }) => {
     const recipient = normalizeRecipient(data.recipient);
     const body = data.body.trim();
@@ -42,7 +42,9 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       text: { preview_url: false, body },
     };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
     const idempotencyKey = `ui:${context.userId}:${crypto.randomUUID()}`;
     const { data: created, error: createError } = await supabaseAdmin.rpc("backend_create_outbox", {
       p_whatsapp_number_id: data.numberId,
@@ -51,10 +53,10 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       p_request_payload: requestPayload,
       p_idempotency_key: idempotencyKey,
       p_requested_by: context.userId,
-      p_contact_id: data.contactId ?? null,
-      p_conversation_id: data.conversationId ?? null,
-      p_campaign_id: null,
-      p_campaign_recipient_id: null,
+      p_contact_id: data.contactId ?? undefined,
+      p_conversation_id: data.conversationId ?? undefined,
+      p_campaign_id: undefined,
+      p_campaign_recipient_id: undefined,
     });
     if (createError) throw new Error(createError.message);
 
@@ -73,7 +75,7 @@ export const sendTextMessage = createServerFn({ method: "POST" })
         p_error: result.errorMessage ?? `HTTP ${result.status}`,
         p_final: true,
       });
-      await supabaseAdmin
+      await supabaseRuntimeAdmin
         .from("jobs")
         .update({
           status: "failed",
@@ -87,7 +89,14 @@ export const sendTextMessage = createServerFn({ method: "POST" })
     }
 
     const metaMessageId = result.data?.messages?.[0]?.id ?? null;
-    if (!metaMessageId) throw new Error("Meta accepted the request without returning a message ID");
+    if (!metaMessageId) {
+      await supabaseAdmin.rpc("backend_finalize_outbox_failure", {
+        p_outbox_id: outboxId,
+        p_error: "Meta accepted the request without returning a message ID",
+        p_final: true,
+      });
+      throw new Error("Meta accepted the request without returning a message ID");
+    }
 
     const { error: finalizeError } = await supabaseAdmin.rpc("backend_finalize_outbox_success", {
       p_outbox_id: outboxId,
@@ -96,7 +105,7 @@ export const sendTextMessage = createServerFn({ method: "POST" })
     });
     if (finalizeError) throw new Error(finalizeError.message);
 
-    await supabaseAdmin
+    await supabaseRuntimeAdmin
       .from("jobs")
       .update({
         status: "completed",
