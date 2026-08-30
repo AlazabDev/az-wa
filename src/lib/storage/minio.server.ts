@@ -84,7 +84,8 @@ export async function putMinioObject(input: {
 }): Promise<MinioUploadResult> {
   const config = readConfig();
   const { amzDate, dateStamp } = timestampParts();
-  const payloadHash = hashHex(input.body);
+  const requestBody = Uint8Array.from(input.body);
+  const payloadHash = hashHex(requestBody);
 
   const bucketPath = encodePathPart(config.bucket);
   const objectPath = encodeObjectKey(input.key);
@@ -138,7 +139,7 @@ export async function putMinioObject(input: {
       "x-amz-content-sha256": payloadHash,
       "x-amz-date": amzDate,
     },
-    body: input.body,
+    body: requestBody.buffer,
   });
 
   if (!response.ok) {
