@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check": "bun run typecheck && bun run lint && bun run build",
+    "check": "bun run build && bun run typecheck && bun run lint",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
