@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const LEGACY_ENABLED = import.meta.env.VITE_ENABLE_LEGACY_UI === "true";
+const LEGACY_ENABLED = import.meta.env["VITE_ENABLE_LEGACY_UI"] === "true";
 
 export const Route = createFileRoute("/legacy")({
   ssr: false,
