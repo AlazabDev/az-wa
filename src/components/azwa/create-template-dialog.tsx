@@ -216,9 +216,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
         result.push({
           type: "HEADER",
           format: headerFormat,
-          ...(headerHandle.trim()
-            ? { example: { header_handle: [headerHandle.trim()] } }
-            : {}),
+          ...(headerHandle.trim() ? { example: { header_handle: [headerHandle.trim()] } } : {}),
         });
       } else if (headerFormat === "LOCATION") {
         result.push({ type: "HEADER", format: "LOCATION" });
@@ -235,7 +233,9 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
         buttons: [
           {
             type: catalogButtonType,
-            text: catalogButtonText.trim() || (catalogButtonType === "CATALOG" ? "View catalog" : "View items"),
+            text:
+              catalogButtonText.trim() ||
+              (catalogButtonType === "CATALOG" ? "View catalog" : "View items"),
           },
         ],
       });
@@ -267,7 +267,8 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
         type: "URL",
         text: ctaUrlText.trim(),
         url: ctaUrl.trim(),
-        ...(placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }]).length > 0 && ctaUrlExample.trim()
+        ...(placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }]).length >
+          0 && ctaUrlExample.trim()
           ? { example: [ctaUrlExample.trim()] }
           : {}),
       });
@@ -384,20 +385,39 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-4">
             <Field label="WABA">
-              <select className={inputClass} value={wabaId} onChange={(event) => setWabaId(event.target.value)}>
+              <select
+                className={inputClass}
+                value={wabaId}
+                onChange={(event) => setWabaId(event.target.value)}
+              >
                 {wabas.map((waba) => (
-                  <option key={waba.id} value={waba.id}>{waba.label}</option>
+                  <option key={waba.id} value={waba.id}>
+                    {waba.label}
+                  </option>
                 ))}
               </select>
             </Field>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="Name">
-                <input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="service_request_update" />
+                <input
+                  className={inputClass}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="service_request_update"
+                />
               </Field>
               <Field label="Template type">
-                <select className={inputClass} value={kind} onChange={(event) => changeKind(event.target.value as Kind)}>
-                  {KINDS.map((value) => <option key={value} value={value}>{value}</option>)}
+                <select
+                  className={inputClass}
+                  value={kind}
+                  onChange={(event) => changeKind(event.target.value as Kind)}
+                >
+                  {KINDS.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Category">
@@ -407,12 +427,24 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   disabled={kind === "AUTHENTICATION"}
                   onChange={(event) => setCategory(event.target.value as Category)}
                 >
-                  {CATEGORIES.map((value) => <option key={value} value={value}>{value}</option>)}
+                  {CATEGORIES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Language">
-                <select className={inputClass} value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-                  {LANGUAGES.map((value) => <option key={value} value={value}>{value}</option>)}
+                <select
+                  className={inputClass}
+                  value={language}
+                  onChange={(event) => setLanguage(event.target.value as Language)}
+                >
+                  {LANGUAGES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>
@@ -421,27 +453,67 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
               <div className="space-y-4 rounded-lg border border-border p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="OTP button type">
-                    <select className={inputClass} value={authOtpType} onChange={(event) => setAuthOtpType(event.target.value as "COPY_CODE" | "ONE_TAP")}>
+                    <select
+                      className={inputClass}
+                      value={authOtpType}
+                      onChange={(event) =>
+                        setAuthOtpType(event.target.value as "COPY_CODE" | "ONE_TAP")
+                      }
+                    >
                       <option value="COPY_CODE">COPY_CODE</option>
                       <option value="ONE_TAP">ONE_TAP</option>
                     </select>
                   </Field>
                   <Field label="Code expiration (minutes)">
-                    <input className={inputClass} type="number" min={1} max={90} value={authExpiration} onChange={(event) => setAuthExpiration(event.target.value)} />
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={authExpiration}
+                      onChange={(event) => setAuthExpiration(event.target.value)}
+                    />
                   </Field>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input type="checkbox" checked={authSecurityRecommendation} onChange={(event) => setAuthSecurityRecommendation(event.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={authSecurityRecommendation}
+                    onChange={(event) => setAuthSecurityRecommendation(event.target.checked)}
+                  />
                   Add Meta security recommendation
                 </label>
                 <Field label="OTP button text">
-                  <input className={inputClass} value={authButtonText} onChange={(event) => setAuthButtonText(event.target.value)} />
+                  <input
+                    className={inputClass}
+                    value={authButtonText}
+                    onChange={(event) => setAuthButtonText(event.target.value)}
+                  />
                 </Field>
                 {authOtpType === "ONE_TAP" && (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Autofill text"><input className={inputClass} value={authAutofillText} onChange={(event) => setAuthAutofillText(event.target.value)} /></Field>
-                    <Field label="Android package name"><input className={inputClass} value={authPackageName} onChange={(event) => setAuthPackageName(event.target.value)} placeholder="com.example.app" /></Field>
-                    <Field label="App signature hash"><input className={inputClass} value={authSignatureHash} onChange={(event) => setAuthSignatureHash(event.target.value)} /></Field>
+                    <Field label="Autofill text">
+                      <input
+                        className={inputClass}
+                        value={authAutofillText}
+                        onChange={(event) => setAuthAutofillText(event.target.value)}
+                      />
+                    </Field>
+                    <Field label="Android package name">
+                      <input
+                        className={inputClass}
+                        value={authPackageName}
+                        onChange={(event) => setAuthPackageName(event.target.value)}
+                        placeholder="com.example.app"
+                      />
+                    </Field>
+                    <Field label="App signature hash">
+                      <input
+                        className={inputClass}
+                        value={authSignatureHash}
+                        onChange={(event) => setAuthSignatureHash(event.target.value)}
+                      />
+                    </Field>
                   </div>
                 )}
               </div>
@@ -459,55 +531,132 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 {kind === "STANDARD" && (
                   <div className="space-y-3 rounded-lg border border-border p-4">
                     <Field label="Header format">
-                      <select className={inputClass} value={headerFormat} onChange={(event) => setHeaderFormat(event.target.value as HeaderFormat)}>
-                        {HEADER_FORMATS.map((value) => <option key={value} value={value}>{value}</option>)}
+                      <select
+                        className={inputClass}
+                        value={headerFormat}
+                        onChange={(event) => setHeaderFormat(event.target.value as HeaderFormat)}
+                      >
+                        {HEADER_FORMATS.map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                     {headerFormat === "TEXT" && (
                       <>
-                        <Field label="Header text"><input className={inputClass} value={header} onChange={(event) => setHeader(event.target.value)} /></Field>
+                        <Field label="Header text">
+                          <input
+                            className={inputClass}
+                            value={header}
+                            onChange={(event) => setHeader(event.target.value)}
+                          />
+                        </Field>
                         {placeholdersOf([{ type: "HEADER", text: header }]).length > 0 && (
                           <Field label="Header review examples — one line per variable">
-                            <textarea className={`${textareaClass} min-h-20`} value={headerExamples} onChange={(event) => setHeaderExamples(event.target.value)} />
+                            <textarea
+                              className={`${textareaClass} min-h-20`}
+                              value={headerExamples}
+                              onChange={(event) => setHeaderExamples(event.target.value)}
+                            />
                           </Field>
                         )}
                       </>
                     )}
                     {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerFormat) && (
                       <Field label="Meta header_handle from resumable upload">
-                        <input className={inputClass} value={headerHandle} onChange={(event) => setHeaderHandle(event.target.value)} placeholder="4::..." />
+                        <input
+                          className={inputClass}
+                          value={headerHandle}
+                          onChange={(event) => setHeaderHandle(event.target.value)}
+                          placeholder="4::..."
+                        />
                       </Field>
                     )}
                   </div>
                 )}
 
                 <Field label="Body">
-                  <textarea className={`${textareaClass} min-h-32`} value={body} onChange={(event) => setBody(event.target.value)} placeholder="مرحبًا {{1}}، تم تحديث حالة الطلب {{2}}." />
+                  <textarea
+                    className={`${textareaClass} min-h-32`}
+                    value={body}
+                    onChange={(event) => setBody(event.target.value)}
+                    placeholder="مرحبًا {{1}}، تم تحديث حالة الطلب {{2}}."
+                  />
                 </Field>
                 {placeholdersOf([{ type: "BODY", text: body }]).length > 0 && (
                   <Field label="Body review examples — one line per variable">
-                    <textarea className={`${textareaClass} min-h-20`} value={bodyExamples} onChange={(event) => setBodyExamples(event.target.value)} placeholder={"محمد\nAUF-1024"} />
+                    <textarea
+                      className={`${textareaClass} min-h-20`}
+                      value={bodyExamples}
+                      onChange={(event) => setBodyExamples(event.target.value)}
+                      placeholder={"محمد\nAUF-1024"}
+                    />
                   </Field>
                 )}
                 <Field label="Footer (optional)">
-                  <input className={inputClass} value={footer} onChange={(event) => setFooter(event.target.value)} />
+                  <input
+                    className={inputClass}
+                    value={footer}
+                    onChange={(event) => setFooter(event.target.value)}
+                  />
                 </Field>
 
                 {kind === "STANDARD" && (
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <Field label="Quick reply buttons — one per line">
-                      <textarea className={`${textareaClass} min-h-20`} value={quickReplies} onChange={(event) => setQuickReplies(event.target.value)} />
+                      <textarea
+                        className={`${textareaClass} min-h-20`}
+                        value={quickReplies}
+                        onChange={(event) => setQuickReplies(event.target.value)}
+                      />
                     </Field>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Website button text"><input className={inputClass} value={ctaUrlText} onChange={(event) => setCtaUrlText(event.target.value)} placeholder="Open website" /></Field>
-                      <Field label="Website URL"><input className={inputClass} value={ctaUrl} onChange={(event) => setCtaUrl(event.target.value)} placeholder="https://example.com/order/{{1}}" /></Field>
+                      <Field label="Website button text">
+                        <input
+                          className={inputClass}
+                          value={ctaUrlText}
+                          onChange={(event) => setCtaUrlText(event.target.value)}
+                          placeholder="Open website"
+                        />
+                      </Field>
+                      <Field label="Website URL">
+                        <input
+                          className={inputClass}
+                          value={ctaUrl}
+                          onChange={(event) => setCtaUrl(event.target.value)}
+                          placeholder="https://example.com/order/{{1}}"
+                        />
+                      </Field>
                     </div>
-                    {placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }]).length > 0 && (
-                      <Field label="Website URL review example"><input className={inputClass} value={ctaUrlExample} onChange={(event) => setCtaUrlExample(event.target.value)} placeholder="AUF-1024" /></Field>
+                    {placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }])
+                      .length > 0 && (
+                      <Field label="Website URL review example">
+                        <input
+                          className={inputClass}
+                          value={ctaUrlExample}
+                          onChange={(event) => setCtaUrlExample(event.target.value)}
+                          placeholder="AUF-1024"
+                        />
+                      </Field>
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Phone button text"><input className={inputClass} value={ctaPhoneText} onChange={(event) => setCtaPhoneText(event.target.value)} placeholder="Call us" /></Field>
-                      <Field label="Phone number"><input className={inputClass} value={ctaPhone} onChange={(event) => setCtaPhone(event.target.value)} placeholder="2010xxxxxxxx" /></Field>
+                      <Field label="Phone button text">
+                        <input
+                          className={inputClass}
+                          value={ctaPhoneText}
+                          onChange={(event) => setCtaPhoneText(event.target.value)}
+                          placeholder="Call us"
+                        />
+                      </Field>
+                      <Field label="Phone number">
+                        <input
+                          className={inputClass}
+                          value={ctaPhone}
+                          onChange={(event) => setCtaPhone(event.target.value)}
+                          placeholder="2010xxxxxxxx"
+                        />
+                      </Field>
                     </div>
                   </div>
                 )}
@@ -515,20 +664,50 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 {kind === "CATALOG" && (
                   <div className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2">
                     <Field label="Commerce button type">
-                      <select className={inputClass} value={catalogButtonType} onChange={(event) => setCatalogButtonType(event.target.value as "CATALOG" | "MPM")}>
+                      <select
+                        className={inputClass}
+                        value={catalogButtonType}
+                        onChange={(event) =>
+                          setCatalogButtonType(event.target.value as "CATALOG" | "MPM")
+                        }
+                      >
                         <option value="CATALOG">CATALOG</option>
                         <option value="MPM">MPM (multi-product)</option>
                       </select>
                     </Field>
-                    <Field label="Button text"><input className={inputClass} value={catalogButtonText} onChange={(event) => setCatalogButtonText(event.target.value)} /></Field>
+                    <Field label="Button text">
+                      <input
+                        className={inputClass}
+                        value={catalogButtonText}
+                        onChange={(event) => setCatalogButtonText(event.target.value)}
+                      />
+                    </Field>
                   </div>
                 )}
 
                 {kind === "FLOW" && (
                   <div className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2">
-                    <Field label="Flow ID"><input className={inputClass} value={flowId} onChange={(event) => setFlowId(event.target.value)} /></Field>
-                    <Field label="Button text"><input className={inputClass} value={flowButtonText} onChange={(event) => setFlowButtonText(event.target.value)} /></Field>
-                    <Field label="Navigate screen (optional)"><input className={inputClass} value={flowScreen} onChange={(event) => setFlowScreen(event.target.value)} /></Field>
+                    <Field label="Flow ID">
+                      <input
+                        className={inputClass}
+                        value={flowId}
+                        onChange={(event) => setFlowId(event.target.value)}
+                      />
+                    </Field>
+                    <Field label="Button text">
+                      <input
+                        className={inputClass}
+                        value={flowButtonText}
+                        onChange={(event) => setFlowButtonText(event.target.value)}
+                      />
+                    </Field>
+                    <Field label="Navigate screen (optional)">
+                      <input
+                        className={inputClass}
+                        value={flowScreen}
+                        onChange={(event) => setFlowScreen(event.target.value)}
+                      />
+                    </Field>
                   </div>
                 )}
               </>
@@ -537,16 +716,22 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
 
           <div className="space-y-4">
             <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">WhatsApp preview</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                WhatsApp preview
+              </p>
               <Preview components={components} />
             </div>
             <div className="rounded-lg border border-border p-3 text-xs">
               <p className="font-medium">Submission validation</p>
               {validationErrors.length === 0 ? (
-                <p className="mt-1 text-muted-foreground">Component structure is ready for Meta submission.</p>
+                <p className="mt-1 text-muted-foreground">
+                  Component structure is ready for Meta submission.
+                </p>
               ) : (
                 <ul className="mt-2 space-y-1 text-destructive">
-                  {validationErrors.slice(0, 6).map((error) => <li key={error}>• {error}</li>)}
+                  {validationErrors.slice(0, 6).map((error) => (
+                    <li key={error}>• {error}</li>
+                  ))}
                 </ul>
               )}
             </div>
@@ -559,8 +744,13 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
         </div>
 
         <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
-          <Button onClick={() => void submit()} disabled={submitting || validationErrors.length > 0}>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void submit()}
+            disabled={submitting || validationErrors.length > 0}
+          >
             {submitting ? "Submitting…" : "Submit to Meta"}
           </Button>
         </div>

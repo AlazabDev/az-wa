@@ -22,7 +22,9 @@ function nonEmptyString(value: unknown): value is string {
 }
 
 function componentType(component: TemplateDefinitionComponent) {
-  return String(component["type"] ?? "").trim().toUpperCase();
+  return String(component["type"] ?? "")
+    .trim()
+    .toUpperCase();
 }
 
 export function validateTemplateDefinition(input: {
@@ -50,7 +52,9 @@ export function validateTemplateDefinition(input: {
     }
 
     if (type === "HEADER") {
-      const format = String(component["format"] ?? "TEXT").trim().toUpperCase();
+      const format = String(component["format"] ?? "TEXT")
+        .trim()
+        .toUpperCase();
       if (!HEADER_FORMATS.has(format)) {
         errors.push(`${prefix}: unsupported HEADER format ${format || "(empty)"}`);
       }
@@ -63,7 +67,9 @@ export function validateTemplateDefinition(input: {
         const example = component["example"];
         const handles = isRecord(example) ? example["header_handle"] : null;
         if (!Array.isArray(handles) || !handles.some(nonEmptyString)) {
-          errors.push(`${prefix}: ${format} header requires example.header_handle from Meta resumable upload`);
+          errors.push(
+            `${prefix}: ${format} header requires example.header_handle from Meta resumable upload`,
+          );
         }
       }
     }
@@ -94,7 +100,9 @@ export function validateTemplateDefinition(input: {
           return;
         }
 
-        const buttonType = String(rawButton["type"] ?? "").trim().toUpperCase();
+        const buttonType = String(rawButton["type"] ?? "")
+          .trim()
+          .toUpperCase();
         if (!BUTTON_TYPES.has(buttonType)) {
           errors.push(`${buttonPrefix}: unsupported button type ${buttonType || "(empty)"}`);
           return;
@@ -114,7 +122,9 @@ export function validateTemplateDefinition(input: {
           errors.push(`${buttonPrefix}: FLOW button requires flow_id`);
         }
         if (buttonType === "OTP") {
-          const otpType = String(rawButton["otp_type"] ?? "").trim().toUpperCase();
+          const otpType = String(rawButton["otp_type"] ?? "")
+            .trim()
+            .toUpperCase();
           if (category !== "AUTHENTICATION") {
             errors.push(`${buttonPrefix}: OTP buttons require AUTHENTICATION category`);
           }

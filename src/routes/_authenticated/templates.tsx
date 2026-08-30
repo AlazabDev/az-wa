@@ -107,8 +107,7 @@ function TemplatesPage() {
     [templates, scopedWabaIds],
   );
 
-  const wabaName = (id: string): string =>
-    labelOfWaba(wabas.find((waba) => waba.id === id));
+  const wabaName = (id: string): string => labelOfWaba(wabas.find((waba) => waba.id === id));
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -233,20 +232,42 @@ function TemplatesPage() {
             />
           </div>
 
-          <select className={`${inputClass} w-[150px]`} value={status} onChange={(event) => setStatus(event.target.value)}>
+          <select
+            className={`${inputClass} w-[150px]`}
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
             <option value="all">All statuses</option>
-            {STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
+            {STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
           </select>
 
-          <select className={`${inputClass} w-[165px]`} value={category} onChange={(event) => setCategory(event.target.value)}>
+          <select
+            className={`${inputClass} w-[165px]`}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
             <option value="all">All categories</option>
-            {CATEGORIES.map((value) => <option key={value} value={value}>{value}</option>)}
+            {CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
           </select>
 
-          <select className={`${inputClass} w-[210px]`} value={wabaFilter} onChange={(event) => setWabaFilter(event.target.value)}>
+          <select
+            className={`${inputClass} w-[210px]`}
+            value={wabaFilter}
+            onChange={(event) => setWabaFilter(event.target.value)}
+          >
             <option value="all">All WABAs</option>
             {scopedWabas.map((waba) => (
-              <option key={waba.id} value={waba.id}>{waba.name ?? waba.meta_waba_id ?? "—"}</option>
+              <option key={waba.id} value={waba.id}>
+                {waba.name ?? waba.meta_waba_id ?? "—"}
+              </option>
             ))}
           </select>
         </div>
@@ -254,7 +275,10 @@ function TemplatesPage() {
         {isLoading ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
         ) : visible.length === 0 ? (
-          <EmptyState title="No templates found" hint="Run “Sync from Meta” for the current scope, or create and submit a new template." />
+          <EmptyState
+            title="No templates found"
+            hint="Run “Sync from Meta” for the current scope, or create and submit a new template."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -272,16 +296,35 @@ function TemplatesPage() {
               </thead>
               <tbody>
                 {visible.map((template) => (
-                  <tr key={template.id} className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40" onClick={() => setSelected(template)}>
+                  <tr
+                    key={template.id}
+                    className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40"
+                    onClick={() => setSelected(template)}
+                  >
                     <td className="py-2 pr-4 font-mono text-xs">{template.name}</td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">{wabaName(template.waba_id)}</td>
+                    <td className="py-2 pr-4 text-xs text-muted-foreground">
+                      {wabaName(template.waba_id)}
+                    </td>
                     <td className="py-2 pr-4 text-xs">{template.category}</td>
                     <td className="py-2 pr-4 text-xs">{template.language}</td>
-                    <td className="py-2 pr-4"><StatusBadge value={template.status} /></td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">{template.quality_rating ?? "—"}</td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">{placeholdersOf(template.components).length}</td>
+                    <td className="py-2 pr-4">
+                      <StatusBadge value={template.status} />
+                    </td>
+                    <td className="py-2 pr-4 text-xs text-muted-foreground">
+                      {template.quality_rating ?? "—"}
+                    </td>
+                    <td className="py-2 pr-4 text-xs text-muted-foreground">
+                      {placeholdersOf(template.components).length}
+                    </td>
                     <td className="py-2 pr-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={(event) => { event.stopPropagation(); void handleDelete(template); }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDelete(template);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </td>
@@ -294,12 +337,20 @@ function TemplatesPage() {
       </Panel>
 
       {selected && (
-        <TemplateDetail key={selected.id} template={selected} wabaName={wabaName(selected.waba_id)} onClose={() => setSelected(null)} />
+        <TemplateDetail
+          key={selected.id}
+          template={selected}
+          wabaName={wabaName(selected.waba_id)}
+          onClose={() => setSelected(null)}
+        />
       )}
 
       {creating && (
         <CreateTemplateDialog
-          wabas={scopedWabas.map((waba) => ({ id: waba.id, label: waba.name ?? waba.meta_waba_id ?? "—" }))}
+          wabas={scopedWabas.map((waba) => ({
+            id: waba.id,
+            label: waba.name ?? waba.meta_waba_id ?? "—",
+          }))}
           onClose={() => setCreating(false)}
           onCreated={async () => {
             setCreating(false);
@@ -321,14 +372,23 @@ function Preview({ components }: { components: TemplateComponent[] }) {
       <div className="max-w-[320px] rounded-lg bg-white p-3 text-slate-900 shadow-sm">
         {header?.text && <p className="mb-1 text-sm font-semibold">{header.text}</p>}
         {header?.format && header.format !== "TEXT" && (
-          <p className="mb-2 rounded bg-slate-100 p-2 text-[11px] uppercase text-slate-500">{header.format}</p>
+          <p className="mb-2 rounded bg-slate-100 p-2 text-[11px] uppercase text-slate-500">
+            {header.format}
+          </p>
         )}
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{bodyText(components) || "Message body preview…"}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">
+          {bodyText(components) || "Message body preview…"}
+        </p>
         {footer?.text && <p className="mt-2 text-[11px] text-slate-500">{footer.text}</p>}
         {buttons.length > 0 && (
           <div className="mt-3 space-y-1 border-t border-slate-200 pt-2">
             {buttons.map((button, index) => (
-              <p key={`${button.text ?? "button"}-${index}`} className="text-center text-xs font-medium text-sky-600">{button.text ?? "Button"}</p>
+              <p
+                key={`${button.text ?? "button"}-${index}`}
+                className="text-center text-xs font-medium text-sky-600"
+              >
+                {button.text ?? "Button"}
+              </p>
             ))}
           </div>
         )}
@@ -337,7 +397,15 @@ function Preview({ components }: { components: TemplateComponent[] }) {
   );
 }
 
-function TemplateDetail({ template, wabaName, onClose }: { template: Template; wabaName: string; onClose: () => void }) {
+function TemplateDetail({
+  template,
+  wabaName,
+  onClose,
+}: {
+  template: Template;
+  wabaName: string;
+  onClose: () => void;
+}) {
   const { data: numbers = [] } = useNumbers();
   const send = useServerFn(sendTemplateMessage);
   const senders = numbers.filter((number) => number.enabled && number.waba_id === template.waba_id);
@@ -346,7 +414,10 @@ function TemplateDetail({ template, wabaName, onClose }: { template: Template; w
   const [sending, setSending] = useState(false);
   const runtimeVariables = runtimeVariablesOf(template.components);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
-  const effectiveNumberId = numberId && senders.some((number) => number.id === numberId) ? numberId : senders[0]?.id ?? "";
+  const effectiveNumberId =
+    numberId && senders.some((number) => number.id === numberId)
+      ? numberId
+      : (senders[0]?.id ?? "");
   const authTemplate = template.category === "AUTHENTICATION";
   const [authenticationCode, setAuthenticationCode] = useState("");
 
@@ -361,7 +432,9 @@ function TemplateDetail({ template, wabaName, onClose }: { template: Template; w
     }
 
     let runtimeComponents = runtimeComponentsFromValues(template.components, variableValues);
-    const missing = runtimeVariables.filter((variable) => !(variableValues[variable.id] ?? "").trim());
+    const missing = runtimeVariables.filter(
+      (variable) => !(variableValues[variable.id] ?? "").trim(),
+    );
     if (missing.length > 0) {
       toast.error(`Fill runtime value: ${missing[0]?.label ?? "template variable"}`);
       return;
@@ -379,12 +452,14 @@ function TemplateDetail({ template, wabaName, onClose }: { template: Template; w
       runtimeComponents = [
         { type: "body", parameters: [{ type: "text", text: code }] },
         ...(otpButtonIndex >= 0
-          ? [{
-              type: "button",
-              sub_type: "url",
-              index: String(otpButtonIndex),
-              parameters: [{ type: "text", text: code }],
-            }]
+          ? [
+              {
+                type: "button",
+                sub_type: "url",
+                index: String(otpButtonIndex),
+                parameters: [{ type: "text", text: code }],
+              },
+            ]
           : []),
       ];
     }
@@ -409,13 +484,20 @@ function TemplateDetail({ template, wabaName, onClose }: { template: Template; w
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
-      <aside className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+      <aside
+        className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-mono text-sm font-semibold">{template.name}</h2>
-            <p className="text-xs text-muted-foreground">{wabaName} · {template.language} · {template.category}</p>
+            <p className="text-xs text-muted-foreground">
+              {wabaName} · {template.language} · {template.category}
+            </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
@@ -424,48 +506,86 @@ function TemplateDetail({ template, wabaName, onClose }: { template: Template; w
         </div>
 
         {template.rejection_reason && (
-          <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{template.rejection_reason}</p>
+          <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            {template.rejection_reason}
+          </p>
         )}
 
         <Preview components={template.components} />
 
         <dl className="mt-5 space-y-3 text-xs">
           <DetailRow label="Meta template ID" value={template.meta_template_id ?? "—"} />
-          <DetailRow label="Variables" value={placeholdersOf(template.components).join(", ") || "—"} />
+          <DetailRow
+            label="Variables"
+            value={placeholdersOf(template.components).join(", ") || "—"}
+          />
           <DetailRow label="Last synced" value={formatDate(template.last_synced_at)} />
           <DetailRow label="Updated" value={formatDate(template.updated_at)} />
         </dl>
 
         <div className="mt-6 rounded-lg border border-border p-4">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Send className="h-4 w-4" /> Send test</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Send className="h-4 w-4" /> Send test
+          </h3>
           <div className="space-y-3">
             <Field label="Send from">
-              <select className={inputClass} value={effectiveNumberId} onChange={(event) => setNumberId(event.target.value)}>
+              <select
+                className={inputClass}
+                value={effectiveNumberId}
+                onChange={(event) => setNumberId(event.target.value)}
+              >
                 {senders.length === 0 && <option value="">No enabled number in this WABA</option>}
                 {senders.map((number) => (
-                  <option key={number.id} value={number.id}>{number.internal_name || number.verified_name || number.display_phone_number} — {number.display_phone_number}</option>
+                  <option key={number.id} value={number.id}>
+                    {number.internal_name || number.verified_name || number.display_phone_number} —{" "}
+                    {number.display_phone_number}
+                  </option>
                 ))}
               </select>
             </Field>
             <Field label="Recipient">
-              <input className={inputClass} value={recipient} onChange={(event) => setRecipient(event.target.value)} placeholder="2010xxxxxxxx" inputMode="tel" />
+              <input
+                className={inputClass}
+                value={recipient}
+                onChange={(event) => setRecipient(event.target.value)}
+                placeholder="2010xxxxxxxx"
+                inputMode="tel"
+              />
             </Field>
             {authTemplate && (
               <Field label="Authentication code">
-                <input className={inputClass} value={authenticationCode} onChange={(event) => setAuthenticationCode(event.target.value)} inputMode="numeric" placeholder="123456" />
-              </Field>
-            )}
-            {!authTemplate && runtimeVariables.map((variable) => (
-              <Field key={variable.id} label={variable.label}>
                 <input
                   className={inputClass}
-                  value={variableValues[variable.id] ?? ""}
-                  onChange={(event) => setVariableValues((current) => ({ ...current, [variable.id]: event.target.value }))}
-                  placeholder={variable.parameterType === "text" ? undefined : "https://… or Meta media ID"}
+                  value={authenticationCode}
+                  onChange={(event) => setAuthenticationCode(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="123456"
                 />
               </Field>
-            ))}
-            <Button className="w-full" onClick={() => void handleSendTest()} disabled={sending || template.status !== "approved" || !effectiveNumberId}>
+            )}
+            {!authTemplate &&
+              runtimeVariables.map((variable) => (
+                <Field key={variable.id} label={variable.label}>
+                  <input
+                    className={inputClass}
+                    value={variableValues[variable.id] ?? ""}
+                    onChange={(event) =>
+                      setVariableValues((current) => ({
+                        ...current,
+                        [variable.id]: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      variable.parameterType === "text" ? undefined : "https://… or Meta media ID"
+                    }
+                  />
+                </Field>
+              ))}
+            <Button
+              className="w-full"
+              onClick={() => void handleSendTest()}
+              disabled={sending || template.status !== "approved" || !effectiveNumberId}
+            >
               <Send className="mr-2 h-4 w-4" /> {sending ? "Sending…" : "Send approved template"}
             </Button>
           </div>

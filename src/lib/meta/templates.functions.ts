@@ -35,13 +35,10 @@ async function assertWabaPermission(
     throw new Error("WABA not found or not accessible");
   }
 
-  const { data: allowed, error: permissionError } = await supabase.rpc(
-    "azwa_has_org_permission",
-    {
-      p_org_id: waba.organization_id,
-      p_permission: permission,
-    },
-  );
+  const { data: allowed, error: permissionError } = await supabase.rpc("azwa_has_org_permission", {
+    p_org_id: waba.organization_id,
+    p_permission: permission,
+  });
 
   if (permissionError) throw new Error(permissionError.message);
   if (!allowed) throw new Error("Forbidden");
@@ -70,9 +67,7 @@ export const createTemplate = createServerFn({ method: "POST" })
 
     const name = input.name.trim().toLowerCase().replace(/\s+/g, "_");
     if (!/^[a-z0-9_]{1,512}$/.test(name)) {
-      throw new Error(
-        "Template name may only contain lowercase letters, numbers and underscores",
-      );
+      throw new Error("Template name may only contain lowercase letters, numbers and underscores");
     }
 
     const category = input.category.trim().toUpperCase();
