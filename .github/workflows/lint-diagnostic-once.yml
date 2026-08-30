@@ -20,7 +20,20 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - name: Capture ESLint JSON
+      - name: Production build and route generation
+        env:
+          VITE_SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          VITE_SUPABASE_PROJECT_ID: pmhuylckjwrongxlrgrx
+          VITE_ENABLE_LEGACY_UI: "false"
+          SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
+          META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/api/public/webhooks/meta/whatsapp
+          LOVABLE_CRON_SECRET: ci-cron-placeholder
+        run: bun run build
+      - run: bun run typecheck
+      - name: Capture ESLint JSON after build
         shell: bash
         run: |
           set +e
@@ -50,8 +63,12 @@ jobs:
       - name: Commit diagnostics
         shell: bash
         run: |
+          if git diff --quiet -- lint-report.json; then
+            echo "Diagnostic report unchanged"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lint-report.json
-          git commit -m "ci: capture ESLint diagnostics"
+          git commit -m "ci: capture post-build ESLint diagnostics"
           git push origin HEAD:fix/meta-template-runtime-builder
