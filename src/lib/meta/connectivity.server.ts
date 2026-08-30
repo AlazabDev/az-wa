@@ -43,6 +43,7 @@ export type MetaTokenValidation = {
   dataAccessExpiresAt: number | null;
   permissions: string[];
   missingPermissions: string[];
+  warnings: string[];
   errors: string[];
 };
 
@@ -81,6 +82,7 @@ export async function validatePortfolioCredential(input: {
       dataAccessExpiresAt: null,
       permissions: [],
       missingPermissions: [...REQUIRED_WHATSAPP_PERMISSIONS],
+      warnings: [],
       errors: ["No Meta access token resolved for this Business Portfolio"],
     };
   }
@@ -91,6 +93,7 @@ export async function validatePortfolioCredential(input: {
   });
 
   const errors: string[] = [];
+  const warnings: string[] = [];
   const permissionsResult = await client.request<{ data?: PermissionRow[] }>("me/permissions");
   const permissions = (permissionsResult.data?.data ?? [])
     .filter((row) => String(row.status ?? "").toLowerCase() === "granted")
@@ -101,15 +104,15 @@ export async function validatePortfolioCredential(input: {
     errors.push(`Unable to read token permissions: ${permissionsResult.errorMessage ?? "Graph error"}`);
   }
 
-  // Meta allows token inspection through /debug_token. If the token cannot inspect
-  // itself, permission validation above still gives us a useful hard gate; the
-  // debugger failure is surfaced instead of silently ignored.
+  // /debug_token normally expects an app-capable debugger token. Some valid
+  // System User tokens cannot self-debug, so debugger failure is reported as a
+  // warning while explicit permission validation remains a hard gate.
   const debugResult = await client.request<DebugTokenData>("debug_token", {
     query: { input_token: credential.token },
   });
   const debug = debugResult.data?.data;
   if (!debugResult.ok) {
-    errors.push(`Unable to inspect access token: ${debugResult.errorMessage ?? "Graph error"}`);
+    warnings.push(`Token debugger unavailable: ${debugResult.errorMessage ?? "Graph error"}`);
   }
 
   const appId = debug?.app_id ?? null;
@@ -122,12 +125,13 @@ export async function validatePortfolioCredential(input: {
     (permission) => !effectivePermissions.includes(permission),
   );
 
-  if (!isValid) errors.push("Meta reports that the access token is invalid");
+  if (debug && !isValid) errors.push("Meta reports that the access token is invalid");
   if (expired(expiresAt)) errors.push("Meta access token has expired");
   if (expired(dataAccessExpiresAt)) errors.push("Meta token data access has expired");
   if (expectedAppId && appId && expectedAppId !== appId) {
     errors.push(`Token belongs to Meta App ${appId}, expected ${expectedAppId}`);
   }
+  if (expectedAppId && !appId) warnings.push("Token-to-App binding could not be verified by /debug_token");
   if (missingPermissions.length > 0) {
     errors.push(`Missing permissions: ${missingPermissions.join(", ")}`);
   }
@@ -142,6 +146,7 @@ export async function validatePortfolioCredential(input: {
     dataAccessExpiresAt,
     permissions: effectivePermissions,
     missingPermissions,
+    warnings,
     errors,
   };
 }
