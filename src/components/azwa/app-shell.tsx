@@ -43,7 +43,7 @@ const NAV: Array<{ section?: string; items: NavItem[] }> = [
       { label: "Inbox", icon: Inbox, phase: "Phase 4" },
       { label: "Contacts", icon: Users, phase: "Phase 4" },
       { label: "Media", icon: Image, phase: "Phase 5" },
-      { label: "Templates", icon: FileText, phase: "Phase 6" },
+      { label: "Templates", to: "/templates", icon: FileText },
       { label: "Campaigns", icon: Megaphone, phase: "Phase 6" },
       { label: "Automation", icon: Bot, phase: "Phase 6" },
     ],
@@ -94,11 +94,11 @@ const NAV: Array<{ section?: string; items: NavItem[] }> = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { data: numbers = [] } = useNumbers();
 
-  const critical = numbers.filter((n) => n.health === "critical").length;
-  const warning = numbers.filter((n) => n.health === "warning").length;
+  const critical = numbers.filter((number) => number.health === "critical").length;
+  const warning = numbers.filter((number) => number.health === "warning").length;
   const systemHealth = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
 
   return (
@@ -124,8 +124,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-4">
-          {NAV.map((group, gi) => (
-            <div key={gi}>
+          {NAV.map((group, groupIndex) => (
+            <div key={groupIndex}>
               {group.section && !collapsed && (
                 <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest opacity-50">
                   {group.section}
@@ -146,6 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       )}
                     </>
                   );
+
                   return item.to ? (
                     <Link
                       key={item.label}
@@ -173,7 +174,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => setCollapsed((value) => !value)}
           className="flex items-center gap-2 border-t border-sidebar-border px-4 py-3 text-xs hover:bg-sidebar-accent"
         >
           {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
