@@ -14,6 +14,16 @@ export type SyncReport = {
   errors: string[];
 };
 
+function normalizePhoneStatus(status?: string | null) {
+  const value = (status ?? "CONNECTED").toUpperCase();
+  if (value === "CONNECTED" || value === "ACTIVE") return "active";
+  if (value === "DISCONNECTED" || value === "OFFLINE") return "disconnected";
+  if (value === "RESTRICTED" || value === "BLOCKED") return "restricted";
+  if (value === "DELETED" || value === "MISSING") return "missing_from_meta";
+  if (value === "INACTIVE") return "inactive";
+  return "requires_review";
+}
+
 export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
   const report: SyncReport = {
     portfolio: portfolioId,
@@ -61,7 +71,7 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
 
   const discovered = [...(wabaRes.data?.data ?? []), ...(owned.data?.data ?? [])];
   const seenWabaMetaIds = new Set<string>();
-  report.wabas.discovered = discovered.length;
+  report.wabas.discovered = new Set(discovered.map((item) => item.id)).size;
 
   for (const w of discovered) {
     if (seenWabaMetaIds.has(w.id)) continue;
@@ -69,12 +79,13 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
     const { data: existing } = await supabaseAdmin
       .from("wabas")
       .select("id")
+      .eq("business_portfolio_id", portfolio.id)
       .eq("meta_waba_id", w.id)
       .maybeSingle();
 
     let wabaRowId: string;
     if (existing) {
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("wabas")
         .update({
           name: w.name ?? null,
@@ -84,6 +95,10 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
           last_synced_at: new Date().toISOString(),
         })
         .eq("id", existing.id);
+      if (error) {
+        report.errors.push(`WABA ${w.id}: ${error.message}`);
+        continue;
+      }
       wabaRowId = existing.id;
       report.wabas.updated += 1;
     } else {
@@ -96,6 +111,7 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
           name: w.name ?? `WABA ${w.id}`,
           currency: w.currency ?? null,
           timezone: w.timezone_id ?? null,
+          status: "active",
           last_synced_at: new Date().toISOString(),
         })
         .select("id")
@@ -143,15 +159,16 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
         messaging_limit: p.messaging_limit_tier ?? null,
         platform_type: p.platform_type ?? null,
         code_verification_status: p.code_verification_status ?? null,
-        status: (p.status ?? "connected").toLowerCase(),
+        status: normalizePhoneStatus(p.status),
         last_synced_at: new Date().toISOString(),
       };
       if (existingNumber) {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("whatsapp_numbers")
           .update({ ...patch, waba_id: wabaRowId })
           .eq("id", existingNumber.id);
-        report.numbers.updated += 1;
+        if (error) report.errors.push(`Number ${p.id}: ${error.message}`);
+        else report.numbers.updated += 1;
       } else {
         const { error } = await supabaseAdmin.from("whatsapp_numbers").insert({
           ...patch,
@@ -164,19 +181,34 @@ export async function syncPortfolio(portfolioId: string): Promise<SyncReport> {
       }
     }
 
-    // Mark local numbers that Meta no longer returns — never delete history.
     const { data: localNumbers } = await supabaseAdmin
       .from("whatsapp_numbers")
       .select("id, meta_phone_number_id")
       .eq("waba_id", wabaRowId);
     for (const local of localNumbers ?? []) {
       if (!seenPhoneIds.includes(local.meta_phone_number_id)) {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("whatsapp_numbers")
-          .update({ status: "missing" })
+          .update({ status: "missing_from_meta" })
           .eq("id", local.id);
-        report.numbers.missing += 1;
+        if (error) report.errors.push(`Number ${local.meta_phone_number_id}: ${error.message}`);
+        else report.numbers.missing += 1;
       }
+    }
+  }
+
+  const { data: localWabas } = await supabaseAdmin
+    .from("wabas")
+    .select("id, meta_waba_id")
+    .eq("business_portfolio_id", portfolio.id);
+  for (const local of localWabas ?? []) {
+    if (!seenWabaMetaIds.has(local.meta_waba_id)) {
+      const { error } = await supabaseAdmin
+        .from("wabas")
+        .update({ status: "missing_from_meta" })
+        .eq("id", local.id);
+      if (error) report.errors.push(`WABA ${local.meta_waba_id}: ${error.message}`);
+      else report.wabas.missing += 1;
     }
   }
 
