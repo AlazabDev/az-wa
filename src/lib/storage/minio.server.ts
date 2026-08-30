@@ -15,8 +15,13 @@ type MinioConfig = {
   region: string;
 };
 
+function optionalEnv(name: string): string | undefined {
+  const value = Reflect.get(process.env, name) as string | undefined;
+  return value?.trim() || undefined;
+}
+
 function requiredEnv(name: string): string {
-  const value = process.env[name]?.trim();
+  const value = optionalEnv(name);
   if (!value) throw new Error(`Missing required environment variable ${name}`);
   return value;
 }
@@ -30,10 +35,10 @@ function readConfig(): MinioConfig {
     accessKey: requiredEnv("MINIO_ACCESS_KEY"),
     secretKey: requiredEnv("MINIO_SECRET_KEY"),
     bucket:
-      process.env["MINIO_BUCKET_NAME"]?.trim() ||
-      process.env["MINIO_BUCKET"]?.trim() ||
+      optionalEnv("MINIO_BUCKET_NAME") ??
+      optionalEnv("MINIO_BUCKET") ??
       "az-bk-whatsapp",
-    region: process.env["MINIO_REGION"]?.trim() || "us-east-1",
+    region: optionalEnv("MINIO_REGION") ?? "us-east-1",
   };
 }
 
@@ -65,7 +70,11 @@ function timestampParts(now = new Date()) {
   return { amzDate, dateStamp: amzDate.slice(0, 8) };
 }
 
-function signingKey(secretKey: string, dateStamp: string, region: string): Buffer {
+function signingKey(
+  secretKey: string,
+  dateStamp: string,
+  region: string,
+): Buffer {
   const kDate = hmac(`AWS4${secretKey}`, dateStamp);
   const kRegion = hmac(kDate, region);
   const kService = hmac(kRegion, "s3");
@@ -90,7 +99,10 @@ export async function putMinioObject(input: {
   const bucketPath = encodePathPart(config.bucket);
   const objectPath = encodeObjectKey(input.key);
   const basePath = config.endpoint.pathname.replace(/\/$/, "");
-  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(/\/+/g, "/");
+  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(
+    /\/+/g,
+    "/",
+  );
 
   const host = config.endpoint.host;
   const canonicalHeaders =
