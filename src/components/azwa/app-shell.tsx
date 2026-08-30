@@ -69,7 +69,7 @@ const NAV: NavGroup[] = [
       { label: "Alerts", to: "/alerts", icon: Bell },
       { label: "Errors", to: "/errors", icon: AlertTriangle },
       { label: "Queues", to: "/queues", icon: ListChecks },
-      { label: "Dead Letter Queue", to: "/queues", icon: Boxes },
+      { label: "Dead Letter Queue", to: "/dead-letter", icon: Boxes },
       { label: "API Logs", to: "/api-logs", icon: ScrollText },
       { label: "Webhook Events", to: "/webhooks", icon: Webhook },
     ],
