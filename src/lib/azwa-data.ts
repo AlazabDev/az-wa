@@ -181,61 +181,123 @@ export function useOpsCounters(numberIds: string[]) {
       const scoped = numberIds.length > 0;
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      const messagesQuery = supabase
-        .from("messages")
-        .select("id, direction, status", { count: "exact" })
-        .gte("created_at", since);
-      if (scoped) messagesQuery.in("whatsapp_number_id", numberIds);
-      const { data: messages } = await messagesQuery.limit(5000);
+      const countMessages = async (filters?: { direction?: string; status?: string }) => {
+        let query = supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", since);
+        if (scoped) query = query.in("whatsapp_number_id", numberIds);
+        if (filters?.direction) query = query.eq("direction", filters.direction);
+        if (filters?.status) query = query.eq("status", filters.status);
+        const { count, error } = await query;
+        if (error) throw error;
+        return count ?? 0;
+      };
 
-      const convQuery = supabase
+      const [
+        messagesToday,
+        incoming,
+        outgoing,
+        sent,
+        delivered,
+        read,
+        failed,
+      ] = await Promise.all([
+        countMessages(),
+        countMessages({ direction: "incoming" }),
+        countMessages({ direction: "outgoing" }),
+        countMessages({ status: "sent" }),
+        countMessages({ status: "delivered" }),
+        countMessages({ status: "read" }),
+        countMessages({ status: "failed" }),
+      ]);
+
+      let convQuery = supabase
         .from("conversations")
         .select("id", { count: "exact", head: true })
         .eq("status", "open");
-      if (scoped) convQuery.in("whatsapp_number_id", numberIds);
-      const { count: openConversations } = await convQuery;
+      if (scoped) convQuery = convQuery.in("whatsapp_number_id", numberIds);
+      const { count: openConversations, error: convError } = await convQuery;
+      if (convError) throw convError;
 
-      const { count: contacts } = await supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true });
+      let contacts = 0;
+      if (scoped) {
+        const { data: contactRows, error: contactError } = await supabase
+          .from("conversations")
+          .select("contact_id")
+          .in("whatsapp_number_id", numberIds)
+          .not("contact_id", "is", null)
+          .limit(10000);
+        if (contactError) throw contactError;
+        contacts = new Set((contactRows ?? []).map((row) => row.contact_id).filter(Boolean)).size;
+      } else {
+        const { count, error } = await supabase
+          .from("contacts")
+          .select("id", { count: "exact", head: true });
+        if (error) throw error;
+        contacts = count ?? 0;
+      }
 
-      const mediaQuery = supabase.from("media").select("id", { count: "exact", head: true });
-      if (scoped) mediaQuery.in("whatsapp_number_id", numberIds);
-      const { count: mediaReceived } = await mediaQuery;
+      let mediaQuery = supabase.from("media").select("id", { count: "exact", head: true });
+      if (scoped) mediaQuery = mediaQuery.in("whatsapp_number_id", numberIds);
+      const { count: mediaReceived, error: mediaError } = await mediaQuery;
+      if (mediaError) throw mediaError;
 
-      const { data: templates } = await supabase.from("templates").select("status");
+      let scopedWabaIds: string[] = [];
+      if (scoped) {
+        const { data: numberRows, error: numberError } = await supabase
+          .from("whatsapp_numbers")
+          .select("waba_id")
+          .in("id", numberIds);
+        if (numberError) throw numberError;
+        scopedWabaIds = [...new Set((numberRows ?? []).map((row) => row.waba_id).filter(Boolean))];
+      }
 
-      const { count: webhookErrors } = await supabase
+      let templatesQuery = supabase.from("templates").select("status");
+      if (scoped && scopedWabaIds.length > 0) templatesQuery = templatesQuery.in("waba_id", scopedWabaIds);
+      const { data: templates, error: templateError } = await templatesQuery;
+      if (templateError) throw templateError;
+
+      let webhookQuery = supabase
         .from("webhook_events")
         .select("id", { count: "exact", head: true })
         .eq("status", "failed");
+      if (scoped) webhookQuery = webhookQuery.in("whatsapp_number_id", numberIds);
+      const { count: webhookErrors, error: webhookError } = await webhookQuery;
+      if (webhookError) throw webhookError;
 
-      const { count: apiErrors } = await supabase
+      let apiErrorQuery = supabase
         .from("api_errors")
         .select("id", { count: "exact", head: true })
         .eq("status", "open");
+      if (scoped) apiErrorQuery = apiErrorQuery.in("whatsapp_number_id", numberIds);
+      const { count: apiErrors, error: apiError } = await apiErrorQuery;
+      if (apiError) throw apiError;
 
-      const { count: queueBacklog } = await supabase
+      const { count: queueBacklog, error: queueError } = await supabase
         .from("jobs")
         .select("id", { count: "exact", head: true })
-        .eq("status", "pending");
+        .eq("status", "queued");
+      if (queueError) throw queueError;
 
-      const { count: runningCampaigns } = await supabase
+      let campaignQuery = supabase
         .from("campaigns")
         .select("id", { count: "exact", head: true })
         .eq("status", "running");
+      if (scoped) campaignQuery = campaignQuery.in("sender_whatsapp_number_id", numberIds);
+      const { count: runningCampaigns, error: campaignError } = await campaignQuery;
+      if (campaignError) throw campaignError;
 
-      const rows = messages ?? [];
       return {
-        messagesToday: rows.length,
-        incoming: rows.filter((m) => m.direction === "inbound").length,
-        outgoing: rows.filter((m) => m.direction === "outbound").length,
-        sent: rows.filter((m) => m.status === "sent").length,
-        delivered: rows.filter((m) => m.status === "delivered").length,
-        read: rows.filter((m) => m.status === "read").length,
-        failed: rows.filter((m) => m.status === "failed").length,
+        messagesToday,
+        incoming,
+        outgoing,
+        sent,
+        delivered,
+        read,
+        failed,
         openConversations: openConversations ?? 0,
-        contacts: contacts ?? 0,
+        contacts,
         mediaReceived: mediaReceived ?? 0,
         templates: templates?.length ?? 0,
         approvedTemplates: (templates ?? []).filter((t) => t.status === "APPROVED").length,
@@ -246,5 +308,6 @@ export function useOpsCounters(numberIds: string[]) {
         queueBacklog: queueBacklog ?? 0,
       };
     },
+    refetchInterval: 30_000,
   });
 }
