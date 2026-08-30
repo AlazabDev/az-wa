@@ -18,6 +18,7 @@ import {
 type MetaMessage = Record<string, unknown> & {
   id?: string;
   from?: string;
+  type?: string;
 };
 
 type MetaStatus = Record<string, unknown> & {
@@ -29,7 +30,6 @@ type MetaContact = {
   wa_id?: string;
   profile?: { name?: string };
 };
-
 
 type Change = {
   field?: string;
@@ -47,6 +47,8 @@ type MetaWebhookPayload = {
     changes?: Change[];
   }>;
 };
+
+const MEDIA_MESSAGE_TYPES = new Set(["image", "video", "audio", "document", "sticker"]);
 
 function deduplicationKey(raw: string, entryIndex: number, changeIndex: number) {
   return createHash("sha256")
@@ -135,6 +137,8 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           return new Response("Bad Request", { status: 400 });
         }
 
+        let inboundMediaSeen = false;
+
         for (const [entryIndex, entry] of (payload.entry ?? []).entries()) {
           for (const [changeIndex, change] of (entry.changes ?? []).entries()) {
             const value = change.value ?? {};
@@ -205,6 +209,10 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 continue;
               }
 
+              if (typeof message.type === "string" && MEDIA_MESSAGE_TYPES.has(message.type)) {
+                inboundMediaSeen = true;
+              }
+
               if (
                 inbound &&
                 typeof inbound === "object" &&
@@ -252,10 +260,14 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           }
         }
 
-        // Start media pulls immediately without delaying Meta's acknowledgement.
-        void drainMediaQueue(10).catch((error) =>
-          console.error("[AzWA webhook] immediate media drain failed", error),
-        );
+        // The inbound RPC has already enqueued each media row. On the long-lived
+        // production Node process we start a drain immediately, while the cron
+        // worker remains the retry/recovery safety net.
+        if (inboundMediaSeen) {
+          void drainMediaQueue(50).catch((error) =>
+            console.error("[AzWA webhook] immediate media archive failed", error),
+          );
+        }
 
         return new Response("EVENT_RECEIVED", { status: 200 });
       },
