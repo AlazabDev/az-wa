@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
@@ -76,6 +76,8 @@ function TemplatesPage() {
 
   const scopedWabaIds = useMemo<Set<string> | null>(() => {
     if (scope.kind === "all") return null;
+    if (!scope.id) return new Set<string>();
+
     if (scope.kind === "waba") return new Set([scope.id]);
     if (scope.kind === "business") {
       return new Set(
@@ -86,7 +88,7 @@ function TemplatesPage() {
       const number = numbers.find((item) => item.id === scope.id);
       return new Set(number ? [number.waba_id] : []);
     }
-    return new Set();
+    return new Set<string>();
   }, [scope, wabas, numbers]);
 
   const scopedWabas = useMemo(
@@ -384,7 +386,10 @@ function Preview({ components }: { components: TemplateComponent[] }) {
         {buttons.length > 0 && (
           <div className="mt-3 space-y-1 border-t border-slate-200 pt-2">
             {buttons.map((button, index) => (
-              <p key={`${button.text ?? "button"}-${index}`} className="text-center text-xs font-medium text-sky-600">
+              <p
+                key={`${button.text ?? "button"}-${index}`}
+                className="text-center text-xs font-medium text-sky-600"
+              >
                 {button.text ?? "Button"}
               </p>
             ))}
@@ -437,7 +442,10 @@ function TemplateDetail({
 
         <dl className="mt-5 space-y-3 text-xs">
           <DetailRow label="Meta template ID" value={template.meta_template_id ?? "—"} />
-          <DetailRow label="Variables" value={placeholdersOf(template.components).join(", ") || "—"} />
+          <DetailRow
+            label="Variables"
+            value={placeholdersOf(template.components).join(", ") || "—"}
+          />
           <DetailRow label="Last synced" value={formatDate(template.last_synced_at)} />
           <DetailRow label="Updated" value={formatDate(template.updated_at)} />
         </dl>
@@ -555,7 +563,11 @@ function CreateTemplateDialog({
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="space-y-4">
             <Field label="WABA">
-              <select className={inputClass} value={wabaId} onChange={(event) => setWabaId(event.target.value)}>
+              <select
+                className={inputClass}
+                value={wabaId}
+                onChange={(event) => setWabaId(event.target.value)}
+              >
                 {wabas.map((waba) => (
                   <option key={waba.id} value={waba.id}>
                     {waba.label}
@@ -577,7 +589,9 @@ function CreateTemplateDialog({
                 <select
                   className={inputClass}
                   value={category}
-                  onChange={(event) => setCategory(event.target.value as (typeof CATEGORIES)[number])}
+                  onChange={(event) =>
+                    setCategory(event.target.value as (typeof CATEGORIES)[number])
+                  }
                 >
                   {CATEGORIES.map((value) => (
                     <option key={value} value={value}>
@@ -590,7 +604,9 @@ function CreateTemplateDialog({
                 <select
                   className={inputClass}
                   value={language}
-                  onChange={(event) => setLanguage(event.target.value as (typeof LANGUAGES)[number])}
+                  onChange={(event) =>
+                    setLanguage(event.target.value as (typeof LANGUAGES)[number])
+                  }
                 >
                   {LANGUAGES.map((value) => (
                     <option key={value} value={value}>
@@ -602,7 +618,11 @@ function CreateTemplateDialog({
             </div>
 
             <Field label="Header (optional)">
-              <input className={inputClass} value={header} onChange={(event) => setHeader(event.target.value)} />
+              <input
+                className={inputClass}
+                value={header}
+                onChange={(event) => setHeader(event.target.value)}
+              />
             </Field>
 
             <Field label="Body">
@@ -615,7 +635,11 @@ function CreateTemplateDialog({
             </Field>
 
             <Field label="Footer (optional)">
-              <input className={inputClass} value={footer} onChange={(event) => setFooter(event.target.value)} />
+              <input
+                className={inputClass}
+                value={footer}
+                onChange={(event) => setFooter(event.target.value)}
+              />
             </Field>
 
             <Field label="Quick reply buttons — one per line (optional)">
@@ -652,7 +676,7 @@ function CreateTemplateDialog({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1.5">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
