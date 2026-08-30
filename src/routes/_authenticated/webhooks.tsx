@@ -47,7 +47,7 @@ function WebhooksPage() {
               Verify token
             </dt>
             <dd className="mt-1 text-xs text-muted-foreground">
-              Stored server-side as META_WEBHOOK_VERIFY_TOKEN.
+              Stored server-side in the Meta credential vault.
             </dd>
           </div>
           <div>
@@ -55,16 +55,25 @@ function WebhooksPage() {
               Signature
             </dt>
             <dd className="mt-1 text-xs text-muted-foreground">
-              X-Hub-Signature-256 validated with META_APP_SECRET on every request.
+              X-Hub-Signature-256 is validated with the Meta App Secret on every request.
             </dd>
           </div>
           <div>
             <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              Subscribed fields
+              Required subscriptions
             </dt>
             <dd className="mt-1 text-xs text-muted-foreground">
-              messages, message_template_status_update, phone_number_quality_update,
-              account_update, message_echoes
+              messages, message_template_status_update, message_template_quality_update,
+              template_category_update, phone_number_quality_update, account_update, message_echoes
+            </dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              WABA subscription model
+            </dt>
+            <dd className="mt-1 text-xs text-muted-foreground">
+              Portfolio sync verifies /subscribed_apps for every WABA and automatically subscribes
+              the AzWA Meta App when it is missing. One WABA subscription covers every number under it.
             </dd>
           </div>
         </dl>
