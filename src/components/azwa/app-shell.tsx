@@ -34,7 +34,7 @@ import { ScopeSelector } from "./scope-selector";
 import { useNumbers } from "@/lib/azwa-data";
 import { StatusBadge } from "./status-badge";
 
-type NavItem = { label: string; to?: string; icon: typeof Inbox; phase?: string };
+type NavItem = { label: string; to: string; icon: typeof Inbox };
 type NavGroup = { section?: string; items: NavItem[] };
 
 const LEGACY_ENABLED = import.meta.env["VITE_ENABLE_LEGACY_UI"] === "true";
@@ -43,12 +43,12 @@ const NAV: NavGroup[] = [
   {
     items: [
       { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
-      { label: "Inbox", icon: Inbox, phase: "Phase 4" },
-      { label: "Contacts", icon: Users, phase: "Phase 4" },
-      { label: "Media", icon: Image, phase: "Phase 5" },
+      { label: "Inbox", to: "/inbox", icon: Inbox },
+      { label: "Contacts", to: "/contacts", icon: Users },
+      { label: "Media", to: "/media", icon: Image },
       { label: "Templates", to: "/templates", icon: FileText },
-      { label: "Campaigns", icon: Megaphone, phase: "Phase 6" },
-      { label: "Automation", icon: Bot, phase: "Phase 6" },
+      { label: "Campaigns", to: "/campaigns", icon: Megaphone },
+      { label: "Automation", to: "/automation", icon: Bot },
     ],
   },
   {
@@ -66,8 +66,8 @@ const NAV: NavGroup[] = [
     section: "Operations",
     items: [
       { label: "Health & Diagnostics", to: "/health", icon: Activity },
-      { label: "Alerts", icon: Bell, phase: "Phase 7" },
-      { label: "Errors", icon: AlertTriangle, phase: "Phase 7" },
+      { label: "Alerts", to: "/alerts", icon: Bell },
+      { label: "Errors", to: "/errors", icon: AlertTriangle },
       { label: "Queues", to: "/queues", icon: ListChecks },
       { label: "Dead Letter Queue", to: "/queues", icon: Boxes },
       { label: "API Logs", to: "/api-logs", icon: ScrollText },
@@ -77,8 +77,8 @@ const NAV: NavGroup[] = [
   {
     section: "Analytics",
     items: [
-      { label: "Analytics", icon: BarChart3, phase: "Phase 7" },
-      { label: "Reports", icon: BarChart3, phase: "Phase 7" },
+      { label: "Analytics", to: "/analytics", icon: BarChart3 },
+      { label: "Reports", to: "/reports", icon: BarChart3 },
     ],
   },
   {
@@ -141,20 +141,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const active = item.to && pathname === item.to;
-                  const content = (
-                    <>
-                      <Icon className="size-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                      {!collapsed && item.phase && (
-                        <span className="ml-auto rounded bg-sidebar-accent px-1.5 py-0.5 text-[9px] uppercase opacity-70">
-                          {item.phase}
-                        </span>
-                      )}
-                    </>
-                  );
-
-                  return item.to ? (
+                  const active = pathname === item.to;
+                  return (
                     <Link
                       key={item.label}
                       to={item.to}
@@ -163,16 +151,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                         active && "bg-sidebar-accent text-sidebar-accent-foreground",
                       )}
                     >
-                      {content}
+                      <Icon className="size-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
                     </Link>
-                  ) : (
-                    <div
-                      key={item.label}
-                      title="Not built yet — later delivery phase"
-                      className="flex cursor-not-allowed items-center gap-2.5 rounded-md px-3 py-2 text-sm opacity-45"
-                    >
-                      {content}
-                    </div>
                   );
                 })}
               </div>
