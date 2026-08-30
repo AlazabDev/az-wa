@@ -7,7 +7,7 @@ import { MetaGraphClient, resolveCredential } from "./graph.server";
 
 export type TemplateComponent = Record<string, unknown>;
 
-const LOCAL_STATUSES = [
+export const LOCAL_TEMPLATE_STATUSES = [
   "draft",
   "pending",
   "approved",
@@ -18,14 +18,26 @@ const LOCAL_STATUSES = [
   "unknown",
 ] as const;
 
+export type LocalTemplateStatus = (typeof LOCAL_TEMPLATE_STATUSES)[number];
+
 /** Meta returns SCREAMING_CASE statuses; the DB check constraint is lowercase. */
-export function normalizeStatus(status: string | undefined | null): string {
-  const s = (status ?? "").toLowerCase();
-  if ((LOCAL_STATUSES as readonly string[]).includes(s)) return s;
-  if (s === "pending_deletion") return "deleted";
-  if (s === "in_appeal") return "pending";
-  if (s === "flagged") return "paused";
-  return "unknown";
+export function normalizeStatus(status: string | undefined | null): LocalTemplateStatus {
+  const normalized = (status ?? "").trim().toLowerCase();
+
+  if ((LOCAL_TEMPLATE_STATUSES as readonly string[]).includes(normalized)) {
+    return normalized as LocalTemplateStatus;
+  }
+
+  switch (normalized) {
+    case "pending_deletion":
+      return "deleted";
+    case "in_appeal":
+      return "pending";
+    case "flagged":
+      return "paused";
+    default:
+      return "unknown";
+  }
 }
 
 export type WabaScope = {
@@ -34,34 +46,6 @@ export type WabaScope = {
   business_portfolio_id: string | null;
   meta_waba_id: string;
 };
-
-export async function loadWabaScope(wabaId: string): Promise<WabaScope | null> {
-  const { data } = await supabaseAdmin
-    .from("wabas")
-    .select("id, organization_id, business_portfolio_id, meta_waba_id")
-    .eq("id", wabaId)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    id: data.id,
-    organization_id: data.organization_id,
-    business_portfolio_id: data.business_portfolio_id ?? null,
-    meta_waba_id: data.meta_waba_id,
-  };
-}
-
-async function clientForWaba(waba: WabaScope) {
-  const cred = await resolveCredential({
-    wabaId: waba.id,
-    businessPortfolioId: waba.business_portfolio_id,
-  });
-  if (!cred.token) return null;
-  return new MetaGraphClient(cred.token, {
-    organizationId: waba.organization_id,
-    wabaId: waba.id,
-    businessPortfolioId: waba.business_portfolio_id,
-  });
-}
 
 type MetaTemplate = {
   id: string;
@@ -74,47 +58,109 @@ type MetaTemplate = {
   components?: TemplateComponent[];
 };
 
-/** Pulls the full template library of a WABA from Meta and upserts it locally. */
+type MetaTemplatePage = {
+  data?: MetaTemplate[];
+  paging?: {
+    cursors?: { after?: string };
+    next?: string;
+  };
+};
+
+export async function loadWabaScope(wabaId: string): Promise<WabaScope | null> {
+  const { data, error } = await supabaseAdmin
+    .from("wabas")
+    .select("id, organization_id, business_portfolio_id, meta_waba_id")
+    .eq("id", wabaId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    organization_id: data.organization_id,
+    business_portfolio_id: data.business_portfolio_id ?? null,
+    meta_waba_id: data.meta_waba_id,
+  };
+}
+
+async function clientForWaba(waba: WabaScope): Promise<MetaGraphClient | null> {
+  const credential = await resolveCredential({
+    wabaId: waba.id,
+    businessPortfolioId: waba.business_portfolio_id,
+  });
+
+  if (!credential.token) return null;
+
+  return new MetaGraphClient(credential.token, {
+    organizationId: waba.organization_id,
+    wabaId: waba.id,
+    businessPortfolioId: waba.business_portfolio_id,
+  });
+}
+
+/** Pull the complete template library for one WABA from Meta and upsert it locally. */
 export async function syncWabaTemplates(wabaId: string) {
   const waba = await loadWabaScope(wabaId);
-  if (!waba) return { ok: false, error: "WABA not found", synced: 0 };
+  if (!waba) return { ok: false as const, error: "WABA not found", synced: 0 };
 
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false, error: "No Meta credential resolved for this WABA", synced: 0 };
+  if (!client) {
+    return {
+      ok: false as const,
+      error: "No Meta credential resolved for this WABA",
+      synced: 0,
+    };
+  }
 
   const collected: MetaTemplate[] = [];
+  const seenCursors = new Set<string>();
   let after: string | undefined;
 
-  for (let page = 0; page < 20; page += 1) {
+  // Meta currently returns cursor-paginated pages. Keep a safety cap to avoid
+  // an accidental infinite loop if Meta repeats a cursor.
+  for (let page = 0; page < 100; page += 1) {
     const query: Record<string, string> = {
       limit: "100",
       fields: "id,name,language,category,status,quality_score,rejected_reason,components",
     };
     if (after) query["after"] = after;
 
-    const res = await client.request<{
-      data?: MetaTemplate[];
-      paging?: { cursors?: { after?: string }; next?: string };
-    }>(`${waba.meta_waba_id}/message_templates`, { query });
+    const response = await client.request<MetaTemplatePage>(
+      `${waba.meta_waba_id}/message_templates`,
+      { query },
+    );
 
-    if (!res.ok) return { ok: false, error: res.errorMessage ?? "Graph error", synced: 0 };
-    collected.push(...(res.data?.data ?? []));
-    after = res.data?.paging?.next ? res.data?.paging?.cursors?.after : undefined;
-    if (!after) break;
+    if (!response.ok) {
+      return {
+        ok: false as const,
+        error: response.errorMessage ?? "Graph error",
+        synced: 0,
+      };
+    }
+
+    collected.push(...(response.data?.data ?? []));
+
+    const nextCursor = response.data?.paging?.next
+      ? response.data.paging.cursors?.after
+      : undefined;
+
+    if (!nextCursor || seenCursors.has(nextCursor)) break;
+    seenCursors.add(nextCursor);
+    after = nextCursor;
   }
 
   const now = new Date().toISOString();
-  const rows = collected.map((t) => ({
+  const rows = collected.map((template) => ({
     organization_id: waba.organization_id,
     waba_id: waba.id,
-    meta_template_id: t.id,
-    name: t.name,
-    category: (t.category ?? "UTILITY").toUpperCase(),
-    language: t.language,
-    status: normalizeStatus(t.status),
-    quality_rating: t.quality_score?.score ?? null,
-    components: (t.components ?? []) as unknown as Record<string, unknown>[],
-    rejection_reason: t.rejected_reason ?? null,
+    meta_template_id: template.id,
+    name: template.name,
+    category: (template.category ?? "UTILITY").toUpperCase(),
+    language: template.language,
+    status: normalizeStatus(template.status),
+    quality_rating: template.quality_score?.score ?? null,
+    components: (template.components ?? []) as unknown as Record<string, unknown>[],
+    rejection_reason: template.rejected_reason ?? null,
     last_synced_at: now,
     updated_at: now,
   }));
@@ -122,16 +168,28 @@ export async function syncWabaTemplates(wabaId: string) {
   if (rows.length > 0) {
     const { error } = await supabaseAdmin
       .from("templates")
+      // Runtime schema is ahead of the generated client types.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .upsert(rows as any, { onConflict: "waba_id,name,language" });
-    if (error) return { ok: false, error: error.message, synced: 0 };
+
+    if (error) {
+      return { ok: false as const, error: error.message, synced: 0 };
+    }
   }
 
-  await supabaseAdmin.from("wabas").update({ last_synced_at: now }).eq("id", waba.id);
-  return { ok: true, synced: rows.length };
+  const { error: wabaUpdateError } = await supabaseAdmin
+    .from("wabas")
+    .update({ last_synced_at: now })
+    .eq("id", waba.id);
+
+  if (wabaUpdateError) {
+    return { ok: false as const, error: wabaUpdateError.message, synced: rows.length };
+  }
+
+  return { ok: true as const, synced: rows.length };
 }
 
-/** Submits a new template to Meta for review and stores the local record. */
+/** Submit a new template to Meta for review and persist the returned Meta identity locally. */
 export async function createWabaTemplate(input: {
   wabaId: string;
   name: string;
@@ -141,40 +199,52 @@ export async function createWabaTemplate(input: {
   allowCategoryChange?: boolean;
 }) {
   const waba = await loadWabaScope(input.wabaId);
-  if (!waba) return { ok: false, error: "WABA not found" };
+  if (!waba) return { ok: false as const, error: "WABA not found" };
 
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return {
+      ok: false as const,
+      error: "No Meta credential resolved for this WABA",
+    };
+  }
 
-  const res = await client.request<{ id: string; status?: string; category?: string }>(
-    `${waba.meta_waba_id}/message_templates`,
-    {
-      method: "POST",
-      body: {
-        name: input.name,
-        category: input.category,
-        language: input.language,
-        components: input.components,
-        allow_category_change: input.allowCategoryChange ?? true,
-      },
+  const response = await client.request<{
+    id: string;
+    status?: string;
+    category?: string;
+  }>(`${waba.meta_waba_id}/message_templates`, {
+    method: "POST",
+    body: {
+      name: input.name,
+      category: input.category.toUpperCase(),
+      language: input.language,
+      components: input.components,
+      allow_category_change: input.allowCategoryChange ?? true,
     },
-  );
+  });
 
-  if (!res.ok || !res.data) return { ok: false, error: res.errorMessage ?? "Graph error" };
+  if (!response.ok || !response.data) {
+    return {
+      ok: false as const,
+      error: response.errorMessage ?? "Graph error",
+    };
+  }
 
   const now = new Date().toISOString();
   const { data: row, error } = await supabaseAdmin
     .from("templates")
+    // Runtime schema is ahead of the generated client types.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .upsert(
       {
         organization_id: waba.organization_id,
         waba_id: waba.id,
-        meta_template_id: res.data.id,
+        meta_template_id: response.data.id,
         name: input.name,
-        category: (res.data.category ?? input.category).toUpperCase(),
+        category: (response.data.category ?? input.category).toUpperCase(),
         language: input.language,
-        status: normalizeStatus(res.data.status ?? "pending"),
+        status: normalizeStatus(response.data.status ?? "pending"),
         components: input.components as unknown as Record<string, unknown>[],
         last_synced_at: now,
         updated_at: now,
@@ -184,46 +254,84 @@ export async function createWabaTemplate(input: {
     )
     .select("id")
     .single();
-  if (error) return { ok: false, error: error.message };
 
-  await supabaseAdmin.from("template_versions").insert({
+  if (error || !row) {
+    return {
+      ok: false as const,
+      error: error?.message ?? "Failed to persist the template locally",
+    };
+  }
+
+  const { error: versionError } = await supabaseAdmin.from("template_versions").insert({
     organization_id: waba.organization_id,
     template_id: row.id,
     version_no: 1,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    snapshot: { components: input.components, category: input.category } as any,
+    snapshot: {
+      components: input.components,
+      category: (response.data.category ?? input.category).toUpperCase(),
+      language: input.language,
+    } as any,
   });
 
-  return { ok: true, templateId: row.id, metaTemplateId: res.data.id };
+  if (versionError) {
+    return { ok: false as const, error: versionError.message };
+  }
+
+  return {
+    ok: true as const,
+    templateId: row.id,
+    metaTemplateId: response.data.id,
+  };
 }
 
-/** Deletes a template on Meta and marks the local record as deleted. */
+/** Delete a template on Meta first, then mark the corresponding local record as deleted. */
 export async function deleteWabaTemplate(templateId: string) {
-  const { data: tpl } = await supabaseAdmin
+  const { data: template, error: templateError } = await supabaseAdmin
     .from("templates")
     .select("id, waba_id, name, meta_template_id")
     .eq("id", templateId)
     .maybeSingle();
-  if (!tpl) return { ok: false, error: "Template not found" };
 
-  const waba = await loadWabaScope(tpl.waba_id);
-  if (!waba) return { ok: false, error: "WABA not found" };
+  if (templateError || !template) {
+    return { ok: false as const, error: "Template not found" };
+  }
+
+  const waba = await loadWabaScope(template.waba_id);
+  if (!waba) return { ok: false as const, error: "WABA not found" };
+
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return {
+      ok: false as const,
+      error: "No Meta credential resolved for this WABA",
+    };
+  }
 
-  const query: Record<string, string> = { name: tpl.name };
-  if (tpl.meta_template_id) query["hsm_id"] = tpl.meta_template_id;
+  const query: Record<string, string> = { name: template.name };
+  if (template.meta_template_id) query["hsm_id"] = template.meta_template_id;
 
-  const res = await client.request<{ success?: boolean }>(
+  const response = await client.request<{ success?: boolean }>(
     `${waba.meta_waba_id}/message_templates`,
     { method: "DELETE", query },
   );
-  if (!res.ok) return { ok: false, error: res.errorMessage ?? "Graph error" };
 
-  await supabaseAdmin
+  if (!response.ok) {
+    return {
+      ok: false as const,
+      error: response.errorMessage ?? "Graph error",
+    };
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabaseAdmin
     .from("templates")
-    .update({ status: "deleted", updated_at: new Date().toISOString() })
+    .update({ status: "deleted", last_synced_at: now, updated_at: now })
     .eq("id", templateId);
 
-  return { ok: true };
+  if (updateError) {
+    return { ok: false as const, error: updateError.message };
+  }
+
+  return { ok: true as const };
 }
