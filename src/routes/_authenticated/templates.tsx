@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { EmptyState, PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
-import { useNumbers, useWabas } from "@/lib/azwa-data";
+import { useNumbers, useWabas, type Waba } from "@/lib/azwa-data";
 import {
   bodyText,
   buttonsOf,
@@ -28,15 +28,8 @@ export const Route = createFileRoute("/_authenticated/templates")({
       {
         name: "description",
         content:
-          "Manage the WhatsApp message template library of every WABA: sync from Meta, review approval status and submit new templates.",
+          "Manage WhatsApp templates across every WABA: sync from Meta, inspect approval state, create and submit templates, and delete them in sync with Meta.",
       },
-      { property: "og:title", content: "Templates — AzWA" },
-      {
-        property: "og:description",
-        content: "WhatsApp template library management across all business accounts.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TemplatesPage,
@@ -45,8 +38,23 @@ export const Route = createFileRoute("/_authenticated/templates")({
 const inputClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20";
 
-const CATEGORIES = ["UTILITY", "MARKETING", "AUTHENTICATION"];
-const LANGUAGES = ["ar", "en", "en_US", "ar_EG"];
+const CATEGORIES = ["UTILITY", "MARKETING", "AUTHENTICATION"] as const;
+const LANGUAGES = ["ar", "ar_EG", "en", "en_US"] as const;
+const STATUSES = [
+  "approved",
+  "pending",
+  "rejected",
+  "paused",
+  "disabled",
+  "deleted",
+  "draft",
+  "unknown",
+] as const;
+
+function labelOfWaba(waba: Waba | undefined): string {
+  if (!waba) return "—";
+  return waba.name ?? waba.meta_waba_id ?? "—";
+}
 
 function TemplatesPage() {
   const { scope } = useScope();
@@ -66,61 +74,102 @@ function TemplatesPage() {
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  const wabaName = (id: string) => {
-    const w = wabas.find((x) => x.id === id);
-    return w?.name ?? w?.meta_waba_id ?? "—";
-  };
-
-  const scopedWabaIds = useMemo(() => {
+  const scopedWabaIds = useMemo<Set<string> | null>(() => {
     if (scope.kind === "all") return null;
     if (scope.kind === "waba") return new Set([scope.id]);
-    if (scope.kind === "business")
-      return new Set(wabas.filter((w) => w.business_portfolio_id === scope.id).map((w) => w.id));
-    const number = numbers.find((n) => n.id === scope.id);
-    return new Set(number ? [number.waba_id] : []);
+    if (scope.kind === "business") {
+      return new Set(
+        wabas.filter((waba) => waba.business_portfolio_id === scope.id).map((waba) => waba.id),
+      );
+    }
+    if (scope.kind === "number") {
+      const number = numbers.find((item) => item.id === scope.id);
+      return new Set(number ? [number.waba_id] : []);
+    }
+    return new Set();
   }, [scope, wabas, numbers]);
 
-  const visible = templates.filter((t) => {
-    if (scopedWabaIds && !scopedWabaIds.has(t.waba_id)) return false;
-    if (status !== "all" && t.status !== status) return false;
-    if (category !== "all" && t.category !== category) return false;
-    if (wabaFilter !== "all" && t.waba_id !== wabaFilter) return false;
-    if (!search.trim()) return true;
+  const scopedWabas = useMemo(
+    () => (scopedWabaIds ? wabas.filter((waba) => scopedWabaIds.has(waba.id)) : wabas),
+    [wabas, scopedWabaIds],
+  );
+
+  const scopedTemplates = useMemo(
+    () =>
+      scopedWabaIds
+        ? templates.filter((template) => scopedWabaIds.has(template.waba_id))
+        : templates,
+    [templates, scopedWabaIds],
+  );
+
+  const wabaName = (id: string): string =>
+    labelOfWaba(wabas.find((waba) => waba.id === id));
+
+  const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return t.name.toLowerCase().includes(q) || bodyText(t.components).toLowerCase().includes(q);
-  });
+    return scopedTemplates.filter((template) => {
+      if (status !== "all" && template.status !== status) return false;
+      if (category !== "all" && template.category !== category) return false;
+      if (wabaFilter !== "all" && template.waba_id !== wabaFilter) return false;
+      if (!q) return true;
+
+      return (
+        template.name.toLowerCase().includes(q) ||
+        bodyText(template.components).toLowerCase().includes(q)
+      );
+    });
+  }, [scopedTemplates, status, category, wabaFilter, search]);
 
   const counts = useMemo(() => {
-    const base = { approved: 0, pending: 0, rejected: 0, other: 0 };
-    for (const t of templates) {
-      if (t.status in base) base[t.status as keyof typeof base] += 1;
-      else base.other += 1;
+    const result = { approved: 0, pending: 0, rejected: 0, other: 0 };
+    for (const template of scopedTemplates) {
+      if (template.status === "approved") result.approved += 1;
+      else if (template.status === "pending") result.pending += 1;
+      else if (template.status === "rejected") result.rejected += 1;
+      else result.other += 1;
     }
-    return base;
-  }, [templates]);
+    return result;
+  }, [scopedTemplates]);
 
-  const syncTargets = () => {
-    if (!scopedWabaIds) return wabas.map((w) => w.id);
-    return [...scopedWabaIds];
-  };
+  const syncTargets = useMemo(
+    () =>
+      scopedWabas.map((waba) => ({
+        id: waba.id,
+        wabaName: waba.name ?? waba.meta_waba_id ?? "—",
+      })),
+    [scopedWabas],
+  );
 
   const handleSync = async () => {
-    const targets = syncTargets();
-    if (!targets.length) return toast.error("No WABA in the current scope");
+    if (!syncTargets.length) {
+      toast.error("No WABA in the current scope");
+      return;
+    }
+
     setSyncing(true);
     try {
       let total = 0;
       const failures: string[] = [];
-      for (const id of targets) {
-        const res = await sync({ data: { wabaId: id } });
-        if (res.ok) total += res.synced ?? 0;
-        else failures.push(`${wabaName(id)}: ${res.error}`);
+
+      for (const target of syncTargets) {
+        const result = await sync({ data: { wabaId: target.id } });
+        if (result.ok) {
+          total += result.synced ?? 0;
+        } else {
+          failures.push(`${target.wabaName}: ${result.error ?? "Sync failed"}`);
+        }
       }
+
       await queryClient.invalidateQueries({ queryKey: ["templates"] });
-      if (failures.length) toast.error(failures[0] as string);
-      else toast.success(`${total} template(s) synced from Meta`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sync failed");
+      await queryClient.invalidateQueries({ queryKey: ["wabas"] });
+
+      if (failures.length > 0) {
+        toast.error(failures[0] as string);
+      } else {
+        toast.success(`${total} template(s) synced from Meta`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Sync failed");
     } finally {
       setSyncing(false);
     }
@@ -128,14 +177,16 @@ function TemplatesPage() {
 
   const handleDelete = async (template: Template) => {
     if (!window.confirm(`Delete template "${template.name}" on Meta as well?`)) return;
+
     try {
-      const res = await remove({ data: { templateId: template.id } });
-      if (!res.ok) throw new Error(res.error ?? "Delete failed");
+      const result = await remove({ data: { templateId: template.id } });
+      if (!result.ok) throw new Error(result.error ?? "Delete failed");
+
       await queryClient.invalidateQueries({ queryKey: ["templates"] });
       setSelected(null);
-      toast.success("Template deleted");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.success("Template deleted from Meta and marked deleted locally");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Delete failed");
     }
   };
 
@@ -143,14 +194,14 @@ function TemplatesPage() {
     <>
       <PageHeader
         title="Message Templates"
-        description="Every WABA owns its own template library. Sync pulls the current approval state from Meta; new templates are submitted for review immediately."
+        description="Manage the template library per WABA. Sync follows the active scope and pulls approval and quality state from Meta."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
               <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync from Meta"}
             </Button>
-            <Button size="sm" onClick={() => setCreating(true)}>
+            <Button size="sm" onClick={() => setCreating(true)} disabled={!scopedWabas.length}>
               <Plus className="mr-2 h-4 w-4" /> New template
             </Button>
           </>
@@ -163,10 +214,10 @@ function TemplatesPage() {
           { label: "Pending", value: counts.pending },
           { label: "Rejected", value: counts.rejected },
           { label: "Other", value: counts.other },
-        ].map((c) => (
-          <div key={c.label} className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">{c.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{c.value}</p>
+        ].map((item) => (
+          <div key={item.label} className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">{item.label}</p>
+            <p className="mt-1 text-2xl font-semibold">{item.value}</p>
           </div>
         ))}
       </div>
@@ -179,44 +230,45 @@ function TemplatesPage() {
               className={`${inputClass} pl-9`}
               placeholder="Search name or body…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
+
           <select
             className={`${inputClass} w-[150px]`}
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(event) => setStatus(event.target.value)}
           >
             <option value="all">All statuses</option>
-            {["approved", "pending", "rejected", "paused", "disabled", "deleted", "unknown"].map(
-              (s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ),
-            )}
-          </select>
-          <select
-            className={`${inputClass} w-[160px]`}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="all">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {value}
               </option>
             ))}
           </select>
+
           <select
-            className={`${inputClass} w-[200px]`}
+            className={`${inputClass} w-[165px]`}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
+            <option value="all">All categories</option>
+            {CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={`${inputClass} w-[210px]`}
             value={wabaFilter}
-            onChange={(e) => setWabaFilter(e.target.value)}
+            onChange={(event) => setWabaFilter(event.target.value)}
           >
             <option value="all">All WABAs</option>
-            {wabas.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name ?? w.meta_waba_id}
+            {scopedWabas.map((waba) => (
+              <option key={waba.id} value={waba.id}>
+                {waba.name ?? waba.meta_waba_id ?? "—"}
               </option>
             ))}
           </select>
@@ -226,8 +278,8 @@ function TemplatesPage() {
           <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
         ) : visible.length === 0 ? (
           <EmptyState
-            title="No templates yet"
-            hint="Run “Sync from Meta” to import the existing library, or create a new template."
+            title="No templates found"
+            hint="Run “Sync from Meta” for the current scope, or create and submit a new template."
           />
         ) : (
           <div className="overflow-x-auto">
@@ -245,34 +297,34 @@ function TemplatesPage() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((t) => (
+                {visible.map((template) => (
                   <tr
-                    key={t.id}
+                    key={template.id}
                     className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40"
-                    onClick={() => setSelected(t)}
+                    onClick={() => setSelected(template)}
                   >
-                    <td className="py-2 pr-4 font-mono text-xs">{t.name}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{template.name}</td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {wabaName(t.waba_id)}
+                      {wabaName(template.waba_id)}
                     </td>
-                    <td className="py-2 pr-4 text-xs">{t.category}</td>
-                    <td className="py-2 pr-4 text-xs">{t.language}</td>
+                    <td className="py-2 pr-4 text-xs">{template.category}</td>
+                    <td className="py-2 pr-4 text-xs">{template.language}</td>
                     <td className="py-2 pr-4">
-                      <StatusBadge value={t.status} />
+                      <StatusBadge value={template.status} />
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {t.quality_rating ?? "—"}
+                      {template.quality_rating ?? "—"}
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {placeholdersOf(t.components).length}
+                      {placeholdersOf(template.components).length}
                     </td>
                     <td className="py-2 pr-4 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleDelete(t);
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDelete(template);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -296,7 +348,10 @@ function TemplatesPage() {
 
       {creating && (
         <CreateTemplateDialog
-          wabas={wabas.map((w) => ({ id: w.id, label: w.name ?? w.meta_waba_id }))}
+          wabas={scopedWabas.map((waba) => ({
+            id: waba.id,
+            label: waba.name ?? waba.meta_waba_id ?? "—",
+          }))}
           onClose={() => setCreating(false)}
           onCreated={async () => {
             setCreating(false);
@@ -311,20 +366,26 @@ function TemplatesPage() {
 function Preview({ components }: { components: TemplateComponent[] }) {
   const header = componentOf(components, "HEADER");
   const footer = componentOf(components, "FOOTER");
+  const buttons = buttonsOf(components);
+
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4">
-      <div className="max-w-[280px] rounded-xl bg-card p-3 shadow-sm">
+    <div className="rounded-xl border border-border bg-[#efeae2] p-5">
+      <div className="max-w-[320px] rounded-lg bg-white p-3 text-slate-900 shadow-sm">
         {header?.text && <p className="mb-1 text-sm font-semibold">{header.text}</p>}
         {header?.format && header.format !== "TEXT" && (
-          <p className="mb-1 text-[11px] uppercase text-muted-foreground">{header.format}</p>
+          <p className="mb-2 rounded bg-slate-100 p-2 text-[11px] uppercase text-slate-500">
+            {header.format}
+          </p>
         )}
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{bodyText(components) || "…"}</p>
-        {footer?.text && <p className="mt-2 text-[11px] text-muted-foreground">{footer.text}</p>}
-        {buttonsOf(components).length > 0 && (
-          <div className="mt-2 space-y-1 border-t border-border pt-2">
-            {buttonsOf(components).map((b, i) => (
-              <p key={i} className="text-center text-xs font-medium text-primary">
-                {b.text}
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">
+          {bodyText(components) || "Message body preview…"}
+        </p>
+        {footer?.text && <p className="mt-2 text-[11px] text-slate-500">{footer.text}</p>}
+        {buttons.length > 0 && (
+          <div className="mt-3 space-y-1 border-t border-slate-200 pt-2">
+            {buttons.map((button, index) => (
+              <p key={`${button.text ?? "button"}-${index}`} className="text-center text-xs font-medium text-sky-600">
+                {button.text ?? "Button"}
               </p>
             ))}
           </div>
@@ -347,7 +408,7 @@ function TemplateDetail({
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
       <aside
         className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
@@ -374,36 +435,30 @@ function TemplateDetail({
 
         <Preview components={template.components} />
 
-        <dl className="mt-4 space-y-2 text-xs">
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Meta template ID</dt>
-            <dd className="font-mono">{template.meta_template_id ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Variables</dt>
-            <dd className="font-mono">{placeholdersOf(template.components).join(", ") || "—"}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Last synced</dt>
-            <dd>
-              {template.last_synced_at
-                ? new Date(template.last_synced_at).toLocaleString()
-                : "never"}
-            </dd>
-          </div>
+        <dl className="mt-5 space-y-3 text-xs">
+          <DetailRow label="Meta template ID" value={template.meta_template_id ?? "—"} />
+          <DetailRow label="Variables" value={placeholdersOf(template.components).join(", ") || "—"} />
+          <DetailRow label="Last synced" value={formatDate(template.last_synced_at)} />
+          <DetailRow label="Updated" value={formatDate(template.updated_at)} />
         </dl>
-
-        <details className="mt-4">
-          <summary className="cursor-pointer text-xs text-muted-foreground">
-            Raw components JSON
-          </summary>
-          <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-[11px]">
-            {JSON.stringify(template.components, null, 2)}
-          </pre>
-        </details>
       </aside>
     </div>
   );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-2">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="break-all text-right font-medium">{value}</dd>
+    </div>
+  );
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
 function CreateTemplateDialog({
@@ -418,41 +473,68 @@ function CreateTemplateDialog({
   const create = useServerFn(createTemplate);
   const [wabaId, setWabaId] = useState(wabas[0]?.id ?? "");
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("UTILITY");
-  const [language, setLanguage] = useState("ar");
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("UTILITY");
+  const [language, setLanguage] = useState<(typeof LANGUAGES)[number]>("ar");
   const [header, setHeader] = useState("");
   const [body, setBody] = useState("");
   const [footer, setFooter] = useState("");
   const [buttons, setButtons] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const components: TemplateComponent[] = [];
-  if (header.trim()) components.push({ type: "HEADER", format: "TEXT", text: header.trim() });
-  if (body.trim()) components.push({ type: "BODY", text: body.trim() });
-  if (footer.trim()) components.push({ type: "FOOTER", text: footer.trim() });
-  const buttonList = buttons
-    .split("\n")
-    .map((b) => b.trim())
-    .filter(Boolean);
-  if (buttonList.length)
-    components.push({
-      type: "BUTTONS",
-      buttons: buttonList.map((text) => ({ type: "QUICK_REPLY", text })),
-    });
+  const components = useMemo<TemplateComponent[]>(() => {
+    const result: TemplateComponent[] = [];
+    if (header.trim()) result.push({ type: "HEADER", format: "TEXT", text: header.trim() });
+    if (body.trim()) result.push({ type: "BODY", text: body.trim() });
+    if (footer.trim()) result.push({ type: "FOOTER", text: footer.trim() });
+
+    const buttonList = buttons
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (buttonList.length > 0) {
+      result.push({
+        type: "BUTTONS",
+        buttons: buttonList.map((text) => ({ type: "QUICK_REPLY", text })),
+      });
+    }
+
+    return result;
+  }, [header, body, footer, buttons]);
 
   const submit = async () => {
-    if (!wabaId) return toast.error("Select a WABA");
-    if (!body.trim()) return toast.error("The body text is required");
+    if (!wabaId) {
+      toast.error("Select a WABA");
+      return;
+    }
+    if (!name.trim()) {
+      toast.error("Template name is required");
+      return;
+    }
+    if (!body.trim()) {
+      toast.error("The body text is required");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await create({
-        data: { wabaId, name, category, language, components },
+      const result = await create({
+        data: {
+          wabaId,
+          name,
+          category,
+          language,
+          components,
+          allowCategoryChange: true,
+        },
       });
-      if (!res.ok) throw new Error(res.error ?? "Submission failed");
+
+      if (!result.ok) throw new Error(result.error ?? "Submission failed");
+
       toast.success("Template submitted to Meta for review");
       await onCreated();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Submission failed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Submission failed");
     } finally {
       setSubmitting(false);
     }
@@ -460,8 +542,8 @@ function CreateTemplateDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             <FileText className="h-4 w-4" /> New message template
           </h2>
@@ -470,39 +552,36 @@ function CreateTemplateDialog({
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-3">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="space-y-4">
             <Field label="WABA">
-              <select
-                className={inputClass}
-                value={wabaId}
-                onChange={(e) => setWabaId(e.target.value)}
-              >
-                {wabas.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.label}
+              <select className={inputClass} value={wabaId} onChange={(event) => setWabaId(event.target.value)}>
+                {wabas.map((waba) => (
+                  <option key={waba.id} value={waba.id}>
+                    {waba.label}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Name (lowercase, underscores)">
-              <input
-                className={inputClass}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="maintenance_reminder"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Name">
+                <input
+                  className={inputClass}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="service_request_update"
+                />
+              </Field>
               <Field label="Category">
                 <select
                   className={inputClass}
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(event) => setCategory(event.target.value as (typeof CATEGORIES)[number])}
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                  {CATEGORIES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
                     </option>
                   ))}
                 </select>
@@ -511,61 +590,61 @@ function CreateTemplateDialog({
                 <select
                   className={inputClass}
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+                  onChange={(event) => setLanguage(event.target.value as (typeof LANGUAGES)[number])}
                 >
-                  {LANGUAGES.map((l) => (
-                    <option key={l} value={l}>
-                      {l}
+                  {LANGUAGES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
                     </option>
                   ))}
                 </select>
               </Field>
             </div>
-            <Field label="Header text (optional)">
-              <input
-                className={inputClass}
-                value={header}
-                onChange={(e) => setHeader(e.target.value)}
-              />
+
+            <Field label="Header (optional)">
+              <input className={inputClass} value={header} onChange={(event) => setHeader(event.target.value)} />
             </Field>
-            <Field label="Body — use {{1}}, {{2}} for variables">
+
+            <Field label="Body">
               <textarea
-                className={`${inputClass} h-28 py-2`}
+                className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder="مرحبًا {{1}}، تم تحديث حالة الطلب {{2}}."
               />
             </Field>
+
             <Field label="Footer (optional)">
-              <input
-                className={inputClass}
-                value={footer}
-                onChange={(e) => setFooter(e.target.value)}
-              />
+              <input className={inputClass} value={footer} onChange={(event) => setFooter(event.target.value)} />
             </Field>
-            <Field label="Quick reply buttons (one per line, optional)">
+
+            <Field label="Quick reply buttons — one per line (optional)">
               <textarea
-                className={`${inputClass} h-20 py-2`}
+                className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
                 value={buttons}
-                onChange={(e) => setButtons(e.target.value)}
+                onChange={(event) => setButtons(event.target.value)}
+                placeholder={"متابعة الطلب\nالتواصل مع الدعم"}
               />
             </Field>
           </div>
 
           <div>
-            <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Preview</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              WhatsApp preview
+            </p>
             <Preview components={components} />
             <p className="mt-3 text-xs text-muted-foreground">
-              Variables detected: {placeholdersOf(components).join(", ") || "none"}
+              Variables: {placeholdersOf(components).join(", ") || "none"}
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting ? "Submitting…" : "Submit for review"}
+          <Button onClick={() => void submit()} disabled={submitting}>
+            {submitting ? "Submitting…" : "Submit to Meta"}
           </Button>
         </div>
       </div>
@@ -575,8 +654,8 @@ function CreateTemplateDialog({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       {children}
     </label>
   );
