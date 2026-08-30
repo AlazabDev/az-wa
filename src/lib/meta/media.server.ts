@@ -1,34 +1,98 @@
 /**
  * WhatsApp media handler — server only.
- * Pulls binaries from the Meta Graph API as soon as an inbound media message
- * arrives, stores them in the private `azwa-whatsapp-media` bucket and records
- * every attempt in `media_download_attempts`.
+ *
+ * Every inbound media item from every connected WhatsApp number is pulled from
+ * Meta immediately, archived in the private MinIO bucket, and tracked in the
+ * media/media_download_attempts tables.
+ *
+ * Object layout:
+ *   <year>/<month>/<folder>/<media-id>.<extension>
+ *
+ * Examples:
+ *   2026/8/img/<uuid>.jpg
+ *   2026/8/pdf/<uuid>.pdf
+ *   2026/9/pdf/<uuid>.pdf
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { putMinioObject } from "@/lib/storage/minio.server";
 
 import { GRAPH_BASE, resolveCredential } from "./graph.server";
 
-export const MEDIA_BUCKET = "azwa-whatsapp-media";
 const MEDIA_QUEUE = "media-downloads";
 
 const EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
+  "image/jpg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "image/gif": "gif",
+  "image/bmp": "bmp",
+  "image/tiff": "tiff",
+  "image/heic": "heic",
+  "image/heif": "heif",
   "video/mp4": "mp4",
   "video/3gpp": "3gp",
+  "video/quicktime": "mov",
+  "video/mpeg": "mpeg",
+  "video/webm": "webm",
   "audio/ogg": "ogg",
   "audio/mpeg": "mp3",
   "audio/mp4": "m4a",
   "audio/amr": "amr",
+  "audio/aac": "aac",
+  "audio/wav": "wav",
+  "audio/webm": "webm",
   "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "text/plain": "txt",
+  "text/csv": "csv",
+  "application/json": "json",
+  "application/xml": "xml",
+  "text/xml": "xml",
+  "application/zip": "zip",
+  "application/x-rar-compressed": "rar",
+  "application/vnd.rar": "rar",
+  "application/x-7z-compressed": "7z",
 };
+
+function cleanExtension(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase().replace(/^\./, "") ?? "";
+  return /^[a-z0-9]{1,10}$/.test(normalized) ? normalized : null;
+}
 
 function extensionFor(mime: string | null, filename: string | null) {
   const fromName = filename?.includes(".") ? filename.split(".").pop() : null;
-  if (fromName && fromName.length <= 5) return fromName.toLowerCase();
-  if (mime && EXTENSIONS[mime]) return EXTENSIONS[mime];
-  return "bin";
+  return cleanExtension(fromName) ?? (mime ? EXTENSIONS[mime.toLowerCase()] : null) ?? "bin";
+}
+
+function folderFor(mime: string | null, extension: string) {
+  if (mime?.toLowerCase().startsWith("image/")) return "img";
+  return extension;
+}
+
+function storagePath(input: {
+  timestamp: string | null;
+  mediaId: string;
+  mime: string | null;
+  filename: string | null;
+}) {
+  const date = input.timestamp ? new Date(input.timestamp) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  const extension = extensionFor(input.mime, input.filename);
+  const folder = folderFor(input.mime, extension);
+  const year = safeDate.getUTCFullYear();
+  const month = safeDate.getUTCMonth() + 1;
+
+  return {
+    extension,
+    folder,
+    key: `${year}/${month}/${folder}/${input.mediaId}.${extension}`,
+  };
 }
 
 async function logAttempt(
@@ -65,7 +129,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
   const { data: media } = await supabaseAdmin
     .from("media")
     .select(
-      "id, organization_id, whatsapp_number_id, meta_media_id, media_type, mime_type, filename, download_status, download_attempts, storage_path",
+      "id, organization_id, whatsapp_number_id, meta_media_id, media_type, mime_type, filename, received_at, created_at, download_status, download_attempts, storage_path",
     )
     .eq("id", mediaRowId)
     .maybeSingle();
@@ -104,7 +168,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
   const cred = await resolveCredential({ whatsappNumberId: media.whatsapp_number_id });
   if (!cred.token) return fail("no active Meta access token for this number", null);
 
-  // 1. Resolve the short-lived, authenticated download URL.
+  // Resolve Meta's short-lived authenticated download URL.
   const metaRes = await fetch(`${GRAPH_BASE}/${media.meta_media_id}`, {
     headers: { Authorization: `Bearer ${cred.token}` },
   });
@@ -119,32 +183,52 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     return fail(meta?.error?.message ?? `media lookup failed (HTTP ${metaRes.status})`, metaRes.status);
   }
 
-  // 2. Fetch the binary (the CDN URL still requires the bearer token).
-  const binRes = await fetch(meta.url, { headers: { Authorization: `Bearer ${cred.token}` } });
+  // The Meta CDN URL still requires the bearer token.
+  const binRes = await fetch(meta.url, {
+    headers: { Authorization: `Bearer ${cred.token}` },
+  });
   if (!binRes.ok) return fail(`binary download failed (HTTP ${binRes.status})`, binRes.status);
+
   const bytes = new Uint8Array(await binRes.arrayBuffer());
-
   const mime = meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
-  const ext = extensionFor(mime, media.filename);
-  const path = `${media.organization_id}/${media.whatsapp_number_id}/${media.id}.${ext}`;
+  const object = storagePath({
+    timestamp: media.received_at ?? media.created_at,
+    mediaId: media.id,
+    mime,
+    filename: media.filename,
+  });
 
-  const { error: uploadError } = await supabaseAdmin.storage
-    .from(MEDIA_BUCKET)
-    .upload(path, bytes, { contentType: mime ?? "application/octet-stream", upsert: true });
-  if (uploadError) return fail(`storage upload failed: ${uploadError.message}`, null);
+  let uploaded: Awaited<ReturnType<typeof putMinioObject>>;
+  try {
+    uploaded = await putMinioObject({
+      key: object.key,
+      body: bytes,
+      contentType: mime ?? "application/octet-stream",
+    });
+  } catch (error) {
+    return fail(
+      error instanceof Error ? error.message : "MinIO upload failed",
+      null,
+    );
+  }
 
   await supabaseAdmin
     .from("media")
     .update({
       download_status: "downloaded",
-      storage_provider: "supabase",
-      storage_bucket: MEDIA_BUCKET,
-      storage_path: path,
+      storage_provider: "minio",
+      storage_bucket: uploaded.bucket,
+      storage_path: uploaded.key,
       mime_type: mime ?? null,
       file_size: meta.file_size ?? bytes.byteLength,
       sha256: meta.sha256 ?? null,
       stored_at: new Date().toISOString(),
       last_error: null,
+      metadata: {
+        archive_folder: object.folder,
+        archive_extension: object.extension,
+        minio_etag: uploaded.etag,
+      },
     })
     .eq("id", media.id);
 
@@ -153,19 +237,20 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     media.id,
     attemptNo,
     "stored",
-    binRes.status,
+    uploaded.status,
     null,
     startedAt,
   );
 
-  return { mediaId: media.id, status: "downloaded", storagePath: path };
+  return { mediaId: media.id, status: "downloaded", storagePath: uploaded.key };
 }
 
 /**
- * Drains the `media-downloads` queue. Called right after webhook ingestion for
- * instant pulls, and by the worker endpoint as a safety net for retries.
+ * Drains the media queue. The central webhook calls this immediately whenever
+ * any connected account receives image/video/audio/document/sticker media.
+ * The cron worker remains a retry safety net.
  */
-export async function drainMediaQueue(limit = 10) {
+export async function drainMediaQueue(limit = 50) {
   const { data: jobs, error } = await supabaseAdmin.rpc("backend_claim_jobs", {
     p_worker_id: `media-worker-${crypto.randomUUID().slice(0, 8)}`,
     p_queue_names: [MEDIA_QUEUE],
@@ -184,6 +269,7 @@ export async function drainMediaQueue(limit = 10) {
       });
       continue;
     }
+
     try {
       const result = await downloadMedia(payload.media_id);
       results.push(result);
@@ -196,8 +282,8 @@ export async function drainMediaQueue(limit = 10) {
       } else {
         await supabaseAdmin.rpc("backend_complete_job", { p_job_id: job.id });
       }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "unexpected error";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unexpected error";
       results.push({ mediaId: payload.media_id, status: "failed", error: message });
       await supabaseAdmin.rpc("backend_fail_job", {
         p_job_id: job.id,
@@ -206,5 +292,6 @@ export async function drainMediaQueue(limit = 10) {
       });
     }
   }
+
   return results;
 }
