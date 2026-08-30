@@ -14,6 +14,7 @@
  *   2026/9/pdf/<uuid>.pdf
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 import { putMinioObject } from "@/lib/storage/minio.server";
 
 import { GRAPH_BASE, resolveCredential } from "./graph.server";
@@ -67,10 +68,17 @@ function cleanExtension(value: string | null | undefined): string | null {
 
 function extensionFor(mime: string | null, filename: string | null) {
   const fromName = filename?.includes(".") ? filename.split(".").pop() : null;
-  return cleanExtension(fromName) ?? (mime ? EXTENSIONS[mime.toLowerCase()] : null) ?? "bin";
+  return (
+    cleanExtension(fromName) ??
+    (mime ? EXTENSIONS[mime.toLowerCase()] : null) ??
+    "bin"
+  );
 }
 
-function folderFor(mime: string | null, extension: string) {
+function folderFor(
+  mime: string | null,
+  extension: string,
+) {
   if (mime?.toLowerCase().startsWith("image/")) return "img";
   return extension;
 }
@@ -93,6 +101,13 @@ function storagePath(input: {
     folder,
     key: `${year}/${month}/${folder}/${input.mediaId}.${extension}`,
   };
+}
+
+function objectMetadata(metadata: Json | null): Record<string, Json | undefined> {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+  return metadata as Record<string, Json | undefined>;
 }
 
 async function logAttempt(
@@ -124,22 +139,38 @@ export type MediaDownloadResult = {
 };
 
 /** Downloads one media row. Idempotent: already-stored rows are skipped. */
-export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadResult> {
+export async function downloadMedia(
+  mediaRowId: string,
+): Promise<MediaDownloadResult> {
   const startedAt = new Date().toISOString();
   const { data: media } = await supabaseAdmin
     .from("media")
     .select(
-      "id, organization_id, whatsapp_number_id, meta_media_id, media_type, mime_type, filename, received_at, created_at, download_status, download_attempts, storage_path",
+      "id, organization_id, whatsapp_number_id, meta_media_id, media_type, mime_type, filename, received_at, created_at, download_status, download_attempts, storage_path, metadata",
     )
     .eq("id", mediaRowId)
     .maybeSingle();
 
-  if (!media) return { mediaId: mediaRowId, status: "failed", error: "media row not found" };
+  if (!media) {
+    return {
+      mediaId: mediaRowId,
+      status: "failed",
+      error: "media row not found",
+    };
+  }
   if (media.download_status === "downloaded" && media.storage_path) {
-    return { mediaId: media.id, status: "skipped", storagePath: media.storage_path };
+    return {
+      mediaId: media.id,
+      status: "skipped",
+      storagePath: media.storage_path,
+    };
   }
   if (!media.meta_media_id) {
-    return { mediaId: media.id, status: "failed", error: "missing meta_media_id" };
+    return {
+      mediaId: media.id,
+      status: "failed",
+      error: "missing meta_media_id",
+    };
   }
 
   const attemptNo = (media.download_attempts ?? 0) + 1;
@@ -165,8 +196,12 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     return { mediaId: media.id, status: "failed" as const, error: message };
   };
 
-  const cred = await resolveCredential({ whatsappNumberId: media.whatsapp_number_id });
-  if (!cred.token) return fail("no active Meta access token for this number", null);
+  const cred = await resolveCredential({
+    whatsappNumberId: media.whatsapp_number_id,
+  });
+  if (!cred.token) {
+    return fail("no active Meta access token for this number", null);
+  }
 
   // Resolve Meta's short-lived authenticated download URL.
   const metaRes = await fetch(`${GRAPH_BASE}/${media.meta_media_id}`, {
@@ -180,17 +215,23 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     error?: { message?: string };
   } | null;
   if (!metaRes.ok || !meta?.url) {
-    return fail(meta?.error?.message ?? `media lookup failed (HTTP ${metaRes.status})`, metaRes.status);
+    return fail(
+      meta?.error?.message ?? `media lookup failed (HTTP ${metaRes.status})`,
+      metaRes.status,
+    );
   }
 
   // The Meta CDN URL still requires the bearer token.
   const binRes = await fetch(meta.url, {
     headers: { Authorization: `Bearer ${cred.token}` },
   });
-  if (!binRes.ok) return fail(`binary download failed (HTTP ${binRes.status})`, binRes.status);
+  if (!binRes.ok) {
+    return fail(`binary download failed (HTTP ${binRes.status})`, binRes.status);
+  }
 
   const bytes = new Uint8Array(await binRes.arrayBuffer());
-  const mime = meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
+  const mime =
+    meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
   const object = storagePath({
     timestamp: media.received_at ?? media.created_at,
     mediaId: media.id,
@@ -212,6 +253,8 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     );
   }
 
+  const currentMetadata = objectMetadata(media.metadata);
+
   await supabaseAdmin
     .from("media")
     .update({
@@ -225,6 +268,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
       stored_at: new Date().toISOString(),
       last_error: null,
       metadata: {
+        ...currentMetadata,
         archive_folder: object.folder,
         archive_extension: object.extension,
         minio_etag: uploaded.etag,
@@ -242,7 +286,11 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     startedAt,
   );
 
-  return { mediaId: media.id, status: "downloaded", storagePath: uploaded.key };
+  return {
+    mediaId: media.id,
+    status: "downloaded",
+    storagePath: uploaded.key,
+  };
 }
 
 /**
@@ -283,8 +331,13 @@ export async function drainMediaQueue(limit = 50) {
         await supabaseAdmin.rpc("backend_complete_job", { p_job_id: job.id });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "unexpected error";
-      results.push({ mediaId: payload.media_id, status: "failed", error: message });
+      const message =
+        error instanceof Error ? error.message : "unexpected error";
+      results.push({
+        mediaId: payload.media_id,
+        status: "failed",
+        error: message,
+      });
       await supabaseAdmin.rpc("backend_fail_job", {
         p_job_id: job.id,
         p_error: message,
