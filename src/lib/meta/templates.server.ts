@@ -66,6 +66,40 @@ type MetaTemplatePage = {
   };
 };
 
+function placeholderIndexes(text: string): number[] {
+  return [...text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isInteger(value) && value > 0)
+    .filter((value, index, all) => all.indexOf(value) === index)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Meta expects concrete examples for variable placeholders during template review.
+ * The UI may omit them, so produce deterministic review-only examples rather than
+ * submitting an incomplete component. User-provided examples are always preserved.
+ */
+export function normalizeComponentsForMeta(components: TemplateComponent[]): TemplateComponent[] {
+  return components.map((component) => {
+    const type = String(component["type"] ?? "").toUpperCase();
+    const normalized: TemplateComponent = { ...component, type };
+    const text = typeof component["text"] === "string" ? component["text"] : "";
+    const indexes = placeholderIndexes(text);
+    const existingExample = component["example"];
+
+    if (indexes.length === 0 || existingExample) return normalized;
+
+    const examples = indexes.map((index) => `sample_${index}`);
+    if (type === "BODY") {
+      normalized["example"] = { body_text: [examples] };
+    } else if (type === "HEADER" && String(component["format"] ?? "TEXT").toUpperCase() === "TEXT") {
+      normalized["example"] = { header_text: examples };
+    }
+
+    return normalized;
+  });
+}
+
 export async function loadWabaScope(wabaId: string): Promise<WabaScope | null> {
   const { data, error } = await supabaseAdmin
     .from("wabas")
@@ -116,8 +150,6 @@ export async function syncWabaTemplates(wabaId: string) {
   const seenCursors = new Set<string>();
   let after: string | undefined;
 
-  // Meta currently returns cursor-paginated pages. Keep a safety cap to avoid
-  // an accidental infinite loop if Meta repeats a cursor.
   for (let page = 0; page < 100; page += 1) {
     const query: Record<string, string> = {
       limit: "100",
@@ -209,6 +241,7 @@ export async function createWabaTemplate(input: {
     };
   }
 
+  const components = normalizeComponentsForMeta(input.components);
   const response = await client.request<{
     id: string;
     status?: string;
@@ -219,7 +252,7 @@ export async function createWabaTemplate(input: {
       name: input.name,
       category: input.category.toUpperCase(),
       language: input.language,
-      components: input.components,
+      components,
       allow_category_change: input.allowCategoryChange ?? true,
     },
   });
@@ -245,7 +278,7 @@ export async function createWabaTemplate(input: {
         category: (response.data.category ?? input.category).toUpperCase(),
         language: input.language,
         status: normalizeStatus(response.data.status ?? "pending"),
-        components: input.components as unknown as Record<string, unknown>[],
+        components: components as unknown as Record<string, unknown>[],
         last_synced_at: now,
         updated_at: now,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -268,7 +301,7 @@ export async function createWabaTemplate(input: {
     version_no: 1,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     snapshot: {
-      components: input.components,
+      components,
       category: (response.data.category ?? input.category).toUpperCase(),
       language: input.language,
     } as any,
