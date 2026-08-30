@@ -51,7 +51,7 @@ export type TemplateRuntimeVariable = {
   componentType: "header" | "body" | "button";
   componentIndex: number;
   buttonIndex?: number;
-  buttonSubtype?: "url";
+  buttonSubtype?: "url" | "flow";
   parameterType: "text" | "image" | "video" | "document";
 };
 
@@ -119,7 +119,7 @@ export function placeholdersOf(components: TemplateComponent[]): string[] {
 
 /**
  * Runtime values are component-scoped. Meta does not accept a HEADER variable
- * as a BODY parameter, and URL button variables have their own button component.
+ * as a BODY parameter, and URL/Flow buttons have their own runtime components.
  */
 export function runtimeVariablesOf(components: TemplateComponent[]): TemplateRuntimeVariable[] {
   const variables: TemplateRuntimeVariable[] = [];
@@ -166,19 +166,34 @@ export function runtimeVariablesOf(components: TemplateComponent[]): TemplateRun
 
     if (type === "BUTTONS") {
       (component.buttons ?? []).forEach((button, buttonIndex) => {
-        if ((button.type ?? "").toUpperCase() !== "URL") return;
-        placeholdersInText(button.url).forEach((name, parameterIndex) => {
+        const buttonType = (button.type ?? "").toUpperCase();
+        if (buttonType === "URL") {
+          placeholdersInText(button.url).forEach((name, parameterIndex) => {
+            variables.push({
+              id: `button:${componentIndex}:${buttonIndex}:${parameterIndex}:${name}`,
+              label: `URL button ${buttonIndex + 1} {{${name}}}`,
+              name,
+              componentType: "button",
+              componentIndex,
+              buttonIndex,
+              buttonSubtype: "url",
+              parameterType: "text",
+            });
+          });
+        }
+
+        if (buttonType === "FLOW") {
           variables.push({
-            id: `button:${componentIndex}:${buttonIndex}:${parameterIndex}:${name}`,
-            label: `URL button ${buttonIndex + 1} {{${name}}}`,
-            name,
+            id: `button:${componentIndex}:${buttonIndex}:flow_token`,
+            label: `Flow button ${buttonIndex + 1} token`,
+            name: "flow_token",
             componentType: "button",
             componentIndex,
             buttonIndex,
-            buttonSubtype: "url",
+            buttonSubtype: "flow",
             parameterType: "text",
           });
-        });
+        }
       });
     }
   });
@@ -236,9 +251,30 @@ export function runtimeComponentsFromValues(
       (variable) => variable.componentType === "button" && variable.buttonIndex === buttonIndex,
     );
     if (buttonVariables.length === 0) continue;
+
+    const buttonSubtype = buttonVariables[0]?.buttonSubtype ?? "url";
+    if (buttonSubtype === "flow") {
+      const flowToken = (values[buttonVariables[0]?.id ?? ""] ?? "").trim();
+      runtime.push({
+        type: "button",
+        sub_type: "flow",
+        index: String(buttonIndex),
+        parameters: [
+          {
+            type: "action",
+            action: {
+              flow_token: flowToken,
+              flow_action_data: {},
+            },
+          },
+        ],
+      });
+      continue;
+    }
+
     runtime.push({
       type: "button",
-      sub_type: buttonVariables[0]?.buttonSubtype ?? "url",
+      sub_type: buttonSubtype,
       index: String(buttonIndex),
       parameters: buttonVariables.map((variable) => ({
         type: "text",
