@@ -7,9 +7,15 @@ services:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+        VITE_ENABLE_LEGACY_UI: ${VITE_ENABLE_LEGACY_UI:-false}
     image: az-wa:latest
     container_name: az-wa-web
     restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
     ports:
-      # Bind to loopback and terminate TLS with the host reverse proxy (nginx/caddy).
-      - "127.0.0.1:8085:80"
+      - "127.0.0.1:8085:3000"

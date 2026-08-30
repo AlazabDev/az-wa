@@ -1,10 +1,13 @@
 node_modules
+.output
 dist
+dist-ssr
 .git
 .github
-.env.local
-.env.production
+.env
+.env.*
+!.env.example
 *.log
-/tmp
 playwright-report
 test-results
+coverage

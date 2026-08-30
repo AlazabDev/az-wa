@@ -1,30 +1,41 @@
-# ---------- build ----------
-FROM node:22-alpine AS build
+# ---------- dependencies ----------
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
-
+# ---------- build ----------
+FROM oven/bun:1-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build-time public config (override with --build-arg or docker compose args)
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_PROJECT_ID
+ARG VITE_ENABLE_LEGACY_UI=false
+
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
     VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY \
-    VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+    VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID \
+    VITE_ENABLE_LEGACY_UI=$VITE_ENABLE_LEGACY_UI \
+    NITRO_PRESET=node-server
 
-RUN npm run build
+RUN bun run build
 
 # ---------- runtime ----------
-FROM nginx:1.27-alpine AS runtime
+FROM node:24-alpine AS runtime
+WORKDIR /app
 
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3000
 
-EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1/healthz || exit 1
+COPY --from=build /app/.output ./.output
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
+
+CMD ["node", ".output/server/index.mjs"]

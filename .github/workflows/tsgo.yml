@@ -1,24 +1,51 @@
-name: tsgo verification
+name: Production CI
 
 on:
   push:
     branches:
-      - fix/final-tsgo-build
+      - main
+      - release/**
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: az-wa-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  tsgo:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24
-          cache: npm
-      - run: npm install --legacy-peer-deps --no-audit --no-fund
-      - name: TypeScript native check
-        run: npx -y @typescript/native-preview --noEmit -p tsconfig.json
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Production build and route generation
+        env:
+          VITE_SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          VITE_SUPABASE_PROJECT_ID: pmhuylckjwrongxlrgrx
+          VITE_ENABLE_LEGACY_UI: "false"
+          SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
+          META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/api/public/webhooks/meta/whatsapp
+          LOVABLE_CRON_SECRET: ci-cron-placeholder
+        run: bun run build
+
+      - name: TypeScript
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
