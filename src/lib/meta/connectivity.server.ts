@@ -26,6 +26,9 @@ type DebugTokenData = {
 };
 
 type SubscriptionRow = {
+  id?: string;
+  name?: string;
+  link?: string;
   whatsapp_business_api_data?: {
     id?: string;
     name?: string;
@@ -186,7 +189,7 @@ export async function ensureWabaSubscription(input: {
       `${input.metaWabaId}/subscribed_apps`,
     );
     const subscribed = (result.data?.data ?? []).some(
-      (row) => row.whatsapp_business_api_data?.id === expectedAppId,
+      (row) => (row.whatsapp_business_api_data?.id ?? row.id) === expectedAppId,
     );
     return { result, subscribed };
   };
