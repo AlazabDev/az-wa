@@ -46,23 +46,33 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       "@/integrations/supabase/client.server"
     );
     const idempotencyKey = `ui:${context.userId}:${crypto.randomUUID()}`;
-    const { data: created, error: createError } = await supabaseAdmin.rpc("backend_create_outbox", {
-      p_whatsapp_number_id: data.numberId,
-      p_recipient_address: recipient,
-      p_message_type: "text",
-      p_request_payload: requestPayload,
-      p_idempotency_key: idempotencyKey,
-      p_requested_by: context.userId,
-      p_contact_id: data.contactId ?? undefined,
-      p_conversation_id: data.conversationId ?? undefined,
-      p_campaign_id: undefined,
-      p_campaign_recipient_id: undefined,
-    });
-    if (createError) throw new Error(createError.message);
 
-    const createdObject = (created ?? {}) as Record<string, unknown>;
-    const outboxId = typeof createdObject["outbox_id"] === "string" ? createdObject["outbox_id"] : null;
-    if (!outboxId) throw new Error("Unable to create durable message outbox record");
+    // Interactive sends are performed synchronously by this authenticated
+    // server function. Store a durable outbox row in `sending` state, but do
+    // not create a worker job — that prevents the worker and UI path from
+    // racing and sending the same WhatsApp message twice.
+    const { data: outbox, error: outboxError } = await supabaseRuntimeAdmin
+      .from("message_outbox")
+      .insert({
+        organization_id: number.organization_id,
+        whatsapp_number_id: data.numberId,
+        contact_id: data.contactId ?? null,
+        conversation_id: data.conversationId ?? null,
+        recipient_address: recipient,
+        message_type: "text",
+        request_payload: requestPayload,
+        idempotency_key: idempotencyKey,
+        requested_by: context.userId,
+        status: "sending",
+        attempt_count: 0,
+        next_attempt_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (outboxError || !outbox?.id) {
+      throw new Error(outboxError?.message ?? "Unable to create durable message outbox record");
+    }
+    const outboxId = String(outbox.id);
 
     const result = await client.request<{ messages?: Array<{ id?: string }> }>(
       `${number.meta_phone_number_id}/messages`,
@@ -75,16 +85,10 @@ export const sendTextMessage = createServerFn({ method: "POST" })
         p_error: result.errorMessage ?? `HTTP ${result.status}`,
         p_final: true,
       });
-      await supabaseRuntimeAdmin
-        .from("jobs")
-        .update({
-          status: "failed",
-          last_error: result.errorMessage ?? `HTTP ${result.status}`,
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("queue_name", "message-send")
-        .eq("deduplication_key", `outbox:${outboxId}`);
+      await supabaseAdmin
+        .from("whatsapp_numbers")
+        .update({ last_api_failure_at: new Date().toISOString() })
+        .eq("id", data.numberId);
       throw new Error(result.errorMessage ?? `Meta send failed with HTTP ${result.status}`);
     }
 
@@ -104,16 +108,6 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       p_raw_response: result.data ?? {},
     });
     if (finalizeError) throw new Error(finalizeError.message);
-
-    await supabaseRuntimeAdmin
-      .from("jobs")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("queue_name", "message-send")
-      .eq("deduplication_key", `outbox:${outboxId}`);
 
     await supabaseAdmin
       .from("whatsapp_numbers")
