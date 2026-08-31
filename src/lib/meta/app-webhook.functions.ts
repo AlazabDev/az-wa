@@ -1,17 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function requireCredentialsManage(context: {
-  supabase: {
-    from: (table: "organization_members") => ReturnType<typeof contextSupabasePlaceholder>;
-  };
-  userId: string;
-}) {
-  void context;
-}
-
-// The explicit handlers below keep auth/RBAC at the server boundary and never
-// expose App Access Token, App Secret or Verify Token to the browser.
+// These handlers keep auth/RBAC at the server boundary and never expose App
+// Access Token, App Secret or Verify Token to the browser.
 export const inspectMetaWebhookSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: Record<string, never>) => input)
@@ -57,8 +48,3 @@ export const reconcileMetaWebhookSubscription = createServerFn({ method: "POST" 
     const { reconcileMetaAppWebhook } = await import("./app-webhook.server");
     return reconcileMetaAppWebhook(membership.organization_id);
   });
-
-// Type-only placeholder is never executed; it prevents no runtime behavior.
-function contextSupabasePlaceholder(): never {
-  throw new Error("type placeholder");
-}
