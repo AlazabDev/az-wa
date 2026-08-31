@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
 import { Button } from "@/components/ui/button";
 import { getMetaProductionReadiness } from "@/lib/meta/production-readiness.functions";
+import type { MetaProductionReadiness } from "@/lib/meta/production-readiness.types";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -18,7 +19,10 @@ export const Route = createFileRoute("/_authenticated/health")({
           "Continuous health checks per number and WABA: API reachability, webhook delivery, token validity, quality rating and messaging limits.",
       },
       { property: "og:title", content: "Health & Diagnostics — AzWA" },
-      { property: "og:description", content: "Continuous health checks for WhatsApp infrastructure." },
+      {
+        property: "og:description",
+        content: "Continuous health checks for WhatsApp infrastructure.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -26,11 +30,9 @@ export const Route = createFileRoute("/_authenticated/health")({
   component: HealthPage,
 });
 
-type ReadinessResult = Awaited<ReturnType<typeof getMetaProductionReadiness>>;
-
 function ProductionReadiness() {
   const load = useServerFn(getMetaProductionReadiness);
-  const [result, setResult] = useState<ReadinessResult | null>(null);
+  const [result, setResult] = useState<MetaProductionReadiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +42,9 @@ function ProductionReadiness() {
     try {
       setResult(await load({ data: {} }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to run production readiness check");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to run production readiness check",
+      );
     } finally {
       setLoading(false);
     }
@@ -58,7 +62,8 @@ function ProductionReadiness() {
         <div>
           <h2 className="text-lg font-semibold">Meta production readiness</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live database state compared with the audited Graph v26 inventory snapshot. Discovery remains the runtime source of truth.
+            Live database state compared with the audited Graph v26 inventory snapshot. Discovery
+            remains the runtime source of truth.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={() => void refresh()} disabled={loading}>
@@ -67,7 +72,11 @@ function ProductionReadiness() {
         </Button>
       </div>
 
-      {error ? <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       {result ? (
         <>
@@ -82,11 +91,18 @@ function ProductionReadiness() {
 
           <div className="mt-5 grid gap-2">
             {result.checks.map((check) => (
-              <div key={check.key} className="flex items-start gap-3 rounded-md border border-border px-3 py-2.5">
+              <div
+                key={check.key}
+                className="flex items-start gap-3 rounded-md border border-border px-3 py-2.5"
+              >
                 {check.ok ? (
                   <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
                 ) : (
-                  <CircleAlert className={`mt-0.5 size-4 shrink-0 ${check.severity === "critical" ? "text-destructive" : "text-warning"}`} />
+                  <CircleAlert
+                    className={`mt-0.5 size-4 shrink-0 ${
+                      check.severity === "critical" ? "text-destructive" : "text-warning"
+                    }`}
+                  />
                 )}
                 <div className="min-w-0">
                   <div className="text-sm font-medium">{check.label}</div>
@@ -96,13 +112,21 @@ function ProductionReadiness() {
             ))}
           </div>
 
-          {(result.drift.staleWabas.length || result.drift.staleNumbers.length || result.drift.missingBaselinePhones.length || result.drift.extraPhones.length) ? (
+          {result.drift.staleWabas.length ||
+          result.drift.staleNumbers.length ||
+          result.drift.missingBaselinePhones.length ||
+          result.drift.extraPhones.length ? (
             <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              Drift — stale WABAs: {result.drift.staleWabas.length}; stale numbers: {result.drift.staleNumbers.length}; missing audited numbers: {result.drift.missingBaselinePhones.length}; newly discovered numbers: {result.drift.extraPhones.length}.
+              Drift — stale WABAs: {result.drift.staleWabas.length}; stale numbers:{" "}
+              {result.drift.staleNumbers.length}; missing audited numbers:{" "}
+              {result.drift.missingBaselinePhones.length}; newly discovered numbers:{" "}
+              {result.drift.extraPhones.length}.
             </div>
           ) : null}
         </>
-      ) : loading ? <p className="mt-4 text-sm text-muted-foreground">Running production readiness checks…</p> : null}
+      ) : loading ? (
+        <p className="mt-4 text-sm text-muted-foreground">Running production readiness checks…</p>
+      ) : null}
     </section>
   );
 }
