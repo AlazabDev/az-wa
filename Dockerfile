@@ -29,13 +29,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=3000
+    PORT=8085
 
 COPY --from=build /app/.output ./.output
 
-EXPOSE 3000
+EXPOSE 8085
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8085/healthz >/dev/null || exit 1
 
 CMD ["node", ".output/server/index.mjs"]
