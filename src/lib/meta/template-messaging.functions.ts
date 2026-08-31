@@ -88,7 +88,6 @@ function mpmRuntimeComponents(productList: ProductListInput) {
   ];
 }
 
-
 export const sendTemplateMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: SendTemplateInput) => input)
@@ -96,13 +95,15 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
     const recipient = normalizeRecipient(data.recipient);
     if (!data.numberId) throw new Error("Send-from number is required");
     if (!data.templateId) throw new Error("Template is required");
-    if (recipient.length < 7 || recipient.length > 20) throw new Error("Recipient number is invalid");
+    if (recipient.length < 7 || recipient.length > 20)
+      throw new Error("Recipient number is invalid");
 
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_can_send_number",
       { p_number_id: data.numberId },
     );
-    if (permissionError || !allowed) throw new Error("You are not allowed to send from this number");
+    if (permissionError || !allowed)
+      throw new Error("You are not allowed to send from this number");
 
     const { data: number, error: numberError } = await context.supabase
       .from("whatsapp_numbers")
@@ -110,7 +111,8 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
       .eq("id", data.numberId)
       .maybeSingle();
     if (numberError || !number) throw new Error("WhatsApp number not found or not accessible");
-    if (!number.is_enabled || number.status !== "active") throw new Error("WhatsApp number is not active");
+    if (!number.is_enabled || number.status !== "active")
+      throw new Error("WhatsApp number is not active");
 
     const { data: template, error: templateError } = await context.supabase
       .from("templates")
@@ -118,34 +120,38 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
       .eq("id", data.templateId)
       .maybeSingle();
     if (templateError || !template) throw new Error("Template not found or not accessible");
-    if (template.organization_id !== number.organization_id) throw new Error("Template and number belong to different organizations");
-    if (template.waba_id !== number.waba_id) throw new Error("Template can only be sent from a number in the same WABA");
-    if (String(template.status).toLowerCase() !== "approved") throw new Error("Only approved Meta templates can be sent");
+    if (template.organization_id !== number.organization_id)
+      throw new Error("Template and number belong to different organizations");
+    if (template.waba_id !== number.waba_id)
+      throw new Error("Template can only be sent from a number in the same WABA");
+    if (String(template.status).toLowerCase() !== "approved")
+      throw new Error("Only approved Meta templates can be sent");
 
     const { client, number: numberScope } = await import("./graph.server").then((m) =>
       m.clientForNumber(data.numberId),
     );
-    if (!client || !numberScope) throw new Error("No active Meta credential is available for this number");
+    if (!client || !numberScope)
+      throw new Error("No active Meta credential is available for this number");
 
     const explicitComponents = Array.isArray(data.components) ? data.components : [];
     const bodyComponent = bodyRuntimeComponent(data.bodyParameters ?? []);
     const mpmComponents = data.productList ? mpmRuntimeComponents(data.productList) : [];
 
-    const runtimeComponents: Record<string, unknown>[] = mpmComponents.length > 0
-      ? [
-          ...mpmComponents.filter((component) => component.type === "header"),
-          ...explicitComponents.filter(
-            (component) => String(component["type"] ?? "").toLowerCase() === "body",
-          ),
-          ...(explicitComponents.length === 0 && bodyComponent ? [bodyComponent] : []),
-          ...mpmComponents.filter((component) => component.type === "button"),
-        ]
-      : explicitComponents.length > 0
-        ? explicitComponents
-        : bodyComponent
-          ? [bodyComponent]
-          : [];
-
+    const runtimeComponents: Record<string, unknown>[] =
+      mpmComponents.length > 0
+        ? [
+            ...mpmComponents.filter((component) => component.type === "header"),
+            ...explicitComponents.filter(
+              (component) => String(component["type"] ?? "").toLowerCase() === "body",
+            ),
+            ...(explicitComponents.length === 0 && bodyComponent ? [bodyComponent] : []),
+            ...mpmComponents.filter((component) => component.type === "button"),
+          ]
+        : explicitComponents.length > 0
+          ? explicitComponents
+          : bodyComponent
+            ? [bodyComponent]
+            : [];
 
     const requestPayload = {
       messaging_product: "whatsapp",
@@ -159,9 +165,8 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
       },
     };
 
-    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
     const idempotencyKey = `template-ui:${context.userId}:${crypto.randomUUID()}`;
 
     const { data: outbox, error: outboxError } = await supabaseRuntimeAdmin
@@ -200,7 +205,9 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
         .from("whatsapp_numbers")
         .update({ last_api_failure_at: new Date().toISOString() })
         .eq("id", data.numberId);
-      throw new Error(result.errorMessage ?? `Meta template send failed with HTTP ${result.status}`);
+      throw new Error(
+        result.errorMessage ?? `Meta template send failed with HTTP ${result.status}`,
+      );
     }
 
     const metaMessageId = result.data?.messages?.[0]?.id ?? null;

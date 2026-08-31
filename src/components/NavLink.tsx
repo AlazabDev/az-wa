@@ -10,7 +10,10 @@ interface NavLinkCompatProps extends Omit<React.ComponentPropsWithoutRef<"a">, "
 }
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
-  ({ className, activeClassName, pendingClassName: _pendingClassName, to, end, target, ...props }, ref) => {
+  (
+    { className, activeClassName, pendingClassName: _pendingClassName, to, end, target, ...props },
+    ref,
+  ) => {
     return (
       <Link
         ref={ref}

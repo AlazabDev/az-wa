@@ -117,9 +117,10 @@ export async function uploadHeaderMedia(input: {
     method: "POST",
     headers: { Authorization: `Bearer ${credential.token}` },
   });
-  const sessionPayload = (await sessionResponse.json().catch(() => null)) as
-    | { id?: string; error?: { message?: string } }
-    | null;
+  const sessionPayload = (await sessionResponse.json().catch(() => null)) as {
+    id?: string;
+    error?: { message?: string };
+  } | null;
 
   await logUpload(
     scope,
@@ -132,7 +133,9 @@ export async function uploadHeaderMedia(input: {
   if (!sessionResponse.ok || !sessionPayload?.id) {
     return {
       ok: false,
-      error: sessionPayload?.error?.message ?? `Upload session failed with HTTP ${sessionResponse.status}`,
+      error:
+        sessionPayload?.error?.message ??
+        `Upload session failed with HTTP ${sessionResponse.status}`,
     };
   }
 
@@ -149,9 +152,10 @@ export async function uploadHeaderMedia(input: {
     },
     body: input.bytes as unknown as BodyInit,
   });
-  const uploadPayload = (await uploadResponse.json().catch(() => null)) as
-    | { h?: string; error?: { message?: string } }
-    | null;
+  const uploadPayload = (await uploadResponse.json().catch(() => null)) as {
+    h?: string;
+    error?: { message?: string };
+  } | null;
 
   await logUpload(
     scope,
@@ -164,7 +168,8 @@ export async function uploadHeaderMedia(input: {
   if (!uploadResponse.ok || !uploadPayload?.h) {
     return {
       ok: false,
-      error: uploadPayload?.error?.message ?? `Media transfer failed with HTTP ${uploadResponse.status}`,
+      error:
+        uploadPayload?.error?.message ?? `Media transfer failed with HTTP ${uploadResponse.status}`,
     };
   }
 

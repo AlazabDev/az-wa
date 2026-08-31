@@ -92,7 +92,10 @@ export function normalizeComponentsForMeta(components: TemplateComponent[]): Tem
     const examples = indexes.map((index) => `sample_${index}`);
     if (type === "BODY") {
       normalized["example"] = { body_text: [examples] };
-    } else if (type === "HEADER" && String(component["format"] ?? "TEXT").toUpperCase() === "TEXT") {
+    } else if (
+      type === "HEADER" &&
+      String(component["format"] ?? "TEXT").toUpperCase() === "TEXT"
+    ) {
       normalized["example"] = { header_text: examples };
     }
 

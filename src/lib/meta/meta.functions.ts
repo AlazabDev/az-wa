@@ -22,8 +22,6 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
 
     if (portfolioError || !portfolio) throw new Error("Portfolio not found or not accessible");
 
-
-
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
       {
@@ -247,15 +245,18 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       secret: string,
       portfolioId: string | null,
     ) => {
-      const { data: credentialId, error } = await supabaseAdmin.rpc("backend_store_meta_credential", {
-        p_organization_id: organizationId,
-        p_credential_type: credentialType,
-        p_name: name,
-        p_secret: secret,
-        p_meta_app_id: metaAppInternalId,
-        ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
-        p_scopes: [],
-      });
+      const { data: credentialId, error } = await supabaseAdmin.rpc(
+        "backend_store_meta_credential",
+        {
+          p_organization_id: organizationId,
+          p_credential_type: credentialType,
+          p_name: name,
+          p_secret: secret,
+          p_meta_app_id: metaAppInternalId,
+          ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
+          p_scopes: [],
+        },
+      );
       if (error || !credentialId) {
         throw new Error(error?.message ?? `Unable to store ${credentialType}`);
       }
@@ -293,7 +294,8 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
 
     if (!verifyCredentialId) throw new Error("Verify Token is required for initial setup");
     if (!appSecretCredentialId) throw new Error("App Secret is required for initial setup");
-    if (!systemTokenCredentialId) throw new Error("System User Token is required for initial setup");
+    if (!systemTokenCredentialId)
+      throw new Error("System User Token is required for initial setup");
 
     const webhookUrl =
       process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";

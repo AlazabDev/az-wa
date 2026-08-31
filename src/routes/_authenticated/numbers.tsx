@@ -22,7 +22,10 @@ export const Route = createFileRoute("/_authenticated/numbers")({
           "Every current and future WhatsApp phone number with quality rating, messaging limit, webhook state, API health and diagnostics.",
       },
       { property: "og:title", content: "WhatsApp Numbers — AzWA" },
-      { property: "og:description", content: "Operational registry of all WhatsApp phone numbers." },
+      {
+        property: "og:description",
+        content: "Operational registry of all WhatsApp phone numbers.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -44,7 +47,13 @@ function NumbersPage() {
     const needle = q.trim().toLowerCase();
     if (!needle) return scoped;
     return scoped.filter((n) =>
-      [n.display_phone_number, n.meta_phone_number_id, n.internal_name, n.verified_name, n.department]
+      [
+        n.display_phone_number,
+        n.meta_phone_number_id,
+        n.internal_name,
+        n.verified_name,
+        n.department,
+      ]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(needle)),
     );

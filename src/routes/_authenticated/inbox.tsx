@@ -41,7 +41,9 @@ function InboxPage() {
   const [sending, setSending] = useState(false);
 
   const effectiveNumberId =
-    numberId && senders.some((number) => number.id === numberId) ? numberId : senders[0]?.id ?? "";
+    numberId && senders.some((number) => number.id === numberId)
+      ? numberId
+      : (senders[0]?.id ?? "");
 
   const submit = async () => {
     if (!effectiveNumberId || !recipient.trim() || !body.trim()) {
@@ -89,7 +91,8 @@ function InboxPage() {
                 {senders.length === 0 && <option value="">No enabled number in scope</option>}
                 {senders.map((number) => (
                   <option key={number.id} value={number.id}>
-                    {number.internal_name || number.verified_name || number.display_phone_number} — {number.display_phone_number}
+                    {number.internal_name || number.verified_name || number.display_phone_number} —{" "}
+                    {number.display_phone_number}
                   </option>
                 ))}
               </select>
@@ -116,7 +119,11 @@ function InboxPage() {
               />
             </label>
 
-            <Button onClick={submit} disabled={sending || !effectiveNumberId} className="h-10 gap-2">
+            <Button
+              onClick={submit}
+              disabled={sending || !effectiveNumberId}
+              className="h-10 gap-2"
+            >
               <Send className="size-4" />
               {sending ? "Sending…" : "Send"}
             </Button>

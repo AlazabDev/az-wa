@@ -9,12 +9,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { drainMediaQueue } from "@/lib/meta/media.server";
-import { applyTemplateWebhookChange, isTemplateWebhookField } from "@/lib/meta/template-webhook.server";
 import {
-  listWebhookSecrets,
-  matchSignature,
-  matchVerifyToken,
-} from "@/lib/meta/webhook.server";
+  applyTemplateWebhookChange,
+  isTemplateWebhookField,
+} from "@/lib/meta/template-webhook.server";
+import { listWebhookSecrets, matchSignature, matchVerifyToken } from "@/lib/meta/webhook.server";
 
 type MetaMessage = Record<string, unknown> & {
   id?: string;
@@ -53,9 +52,7 @@ type MetaWebhookPayload = {
 const MEDIA_MESSAGE_TYPES = new Set(["image", "video", "audio", "document", "sticker"]);
 
 function deduplicationKey(raw: string, entryIndex: number, changeIndex: number) {
-  return createHash("sha256")
-    .update(`${raw}:${entryIndex}:${changeIndex}`, "utf8")
-    .digest("hex");
+  return createHash("sha256").update(`${raw}:${entryIndex}:${changeIndex}`, "utf8").digest("hex");
 }
 
 function asJson(value: unknown): Json {
@@ -146,9 +143,8 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
             const value = change.value ?? {};
             const metaPhoneId = value.metadata?.phone_number_id ?? null;
             const metaWabaId = entry.id ?? null;
-            const templateEventId = value.message_template_id != null
-              ? String(value.message_template_id)
-              : null;
+            const templateEventId =
+              value.message_template_id != null ? String(value.message_template_id) : null;
             const firstMessageId =
               value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
 

@@ -26,7 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
-  const [currentTenantId, setTenantId] = useState<string | null>(() => localStorage.getItem(TENANT_KEY));
+  const [currentTenantId, setTenantId] = useState<string | null>(() =>
+    localStorage.getItem(TENANT_KEY),
+  );
 
   const loadMemberships = async (userId?: string) => {
     const uid = userId ?? session?.user.id;
@@ -48,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const stored = localStorage.getItem(TENANT_KEY);
     const validStored = stored && rows.some((m) => m.tenant_id === stored);
-    const next = validStored ? stored : rows[0]?.tenant_id ?? null;
+    const next = validStored ? stored : (rows[0]?.tenant_id ?? null);
     setTenantId(next);
     if (next) localStorage.setItem(TENANT_KEY, next);
     else localStorage.removeItem(TENANT_KEY);
@@ -92,17 +94,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const currentRole = memberships.find((m) => m.tenant_id === currentTenantId)?.role ?? null;
 
-  const value = useMemo<AuthContextValue>(() => ({
-    session,
-    user: session?.user ?? null,
-    loading,
-    memberships,
-    currentTenantId,
-    currentRole,
-    setCurrentTenantId,
-    refreshMemberships: () => loadMemberships(),
-    signOut: async () => { await supabase.auth.signOut(); },
-  }), [session, loading, memberships, currentTenantId, currentRole]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      session,
+      user: session?.user ?? null,
+      loading,
+      memberships,
+      currentTenantId,
+      currentRole,
+      setCurrentTenantId,
+      refreshMemberships: () => loadMemberships(),
+      signOut: async () => {
+        await supabase.auth.signOut();
+      },
+    }),
+    [session, loading, memberships, currentTenantId, currentRole],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

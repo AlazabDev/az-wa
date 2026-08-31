@@ -23,7 +23,10 @@ export default function Login() {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
     setSubmitting(false);
     if (signInError) {
       setError(signInError.message);
@@ -41,19 +44,41 @@ export default function Login() {
             <Building2 className="h-6 w-6 text-primary-foreground" />
           </div>
           <CardTitle>WhatsApp Business Hub</CardTitle>
-          <CardDescription>سجّل الدخول بحساب مصرح له للوصول إلى حسابات واتساب والعمليات المالية.</CardDescription>
+          <CardDescription>
+            سجّل الدخول بحساب مصرح له للوصول إلى حسابات واتساب والعمليات المالية.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={submit}>
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required dir="ltr" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                dir="ltr"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required dir="ltr" />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                dir="ltr"
+              />
             </div>
-            {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
             <Button className="w-full" type="submit" disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
               تسجيل الدخول

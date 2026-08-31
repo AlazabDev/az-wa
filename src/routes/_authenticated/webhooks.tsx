@@ -73,7 +73,8 @@ function WebhooksPage() {
             </dt>
             <dd className="mt-1 text-xs text-muted-foreground">
               Portfolio sync verifies /subscribed_apps for every WABA and automatically subscribes
-              the AzWA Meta App when it is missing. One WABA subscription covers every number under it.
+              the AzWA Meta App when it is missing. One WABA subscription covers every number under
+              it.
             </dd>
           </div>
         </dl>

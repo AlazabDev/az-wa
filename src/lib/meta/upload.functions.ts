@@ -62,9 +62,7 @@ export const uploadTemplateHeaderMedia = createServerFn({ method: "POST" })
     const { ALLOWED_HEADER_MEDIA_TYPES, uploadHeaderMedia } = await import("./upload.server");
     const allowedTypes = ALLOWED_HEADER_MEDIA_TYPES[data.headerFormat] ?? [];
     if (!allowedTypes.includes(data.mimeType)) {
-      throw new Error(
-        `${data.headerFormat} headers accept only: ${allowedTypes.join(", ")}`,
-      );
+      throw new Error(`${data.headerFormat} headers accept only: ${allowedTypes.join(", ")}`);
     }
 
     const result = await uploadHeaderMedia({

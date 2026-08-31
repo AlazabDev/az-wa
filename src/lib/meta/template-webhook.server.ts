@@ -128,7 +128,8 @@ export async function applyTemplateWebhookChange(input: {
   }
 
   if (input.field === "template_category_update") {
-    const category = stringValue(value.new_category) ?? stringValue(value.category) ?? stringValue(value.event);
+    const category =
+      stringValue(value.new_category) ?? stringValue(value.category) ?? stringValue(value.event);
     if (category) patch["category"] = category.toUpperCase();
   }
 

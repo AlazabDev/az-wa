@@ -13,7 +13,10 @@ export const Route = createFileRoute("/_authenticated/health")({
           "Continuous health checks per number and WABA: API reachability, webhook delivery, token validity, quality rating and messaging limits.",
       },
       { property: "og:title", content: "Health & Diagnostics — AzWA" },
-      { property: "og:description", content: "Continuous health checks for WhatsApp infrastructure." },
+      {
+        property: "og:description",
+        content: "Continuous health checks for WhatsApp infrastructure.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
