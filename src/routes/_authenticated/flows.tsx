@@ -196,7 +196,7 @@ function WhatsappFlowsPage() {
     try {
       const result = await uploadJson({ data: { flowId: jsonFlowId, flowJson } });
       if (!result.ok) throw new Error(result.error);
-      const count = result.validationErrors.length;
+      const count = result.validationErrorCount;
       if (count > 0) toast.error(`Flow JSON uploaded with ${count} validation issue(s)`);
       else toast.success("Flow JSON uploaded and validated");
       await invalidateFlows();
