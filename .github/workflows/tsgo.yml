@@ -40,7 +40,8 @@ jobs:
           SUPABASE_URL: https://pmhuylckjwrongxlrgrx.supabase.co
           SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
-          META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/api/public/webhooks/meta/whatsapp
+          META_GRAPH_VERSION: v26.0
+          META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/webhooks/meta/whatsapp
           LOVABLE_CRON_SECRET: ci-cron-placeholder
         run: bun run build
 
