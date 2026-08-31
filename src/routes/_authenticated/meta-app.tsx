@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/meta-app")({
 type SecretState = {
   verifyToken: boolean;
   appSecret: boolean;
+  appAccessToken: boolean;
   systemUserToken: boolean;
 };
 
@@ -41,6 +42,7 @@ function MetaAppPage() {
   const [namespace, setNamespace] = useState("");
   const [verifyToken, setVerifyToken] = useState("");
   const [appSecret, setAppSecret] = useState("");
+  const [appAccessToken, setAppAccessToken] = useState("");
   const [systemUserToken, setSystemUserToken] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookStatus, setWebhookStatus] = useState("unconfigured");
@@ -48,6 +50,7 @@ function MetaAppPage() {
   const [configured, setConfigured] = useState<SecretState>({
     verifyToken: false,
     appSecret: false,
+    appAccessToken: false,
     systemUserToken: false,
   });
 
@@ -65,6 +68,7 @@ function MetaAppPage() {
         setConfigured({
           verifyToken: config.hasVerifyToken,
           appSecret: config.hasAppSecret,
+          appAccessToken: config.hasAppAccessToken,
           systemUserToken: config.hasSystemUserToken,
         });
       })
@@ -91,15 +95,22 @@ function MetaAppPage() {
           namespace,
           verifyToken,
           appSecret,
+          appAccessToken,
           systemUserToken,
         },
       });
 
       setWebhookUrl(result.webhookUrl);
       setWebhookStatus("active");
-      setConfigured({ verifyToken: true, appSecret: true, systemUserToken: true });
+      setConfigured({
+        verifyToken: true,
+        appSecret: true,
+        appAccessToken: true,
+        systemUserToken: true,
+      });
       setVerifyToken("");
       setAppSecret("");
+      setAppAccessToken("");
       setSystemUserToken("");
       toast.success("Meta App configuration saved");
     } catch (error) {
@@ -113,7 +124,7 @@ function MetaAppPage() {
     <>
       <PageHeader
         title="Meta App"
-        description="App identity and webhook credentials are stored server-side. Secrets are written to Supabase Vault and are never returned to the browser."
+        description="App identity and all Meta secrets are stored server-side in Supabase Vault and are never returned to the browser."
       />
 
       <form onSubmit={onSubmit} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -173,6 +184,13 @@ function MetaAppPage() {
               disabled={loading || saving}
             />
             <SecretField
+              label="App Access Token"
+              value={appAccessToken}
+              onChange={setAppAccessToken}
+              configured={configured.appAccessToken}
+              disabled={loading || saving}
+            />
+            <SecretField
               label="System User Token"
               value={systemUserToken}
               onChange={setSystemUserToken}
@@ -194,6 +212,7 @@ function MetaAppPage() {
             <div className="space-y-3 text-sm">
               <CredentialState label="Verify Token" ready={configured.verifyToken} />
               <CredentialState label="App Secret" ready={configured.appSecret} />
+              <CredentialState label="App Access Token" ready={configured.appAccessToken} />
               <CredentialState label="System User Token" ready={configured.systemUserToken} />
             </div>
           </Panel>
