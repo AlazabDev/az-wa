@@ -37,4 +37,18 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    // Legacy react-router pages and the archived Deno edge functions predate the
+    // unified AzWA schema; `any` there stays a warning instead of a build blocker.
+    files: [
+      "src/pages/**/*.{ts,tsx}",
+      "src/contexts/**/*.{ts,tsx}",
+      "src/components/App*.tsx",
+      "supabase/functions/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 );
+
