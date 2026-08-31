@@ -17,7 +17,10 @@ export const Route = createFileRoute("/_authenticated/wabas")({
           "Every WhatsApp Business Account in the organisation with its numbers, templates, message volume, errors and sync state.",
       },
       { property: "og:title", content: "WABAs — AzWA" },
-      { property: "og:description", content: "All WhatsApp Business Accounts in one control plane." },
+      {
+        property: "og:description",
+        content: "All WhatsApp Business Accounts in one control plane.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

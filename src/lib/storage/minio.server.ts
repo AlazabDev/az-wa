@@ -34,10 +34,7 @@ function readConfig(): MinioConfig {
     endpoint,
     accessKey: requiredEnv("MINIO_ACCESS_KEY"),
     secretKey: requiredEnv("MINIO_SECRET_KEY"),
-    bucket:
-      optionalEnv("MINIO_BUCKET_NAME") ??
-      optionalEnv("MINIO_BUCKET") ??
-      "az-bk-whatsapp",
+    bucket: optionalEnv("MINIO_BUCKET_NAME") ?? optionalEnv("MINIO_BUCKET") ?? "az-bk-whatsapp",
     region: optionalEnv("MINIO_REGION") ?? "us-east-1",
   };
 }
@@ -51,17 +48,14 @@ function hmac(key: string | Buffer, value: string): Buffer {
 }
 
 function encodePathPart(value: string): string {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
-    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 }
 
 function encodeObjectKey(key: string): string {
-  return key
-    .split("/")
-    .filter(Boolean)
-    .map(encodePathPart)
-    .join("/");
+  return key.split("/").filter(Boolean).map(encodePathPart).join("/");
 }
 
 function timestampParts(now = new Date()) {
@@ -70,11 +64,7 @@ function timestampParts(now = new Date()) {
   return { amzDate, dateStamp: amzDate.slice(0, 8) };
 }
 
-function signingKey(
-  secretKey: string,
-  dateStamp: string,
-  region: string,
-): Buffer {
+function signingKey(secretKey: string, dateStamp: string, region: string): Buffer {
   const kDate = hmac(`AWS4${secretKey}`, dateStamp);
   const kRegion = hmac(kDate, region);
   const kService = hmac(kRegion, "s3");
@@ -99,16 +89,11 @@ export async function putMinioObject(input: {
   const bucketPath = encodePathPart(config.bucket);
   const objectPath = encodeObjectKey(input.key);
   const basePath = config.endpoint.pathname.replace(/\/$/, "");
-  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(
-    /\/+/g,
-    "/",
-  );
+  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(/\/+/g, "/");
 
   const host = config.endpoint.host;
   const canonicalHeaders =
-    `host:${host}\n` +
-    `x-amz-content-sha256:${payloadHash}\n` +
-    `x-amz-date:${amzDate}\n`;
+    `host:${host}\n` + `x-amz-content-sha256:${payloadHash}\n` + `x-amz-date:${amzDate}\n`;
   const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
 
   const canonicalRequest = [
@@ -121,17 +106,9 @@ export async function putMinioObject(input: {
   ].join("\n");
 
   const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    scope,
-    hashHex(canonicalRequest),
-  ].join("\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hashHex(canonicalRequest)].join("\n");
 
-  const signature = createHmac(
-    "sha256",
-    signingKey(config.secretKey, dateStamp, config.region),
-  )
+  const signature = createHmac("sha256", signingKey(config.secretKey, dateStamp, config.region))
     .update(stringToSign, "utf8")
     .digest("hex");
 
@@ -156,9 +133,7 @@ export async function putMinioObject(input: {
 
   if (!response.ok) {
     const detail = (await response.text().catch(() => "")).slice(0, 1000);
-    throw new Error(
-      `MinIO upload failed (HTTP ${response.status})${detail ? `: ${detail}` : ""}`,
-    );
+    throw new Error(`MinIO upload failed (HTTP ${response.status})${detail ? `: ${detail}` : ""}`);
   }
 
   return {

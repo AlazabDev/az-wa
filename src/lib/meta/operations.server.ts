@@ -10,7 +10,12 @@ import {
   recordMetaHealth,
   validatePortfolioCredential,
 } from "./connectivity.server";
-import { MetaGraphClient, clientForNumber, loadNumberScope, resolveCredential } from "./graph.server";
+import {
+  MetaGraphClient,
+  clientForNumber,
+  loadNumberScope,
+  resolveCredential,
+} from "./graph.server";
 
 export type SyncReport = {
   portfolio: string;

@@ -92,7 +92,10 @@ export function normalizeComponentsForMeta(components: TemplateComponent[]): Tem
     const examples = indexes.map((index) => `sample_${index}`);
     if (type === "BODY") {
       normalized["example"] = { body_text: [examples] };
-    } else if (type === "HEADER" && String(component["format"] ?? "TEXT").toUpperCase() === "TEXT") {
+    } else if (
+      type === "HEADER" &&
+      String(component["format"] ?? "TEXT").toUpperCase() === "TEXT"
+    ) {
       normalized["example"] = { header_text: examples };
     }
 
@@ -268,7 +271,7 @@ export async function createWabaTemplate(input: {
   const { data: row, error } = await supabaseAdmin
     .from("templates")
     // Runtime schema is ahead of the generated client types.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     .upsert(
       {
         organization_id: waba.organization_id,
@@ -299,11 +302,12 @@ export async function createWabaTemplate(input: {
     organization_id: waba.organization_id,
     template_id: row.id,
     version_no: 1,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Runtime schema is ahead of the generated client types.
     snapshot: {
       components,
       category: (response.data.category ?? input.category).toUpperCase(),
       language: input.language,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
   });
 

@@ -23,7 +23,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <h1 className="text-lg font-semibold">حدث خطأ غير متوقع</h1>
           <p className="text-sm text-muted-foreground break-words">{this.state.error.message}</p>
           <div className="flex justify-center gap-2">
-            <Button onClick={() => this.setState({ error: null })} variant="outline">إعادة المحاولة</Button>
+            <Button onClick={() => this.setState({ error: null })} variant="outline">
+              إعادة المحاولة
+            </Button>
             <Button onClick={() => window.location.assign("/")}>العودة للرئيسية</Button>
           </div>
         </div>

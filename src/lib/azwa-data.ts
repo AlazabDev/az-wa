@@ -194,15 +194,7 @@ export function useOpsCounters(numberIds: string[]) {
         return count ?? 0;
       };
 
-      const [
-        messagesToday,
-        incoming,
-        outgoing,
-        sent,
-        delivered,
-        read,
-        failed,
-      ] = await Promise.all([
+      const [messagesToday, incoming, outgoing, sent, delivered, read, failed] = await Promise.all([
         countMessages(),
         countMessages({ direction: "incoming" }),
         countMessages({ direction: "outgoing" }),
@@ -254,7 +246,8 @@ export function useOpsCounters(numberIds: string[]) {
       }
 
       let templatesQuery = supabase.from("templates").select("status");
-      if (scoped && scopedWabaIds.length > 0) templatesQuery = templatesQuery.in("waba_id", scopedWabaIds);
+      if (scoped && scopedWabaIds.length > 0)
+        templatesQuery = templatesQuery.in("waba_id", scopedWabaIds);
       const { data: templates, error: templateError } = await templatesQuery;
       if (templateError) throw templateError;
 

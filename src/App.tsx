@@ -35,32 +35,34 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/inbox" element={<Inbox />} />
-              <Route path="/finance" element={<Finance />} />
-              <Route path="/webhooks" element={<Webhooks />} />
-              <Route path="/settings" element={<Settings />} />
-              {import.meta.env.DEV && <>
-                <Route path="/accounts" element={<Accounts />} />
-                <Route path="/templates" element={<Templates />} />
-                <Route path="/flows" element={<Flows />} />
-                <Route path="/flows/new" element={<FlowBuilder />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/clients" element={<Clients />} />
-                <Route path="/maintenance" element={<Maintenance />} />
-                <Route path="/teams" element={<Teams />} />
-              </>}
-            </Route>
-            <Route path="/home" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/inbox" element={<Inbox />} />
+                <Route path="/finance" element={<Finance />} />
+                <Route path="/webhooks" element={<Webhooks />} />
+                <Route path="/settings" element={<Settings />} />
+                {import.meta.env.DEV && (
+                  <>
+                    <Route path="/accounts" element={<Accounts />} />
+                    <Route path="/templates" element={<Templates />} />
+                    <Route path="/flows" element={<Flows />} />
+                    <Route path="/flows/new" element={<FlowBuilder />} />
+                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/clients" element={<Clients />} />
+                    <Route path="/maintenance" element={<Maintenance />} />
+                    <Route path="/teams" element={<Teams />} />
+                  </>
+                )}
+              </Route>
+              <Route path="/home" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
       </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>

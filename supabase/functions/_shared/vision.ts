@@ -13,10 +13,15 @@ export interface VisionResult {
   raw: unknown;
 }
 
-export async function analyzeImage(bytes: Uint8Array, contentType = "image/jpeg"): Promise<VisionResult> {
-  if (!visionConfigured()) throw new Error("AZURE_VISION_ENDPOINT / AZURE_VISION_KEY not configured");
+export async function analyzeImage(
+  bytes: Uint8Array,
+  contentType = "image/jpeg",
+): Promise<VisionResult> {
+  if (!visionConfigured())
+    throw new Error("AZURE_VISION_ENDPOINT / AZURE_VISION_KEY not configured");
 
-  const url = `${ENDPOINT}/computervision/imageanalysis:analyze` +
+  const url =
+    `${ENDPOINT}/computervision/imageanalysis:analyze` +
     `?api-version=2024-02-01&features=read,caption,tags&gender-neutral-caption=true`;
 
   const res = await fetch(url, {
@@ -30,9 +35,7 @@ export async function analyzeImage(bytes: Uint8Array, contentType = "image/jpeg"
   }
 
   const blocks = json?.readResult?.blocks ?? [];
-  const ocrText = blocks
-    .flatMap((b: any) => (b.lines ?? []).map((l: any) => l.text))
-    .join("\n");
+  const ocrText = blocks.flatMap((b: any) => (b.lines ?? []).map((l: any) => l.text)).join("\n");
 
   return {
     ocrText,

@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   const supabase = createClient(SUPABASE_URL, ANON_KEY, {
@@ -29,7 +30,8 @@ Deno.serve(async (req) => {
   const { data: claims, error } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
   if (error || !claims?.claims) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   const userId = claims.claims.sub;
@@ -52,59 +54,77 @@ Deno.serve(async (req) => {
   };
 
   // Test each number against Meta
-  const results = await Promise.all((numbers ?? []).map(async (n) => {
-    const startedAt = Date.now();
-    try {
-      const r = await fetch(
-        `https://graph.facebook.com/${WA_VERSION}/${n.phone_number_id}?fields=display_phone_number,verified_name,quality_rating,code_verification_status,platform_type`,
-        { headers: { Authorization: `Bearer ${WA_TOKEN}` } },
-      );
-      const json = await r.json();
-      const elapsed = Date.now() - startedAt;
-      if (!r.ok) {
+  const results = await Promise.all(
+    (numbers ?? []).map(async (n) => {
+      const startedAt = Date.now();
+      try {
+        const r = await fetch(
+          `https://graph.facebook.com/${WA_VERSION}/${n.phone_number_id}?fields=display_phone_number,verified_name,quality_rating,code_verification_status,platform_type`,
+          { headers: { Authorization: `Bearer ${WA_TOKEN}` } },
+        );
+        const json = await r.json();
+        const elapsed = Date.now() - startedAt;
+        if (!r.ok) {
+          return {
+            id: n.id,
+            phone: n.display_phone_number || n.phone_e164,
+            phone_number_id: n.phone_number_id,
+            ok: false,
+            error: json?.error?.message || `HTTP ${r.status}`,
+            code: json?.error?.code,
+            latency_ms: elapsed,
+          };
+        }
+        // Refresh DB metadata
+        await admin
+          .from("wa_numbers")
+          .update({
+            verified_name: json.verified_name ?? n.verified_name,
+            display_phone_number: json.display_phone_number ?? n.display_phone_number,
+            quality_rating: json.quality_rating ?? null,
+            platform_type: json.platform_type ?? null,
+            last_active_at: new Date().toISOString(),
+          })
+          .eq("id", n.id);
         return {
-          id: n.id, phone: n.display_phone_number || n.phone_e164,
-          phone_number_id: n.phone_number_id, ok: false,
-          error: json?.error?.message || `HTTP ${r.status}`,
-          code: json?.error?.code, latency_ms: elapsed,
+          id: n.id,
+          phone: json.display_phone_number || n.phone_e164,
+          phone_number_id: n.phone_number_id,
+          ok: true,
+          verified_name: json.verified_name,
+          quality: json.quality_rating,
+          latency_ms: elapsed,
+        };
+      } catch (e) {
+        return {
+          id: n.id,
+          phone: n.display_phone_number || n.phone_e164,
+          phone_number_id: n.phone_number_id,
+          ok: false,
+          error: (e as Error).message,
+          latency_ms: Date.now() - startedAt,
         };
       }
-      // Refresh DB metadata
-      await admin.from("wa_numbers").update({
-        verified_name: json.verified_name ?? n.verified_name,
-        display_phone_number: json.display_phone_number ?? n.display_phone_number,
-        quality_rating: json.quality_rating ?? null,
-        platform_type: json.platform_type ?? null,
-        last_active_at: new Date().toISOString(),
-      }).eq("id", n.id);
-      return {
-        id: n.id, phone: json.display_phone_number || n.phone_e164,
-        phone_number_id: n.phone_number_id, ok: true,
-        verified_name: json.verified_name, quality: json.quality_rating,
-        latency_ms: elapsed,
-      };
-    } catch (e) {
-      return {
-        id: n.id, phone: n.display_phone_number || n.phone_e164,
-        phone_number_id: n.phone_number_id, ok: false,
-        error: (e as Error).message, latency_ms: Date.now() - startedAt,
-      };
-    }
-  }));
+    }),
+  );
 
   const webhookUrl = `${SUPABASE_URL}/functions/v1/wa-webhook`;
 
-  return new Response(JSON.stringify({
-    webhook_url: webhookUrl,
-    api_version: WA_VERSION,
-    env: envStatus,
-    numbers: results,
-    summary: {
-      total: results.length,
-      online: results.filter((r) => r.ok).length,
-      offline: results.filter((r) => !r.ok).length,
+  return new Response(
+    JSON.stringify({
+      webhook_url: webhookUrl,
+      api_version: WA_VERSION,
+      env: envStatus,
+      numbers: results,
+      summary: {
+        total: results.length,
+        online: results.filter((r) => r.ok).length,
+        offline: results.filter((r) => !r.ok).length,
+      },
+    }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     },
-  }), {
-    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  );
 });

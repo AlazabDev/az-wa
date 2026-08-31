@@ -8,13 +8,46 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import {
-  RefreshCw, Copy, CheckCircle2, XCircle, Phone, Webhook, KeyRound,
-  Activity, Eye, EyeOff, AlertCircle, Wifi, WifiOff, Send, Loader2,
+  RefreshCw,
+  Copy,
+  CheckCircle2,
+  XCircle,
+  Phone,
+  Webhook,
+  KeyRound,
+  Activity,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Wifi,
+  WifiOff,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -101,21 +134,37 @@ export default function Settings() {
           .eq("provider_message_id", testResult.message_id!)
           .maybeSingle();
         if (m && !cancelled) {
-          setTestResult((r) => r && { ...r, status: m.status, sent_at: m.sent_at, delivered_at: m.delivered_at, read_at: m.read_at });
+          setTestResult(
+            (r) =>
+              r && {
+                ...r,
+                status: m.status,
+                sent_at: m.sent_at,
+                delivered_at: m.delivered_at,
+                read_at: m.read_at,
+              },
+          );
           if (m.read_at || m.delivered_at) break;
         }
         await new Promise((r) => setTimeout(r, 3000));
       }
     };
     poll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [testResult?.message_id, testResult?.ok]);
 
   const runTest = async () => {
     setTesting(true);
-    try { await refetch(); toast.success("تم تحديث حالة الاتصال"); }
-    catch (e: any) { toast.error("فشل: " + e.message); }
-    finally { setTesting(false); }
+    try {
+      await refetch();
+      toast.success("تم تحديث حالة الاتصال");
+    } catch (e: any) {
+      toast.error("فشل: " + e.message);
+    } finally {
+      setTesting(false);
+    }
   };
 
   const sendTest = async () => {
@@ -161,7 +210,13 @@ export default function Settings() {
       subtitle="إعداد الأرقام والمتغيرات والويب هوك مع مؤشرات الاتصال"
       actions={
         <div className="flex gap-2">
-          <Dialog open={testOpen} onOpenChange={(o) => { setTestOpen(o); if (!o) setTestResult(null); }}>
+          <Dialog
+            open={testOpen}
+            onOpenChange={(o) => {
+              setTestOpen(o);
+              if (!o) setTestResult(null);
+            }}
+          >
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Send className="h-4 w-4" />
@@ -179,14 +234,27 @@ export default function Settings() {
                 <div className="space-y-2">
                   <Label className="text-xs">الرقم المرسل</Label>
                   <Select value={testNumberId} onValueChange={setTestNumberId}>
-                    <SelectTrigger><SelectValue placeholder="اختر رقم..." /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر رقم..." />
+                    </SelectTrigger>
                     <SelectContent>
                       {data?.numbers.map((n) => (
                         <SelectItem key={n.id} value={n.id}>
                           <span className="flex items-center gap-2">
-                            <span className={cn("h-2 w-2 rounded-full", n.ok ? "bg-success" : "bg-destructive")} />
-                            <span dir="ltr" className="font-mono">{n.phone}</span>
-                            {n.verified_name && <span className="text-muted-foreground text-xs">• {n.verified_name}</span>}
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                n.ok ? "bg-success" : "bg-destructive",
+                              )}
+                            />
+                            <span dir="ltr" className="font-mono">
+                              {n.phone}
+                            </span>
+                            {n.verified_name && (
+                              <span className="text-muted-foreground text-xs">
+                                • {n.verified_name}
+                              </span>
+                            )}
                           </span>
                         </SelectItem>
                       ))}
@@ -205,12 +273,22 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs">نص الرسالة</Label>
-                  <Textarea rows={3} value={testText} onChange={(e) => setTestText(e.target.value)} />
+                  <Textarea
+                    rows={3}
+                    value={testText}
+                    onChange={(e) => setTestText(e.target.value)}
+                  />
                 </div>
 
                 {testResult && (
-                  <div className={cn("rounded-lg border p-3 space-y-2",
-                    testResult.ok ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5")}>
+                  <div
+                    className={cn(
+                      "rounded-lg border p-3 space-y-2",
+                      testResult.ok
+                        ? "border-success/40 bg-success/5"
+                        : "border-destructive/40 bg-destructive/5",
+                    )}
+                  >
                     <div className="flex items-center gap-2">
                       {testResult.ok ? (
                         <CheckCircle2 className="h-5 w-5 text-success" />
@@ -225,26 +303,39 @@ export default function Settings() {
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">معرف الرسالة:</span>
-                          <code className="font-mono" dir="ltr">{testResult.message_id?.slice(-20)}</code>
+                          <code className="font-mono" dir="ltr">
+                            {testResult.message_id?.slice(-20)}
+                          </code>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">الحالة:</span>
-                          <Badge variant={testResult.read_at ? "default" : "secondary"} className="text-[10px]">
-                            {testResult.read_at ? "مقروءة ✓✓" :
-                             testResult.delivered_at ? "تم التسليم ✓✓" :
-                             testResult.sent_at || testResult.status === "sent" ? "تم الإرسال ✓" : "قيد الانتظار..."}
+                          <Badge
+                            variant={testResult.read_at ? "default" : "secondary"}
+                            className="text-[10px]"
+                          >
+                            {testResult.read_at
+                              ? "مقروءة ✓✓"
+                              : testResult.delivered_at
+                                ? "تم التسليم ✓✓"
+                                : testResult.sent_at || testResult.status === "sent"
+                                  ? "تم الإرسال ✓"
+                                  : "قيد الانتظار..."}
                           </Badge>
                         </div>
                         {testResult.delivered_at && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">سُلّمت في:</span>
-                            <span dir="ltr">{new Date(testResult.delivered_at).toLocaleTimeString("ar-EG")}</span>
+                            <span dir="ltr">
+                              {new Date(testResult.delivered_at).toLocaleTimeString("ar-EG")}
+                            </span>
                           </div>
                         )}
                         {testResult.read_at && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">قُرئت في:</span>
-                            <span dir="ltr">{new Date(testResult.read_at).toLocaleTimeString("ar-EG")}</span>
+                            <span dir="ltr">
+                              {new Date(testResult.read_at).toLocaleTimeString("ar-EG")}
+                            </span>
                           </div>
                         )}
                         {!testResult.delivered_at && (
@@ -258,8 +349,11 @@ export default function Settings() {
                       <div className="text-xs space-y-1">
                         <p className="text-destructive">{testResult.error}</p>
                         {testResult.details && (
-                          <pre className="bg-background/60 rounded p-2 overflow-auto text-[10px] max-h-32" dir="ltr">
-{JSON.stringify(testResult.details, null, 2)}
+                          <pre
+                            className="bg-background/60 rounded p-2 overflow-auto text-[10px] max-h-32"
+                            dir="ltr"
+                          >
+                            {JSON.stringify(testResult.details, null, 2)}
                           </pre>
                         )}
                       </div>
@@ -268,9 +362,15 @@ export default function Settings() {
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setTestOpen(false)}>إغلاق</Button>
+                <Button variant="outline" onClick={() => setTestOpen(false)}>
+                  إغلاق
+                </Button>
                 <Button onClick={sendTest} disabled={sending} className="gap-2">
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                   {sending ? "جاري الإرسال..." : "إرسال الآن"}
                 </Button>
               </DialogFooter>
@@ -285,7 +385,12 @@ export default function Settings() {
     >
       <div className="space-y-6" dir="rtl">
         {/* Overall status */}
-        <Card className={cn("border-2", overallOk ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5")}>
+        <Card
+          className={cn(
+            "border-2",
+            overallOk ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5",
+          )}
+        >
           <CardContent className="p-5 flex items-center gap-4">
             {overallOk ? (
               <Wifi className="h-10 w-10 text-success" />
@@ -297,7 +402,9 @@ export default function Settings() {
                 {overallOk ? "النظام متصل بنجاح" : "هناك مشاكل في الاتصال"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {data ? `${data.summary.online}/${data.summary.total} أرقام نشطة • API ${data.api_version}` : "جاري الفحص..."}
+                {data
+                  ? `${data.summary.online}/${data.summary.total} أرقام نشطة • API ${data.api_version}`
+                  : "جاري الفحص..."}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
@@ -306,12 +413,15 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">متصل</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-destructive">{data?.summary.offline ?? "—"}</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {data?.summary.offline ?? "—"}
+                </p>
                 <p className="text-xs text-muted-foreground">معطل</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-info">
-                  {data ? Object.values(data.env).filter(Boolean).length : "—"}/{Object.keys(ENV_LABELS).length}
+                  {data ? Object.values(data.env).filter(Boolean).length : "—"}/
+                  {Object.keys(ENV_LABELS).length}
                 </p>
                 <p className="text-xs text-muted-foreground">متغيرات</p>
               </div>
@@ -325,8 +435,15 @@ export default function Settings() {
             <div className="flex items-center gap-2">
               <Webhook className="h-5 w-5 text-primary" />
               <h3 className="font-bold">رابط الويب هوك (Webhook URL)</h3>
-              <Badge variant={data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? "default" : "destructive"} className="gap-1">
-                {data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+              <Badge
+                variant={data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? "default" : "destructive"}
+                className="gap-1"
+              >
+                {data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <XCircle className="h-3 w-3" />
+                )}
                 {data?.env["WA_WEBHOOK_VERIFY_TOKEN"] ? "جاهز" : "Verify Token مفقود"}
               </Badge>
             </div>
@@ -337,8 +454,17 @@ export default function Settings() {
             <div className="space-y-2">
               <Label className="text-xs">Callback URL</Label>
               <div className="flex gap-2">
-                <Input value={data?.webhook_url ?? ""} readOnly dir="ltr" className="font-mono text-xs" />
-                <Button variant="outline" size="icon" onClick={() => copyToClipboard(data?.webhook_url ?? "", "الرابط")}>
+                <Input
+                  value={data?.webhook_url ?? ""}
+                  readOnly
+                  dir="ltr"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(data?.webhook_url ?? "", "الرابط")}
+                >
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
@@ -357,8 +483,15 @@ export default function Settings() {
             <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-xs">
               <p className="font-semibold">الحقول المطلوب الاشتراك بها في Meta:</p>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {["messages", "message_template_status_update", "message_status", "account_review_update"].map((f) => (
-                  <Badge key={f} variant="secondary" className="font-mono text-[10px]">{f}</Badge>
+                {[
+                  "messages",
+                  "message_template_status_update",
+                  "message_status",
+                  "account_review_update",
+                ].map((f) => (
+                  <Badge key={f} variant="secondary" className="font-mono text-[10px]">
+                    {f}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -373,7 +506,12 @@ export default function Settings() {
                 <KeyRound className="h-5 w-5 text-primary" />
                 <h3 className="font-bold">المتغيرات البيئية</h3>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowSecret(!showSecret)} className="gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSecret(!showSecret)}
+                className="gap-1.5"
+              >
                 {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 {showSecret ? "إخفاء" : "إظهار"}
               </Button>
@@ -383,10 +521,21 @@ export default function Settings() {
               {Object.entries(ENV_LABELS).map(([key, label]) => {
                 const ok = data?.env[key];
                 return (
-                  <div key={key} className={cn("flex items-center gap-3 p-3 rounded-lg border",
-                    ok ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5")}>
-                    <div className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0",
-                      ok ? "bg-success animate-pulse" : "bg-destructive")} />
+                  <div
+                    key={key}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border",
+                      ok
+                        ? "border-success/30 bg-success/5"
+                        : "border-destructive/30 bg-destructive/5",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "h-2.5 w-2.5 rounded-full flex-shrink-0",
+                        ok ? "bg-success animate-pulse" : "bg-destructive",
+                      )}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{label}</p>
                       <code className="text-[10px] text-muted-foreground font-mono">{key}</code>
@@ -405,7 +554,8 @@ export default function Settings() {
               <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
                 <AlertCircle className="h-4 w-4 text-warning mt-0.5" />
                 <p className="text-xs">
-                  بعض المتغيرات غير مضافة. يجب إضافتها من إعدادات Supabase Edge Functions Secrets قبل الاستخدام الفعلي.
+                  بعض المتغيرات غير مضافة. يجب إضافتها من إعدادات Supabase Edge Functions Secrets
+                  قبل الاستخدام الفعلي.
                 </p>
               </div>
             )}
@@ -418,7 +568,9 @@ export default function Settings() {
             <div className="flex items-center gap-2 mb-4">
               <Phone className="h-5 w-5 text-primary" />
               <h3 className="font-bold">حالة الأرقام مع Meta</h3>
-              <Badge variant="outline" className="ml-auto">{data?.summary.total ?? 0} رقم</Badge>
+              <Badge variant="outline" className="ml-auto">
+                {data?.summary.total ?? 0} رقم
+              </Badge>
             </div>
 
             {isLoading ? (
@@ -445,36 +597,65 @@ export default function Settings() {
                     <TableRow key={n.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className={cn("h-3 w-3 rounded-full",
-                            n.ok ? "bg-success animate-pulse shadow-[0_0_8px_hsl(var(--success))]" : "bg-destructive")} />
+                          <div
+                            className={cn(
+                              "h-3 w-3 rounded-full",
+                              n.ok
+                                ? "bg-success animate-pulse shadow-[0_0_8px_hsl(var(--success))]"
+                                : "bg-destructive",
+                            )}
+                          />
                           <Badge variant={n.ok ? "default" : "destructive"} className="text-[10px]">
                             {n.ok ? "متصل" : "معطل"}
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-sm" dir="ltr">{n.phone}</TableCell>
+                      <TableCell className="font-mono text-sm" dir="ltr">
+                        {n.phone}
+                      </TableCell>
                       <TableCell className="text-sm">{n.verified_name || "—"}</TableCell>
                       <TableCell>
                         {n.quality ? (
-                          <Badge variant="outline" className={cn("text-[10px]",
-                            n.quality === "GREEN" && "border-success text-success",
-                            n.quality === "YELLOW" && "border-warning text-warning",
-                            n.quality === "RED" && "border-destructive text-destructive")}>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px]",
+                              n.quality === "GREEN" && "border-success text-success",
+                              n.quality === "YELLOW" && "border-warning text-warning",
+                              n.quality === "RED" && "border-destructive text-destructive",
+                            )}
+                          >
                             {n.quality}
                           </Badge>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell>
-                        <code className="text-[10px] font-mono text-muted-foreground">{n.phone_number_id}</code>
+                        <code className="text-[10px] font-mono text-muted-foreground">
+                          {n.phone_number_id}
+                        </code>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Activity className="h-3 w-3 text-muted-foreground" />
-                          <span className={cn("text-xs", n.latency_ms < 500 ? "text-success" : n.latency_ms < 1500 ? "text-warning" : "text-destructive")}>
+                          <span
+                            className={cn(
+                              "text-xs",
+                              n.latency_ms < 500
+                                ? "text-success"
+                                : n.latency_ms < 1500
+                                  ? "text-warning"
+                                  : "text-destructive",
+                            )}
+                          >
                             {n.latency_ms}ms
                           </span>
                           {n.error && (
-                            <span className="text-[10px] text-destructive truncate max-w-[200px]" title={n.error}>
+                            <span
+                              className="text-[10px] text-destructive truncate max-w-[200px]"
+                              title={n.error}
+                            >
                               • {n.error}
                             </span>
                           )}

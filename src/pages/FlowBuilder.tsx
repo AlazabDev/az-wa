@@ -39,7 +39,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 type TriggerType = "event" | "schedule" | "manual";
-type ActionType = "send_message" | "send_template" | "assign_team" | "update_status" | "wait" | "condition" | "notify" | "create_task";
+type ActionType =
+  | "send_message"
+  | "send_template"
+  | "assign_team"
+  | "update_status"
+  | "wait"
+  | "condition"
+  | "notify"
+  | "create_task";
 
 interface FlowStep {
   id: string;
@@ -49,10 +57,30 @@ interface FlowStep {
   expanded: boolean;
 }
 
-const triggerOptions: { value: TriggerType; label: string; icon: typeof Zap; description: string }[] = [
-  { value: "event", label: "حدث معين", icon: Zap, description: "عند حدوث إجراء مثل طلب صيانة جديد أو تحديث مشروع" },
-  { value: "schedule", label: "جدول زمني", icon: Clock, description: "تشغيل تلقائي في وقت محدد (يومي، أسبوعي، شهري)" },
-  { value: "manual", label: "تشغيل يدوي", icon: Play, description: "يتم تشغيله يدوياً من قبل المستخدم" },
+const triggerOptions: {
+  value: TriggerType;
+  label: string;
+  icon: typeof Zap;
+  description: string;
+}[] = [
+  {
+    value: "event",
+    label: "حدث معين",
+    icon: Zap,
+    description: "عند حدوث إجراء مثل طلب صيانة جديد أو تحديث مشروع",
+  },
+  {
+    value: "schedule",
+    label: "جدول زمني",
+    icon: Clock,
+    description: "تشغيل تلقائي في وقت محدد (يومي، أسبوعي، شهري)",
+  },
+  {
+    value: "manual",
+    label: "تشغيل يدوي",
+    icon: Play,
+    description: "يتم تشغيله يدوياً من قبل المستخدم",
+  },
 ];
 
 const eventOptions = [
@@ -73,7 +101,12 @@ const scheduleOptions = [
   { value: "monthly_15", label: "شهرياً - منتصف الشهر" },
 ];
 
-const actionTypes: { value: ActionType; label: string; icon: typeof MessageSquare; color: string }[] = [
+const actionTypes: {
+  value: ActionType;
+  label: string;
+  icon: typeof MessageSquare;
+  color: string;
+}[] = [
   { value: "send_message", label: "إرسال رسالة", icon: MessageSquare, color: "text-blue-500" },
   { value: "send_template", label: "إرسال قالب", icon: FileText, color: "text-green-500" },
   { value: "assign_team", label: "تعيين فريق", icon: Users, color: "text-purple-500" },
@@ -163,8 +196,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">المستلم</Label>
-              <Select value={step.config["recipient"] || ""} onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر المستلم" /></SelectTrigger>
+              <Select
+                value={step.config["recipient"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر المستلم" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="client">العميل</SelectItem>
                   <SelectItem value="team_lead">قائد الفريق</SelectItem>
@@ -175,7 +213,13 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">نص الرسالة</Label>
-              <Textarea className="mt-1 text-sm" rows={3} placeholder="اكتب نص الرسالة... يمكنك استخدام {{اسم_العميل}} {{رقم_الطلب}}" value={step.config["message"] || ""} onChange={(e) => updateStepConfig(step.id, "message", e.target.value)} />
+              <Textarea
+                className="mt-1 text-sm"
+                rows={3}
+                placeholder="اكتب نص الرسالة... يمكنك استخدام {{اسم_العميل}} {{رقم_الطلب}}"
+                value={step.config["message"] || ""}
+                onChange={(e) => updateStepConfig(step.id, "message", e.target.value)}
+              />
             </div>
           </div>
         );
@@ -184,8 +228,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">القالب</Label>
-              <Select value={step.config["template"] || ""} onValueChange={(v) => updateStepConfig(step.id, "template", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر القالب" /></SelectTrigger>
+              <Select
+                value={step.config["template"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "template", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر القالب" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="maintenance_confirm">تأكيد موعد صيانة</SelectItem>
                   <SelectItem value="project_update">تحديث تقدم المشروع</SelectItem>
@@ -197,8 +246,13 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">المستلم</Label>
-              <Select value={step.config["recipient"] || ""} onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر المستلم" /></SelectTrigger>
+              <Select
+                value={step.config["recipient"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر المستلم" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="client">العميل</SelectItem>
                   <SelectItem value="team_lead">قائد الفريق</SelectItem>
@@ -213,8 +267,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">الفريق</Label>
-              <Select value={step.config["team"] || ""} onValueChange={(v) => updateStepConfig(step.id, "team", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الفريق" /></SelectTrigger>
+              <Select
+                value={step.config["team"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "team", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر الفريق" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="plumbing">فريق السباكة</SelectItem>
                   <SelectItem value="electrical">فريق الكهرباء</SelectItem>
@@ -226,7 +285,12 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">ملاحظات التعيين</Label>
-              <Input className="mt-1 text-sm" placeholder="ملاحظات إضافية للفريق..." value={step.config["notes"] || ""} onChange={(e) => updateStepConfig(step.id, "notes", e.target.value)} />
+              <Input
+                className="mt-1 text-sm"
+                placeholder="ملاحظات إضافية للفريق..."
+                value={step.config["notes"] || ""}
+                onChange={(e) => updateStepConfig(step.id, "notes", e.target.value)}
+              />
             </div>
           </div>
         );
@@ -235,8 +299,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">الكيان</Label>
-              <Select value={step.config["entity"] || ""} onValueChange={(v) => updateStepConfig(step.id, "entity", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الكيان" /></SelectTrigger>
+              <Select
+                value={step.config["entity"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "entity", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر الكيان" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="maintenance">طلب الصيانة</SelectItem>
                   <SelectItem value="project">المشروع</SelectItem>
@@ -246,8 +315,13 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">الحالة الجديدة</Label>
-              <Select value={step.config["status"] || ""} onValueChange={(v) => updateStepConfig(step.id, "status", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
+              <Select
+                value={step.config["status"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "status", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="in_progress">قيد التنفيذ</SelectItem>
                   <SelectItem value="pending_approval">بانتظار الموافقة</SelectItem>
@@ -264,12 +338,24 @@ export default function FlowBuilder() {
             <div className="flex gap-3">
               <div className="flex-1">
                 <Label className="text-xs">المدة</Label>
-                <Input className="mt-1 text-sm" type="number" min={1} placeholder="المدة" value={step.config["duration"] || ""} onChange={(e) => updateStepConfig(step.id, "duration", e.target.value)} />
+                <Input
+                  className="mt-1 text-sm"
+                  type="number"
+                  min={1}
+                  placeholder="المدة"
+                  value={step.config["duration"] || ""}
+                  onChange={(e) => updateStepConfig(step.id, "duration", e.target.value)}
+                />
               </div>
               <div className="flex-1">
                 <Label className="text-xs">الوحدة</Label>
-                <Select value={step.config["unit"] || ""} onValueChange={(v) => updateStepConfig(step.id, "unit", v)}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="وحدة" /></SelectTrigger>
+                <Select
+                  value={step.config["unit"] || ""}
+                  onValueChange={(v) => updateStepConfig(step.id, "unit", v)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="وحدة" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="minutes">دقائق</SelectItem>
                     <SelectItem value="hours">ساعات</SelectItem>
@@ -285,8 +371,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">الشرط</Label>
-              <Select value={step.config["field"] || ""} onValueChange={(v) => updateStepConfig(step.id, "field", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الحقل" /></SelectTrigger>
+              <Select
+                value={step.config["field"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "field", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر الحقل" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="priority">الأولوية</SelectItem>
                   <SelectItem value="type">نوع الطلب</SelectItem>
@@ -297,7 +388,12 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">القيمة</Label>
-              <Input className="mt-1 text-sm" placeholder="القيمة المطلوبة..." value={step.config["value"] || ""} onChange={(e) => updateStepConfig(step.id, "value", e.target.value)} />
+              <Input
+                className="mt-1 text-sm"
+                placeholder="القيمة المطلوبة..."
+                value={step.config["value"] || ""}
+                onChange={(e) => updateStepConfig(step.id, "value", e.target.value)}
+              />
             </div>
           </div>
         );
@@ -306,8 +402,13 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">المستلم</Label>
-              <Select value={step.config["recipient"] || ""} onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="من يتلقى الإشعار" /></SelectTrigger>
+              <Select
+                value={step.config["recipient"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "recipient", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="من يتلقى الإشعار" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">المدير العام</SelectItem>
                   <SelectItem value="project_manager">مدير المشروع</SelectItem>
@@ -318,7 +419,12 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">نص الإشعار</Label>
-              <Input className="mt-1 text-sm" placeholder="نص الإشعار..." value={step.config["message"] || ""} onChange={(e) => updateStepConfig(step.id, "message", e.target.value)} />
+              <Input
+                className="mt-1 text-sm"
+                placeholder="نص الإشعار..."
+                value={step.config["message"] || ""}
+                onChange={(e) => updateStepConfig(step.id, "message", e.target.value)}
+              />
             </div>
           </div>
         );
@@ -327,12 +433,22 @@ export default function FlowBuilder() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">عنوان المهمة</Label>
-              <Input className="mt-1 text-sm" placeholder="عنوان المهمة..." value={step.config["task_title"] || ""} onChange={(e) => updateStepConfig(step.id, "task_title", e.target.value)} />
+              <Input
+                className="mt-1 text-sm"
+                placeholder="عنوان المهمة..."
+                value={step.config["task_title"] || ""}
+                onChange={(e) => updateStepConfig(step.id, "task_title", e.target.value)}
+              />
             </div>
             <div>
               <Label className="text-xs">تعيين إلى</Label>
-              <Select value={step.config["assignee"] || ""} onValueChange={(v) => updateStepConfig(step.id, "assignee", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="تعيين المهمة إلى" /></SelectTrigger>
+              <Select
+                value={step.config["assignee"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "assignee", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="تعيين المهمة إلى" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="team_lead">قائد الفريق</SelectItem>
                   <SelectItem value="project_manager">مدير المشروع</SelectItem>
@@ -342,8 +458,13 @@ export default function FlowBuilder() {
             </div>
             <div>
               <Label className="text-xs">الأولوية</Label>
-              <Select value={step.config["priority"] || ""} onValueChange={(v) => updateStepConfig(step.id, "priority", v)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="الأولوية" /></SelectTrigger>
+              <Select
+                value={step.config["priority"] || ""}
+                onValueChange={(v) => updateStepConfig(step.id, "priority", v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="الأولوية" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">عاجل</SelectItem>
                   <SelectItem value="medium">متوسط</SelectItem>
@@ -381,11 +502,22 @@ export default function FlowBuilder() {
           <CardContent className="space-y-4">
             <div>
               <Label className="text-sm">اسم التدفق</Label>
-              <Input className="mt-1" placeholder="مثال: تدفق طلب صيانة جديد" value={flowName} onChange={(e) => setFlowName(e.target.value)} />
+              <Input
+                className="mt-1"
+                placeholder="مثال: تدفق طلب صيانة جديد"
+                value={flowName}
+                onChange={(e) => setFlowName(e.target.value)}
+              />
             </div>
             <div>
               <Label className="text-sm">الوصف (اختياري)</Label>
-              <Textarea className="mt-1" rows={2} placeholder="وصف مختصر لما يفعله هذا التدفق..." value={flowDescription} onChange={(e) => setFlowDescription(e.target.value)} />
+              <Textarea
+                className="mt-1"
+                rows={2}
+                placeholder="وصف مختصر لما يفعله هذا التدفق..."
+                value={flowDescription}
+                onChange={(e) => setFlowDescription(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -406,14 +538,20 @@ export default function FlowBuilder() {
                 return (
                   <button
                     key={trigger.value}
-                    onClick={() => { setTriggerType(trigger.value); setTriggerEvent(""); setTriggerSchedule(""); }}
+                    onClick={() => {
+                      setTriggerType(trigger.value);
+                      setTriggerEvent("");
+                      setTriggerSchedule("");
+                    }}
                     className={`p-3 rounded-lg border-2 text-right transition-all ${
                       isSelected
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/40 hover:bg-muted/50"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                    <Icon
+                      className={`h-5 w-5 mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                    />
                     <p className="text-sm font-medium">{trigger.label}</p>
                     <p className="text-xs text-muted-foreground mt-1">{trigger.description}</p>
                   </button>
@@ -425,10 +563,14 @@ export default function FlowBuilder() {
               <div>
                 <Label className="text-sm">الحدث</Label>
                 <Select value={triggerEvent} onValueChange={setTriggerEvent}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="اختر الحدث المحفز" /></SelectTrigger>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="اختر الحدث المحفز" />
+                  </SelectTrigger>
                   <SelectContent>
                     {eventOptions.map((e) => (
-                      <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                      <SelectItem key={e.value} value={e.value}>
+                        {e.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -439,10 +581,14 @@ export default function FlowBuilder() {
               <div>
                 <Label className="text-sm">الجدول الزمني</Label>
                 <Select value={triggerSchedule} onValueChange={setTriggerSchedule}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="اختر التوقيت" /></SelectTrigger>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="اختر التوقيت" />
+                  </SelectTrigger>
                   <SelectContent>
                     {scheduleOptions.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -478,14 +624,25 @@ export default function FlowBuilder() {
                   <div className="border rounded-lg overflow-hidden">
                     <div className="flex items-center gap-2 p-3 bg-muted/30">
                       <div className="flex flex-col gap-0.5">
-                        <button onClick={() => moveStep(index, "up")} disabled={index === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <button
+                          onClick={() => moveStep(index, "up")}
+                          disabled={index === 0}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        >
                           <ChevronUp className="h-3 w-3" />
                         </button>
-                        <button onClick={() => moveStep(index, "down")} disabled={index === steps.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <button
+                          onClick={() => moveStep(index, "down")}
+                          disabled={index === steps.length - 1}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        >
                           <ChevronDown className="h-3 w-3" />
                         </button>
                       </div>
-                      <Badge variant="outline" className="text-xs w-6 h-6 flex items-center justify-center p-0 rounded-full">
+                      <Badge
+                        variant="outline"
+                        className="text-xs w-6 h-6 flex items-center justify-center p-0 rounded-full"
+                      >
                         {index + 1}
                       </Badge>
                       <StepIcon className={`h-4 w-4 ${actionInfo.color}`} />
@@ -494,19 +651,27 @@ export default function FlowBuilder() {
                         value={step.title}
                         onChange={(e) => updateStepTitle(step.id, e.target.value)}
                       />
-                      <Badge variant="secondary" className="text-xs">{actionInfo.label}</Badge>
-                      <button onClick={() => toggleExpand(step.id)} className="text-muted-foreground hover:text-foreground">
-                        {step.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      <Badge variant="secondary" className="text-xs">
+                        {actionInfo.label}
+                      </Badge>
+                      <button
+                        onClick={() => toggleExpand(step.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {step.expanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
                       </button>
-                      <button onClick={() => removeStep(step.id)} className="text-destructive/60 hover:text-destructive">
+                      <button
+                        onClick={() => removeStep(step.id)}
+                        className="text-destructive/60 hover:text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    {step.expanded && (
-                      <div className="p-3 border-t">
-                        {renderStepConfig(step)}
-                      </div>
-                    )}
+                    {step.expanded && <div className="p-3 border-t">{renderStepConfig(step)}</div>}
                   </div>
                   {index < steps.length - 1 && (
                     <div className="flex justify-center py-1">
@@ -536,12 +701,21 @@ export default function FlowBuilder() {
                     );
                   })}
                 </div>
-                <Button variant="ghost" size="sm" className="mt-3 w-full text-xs" onClick={() => setShowActionPicker(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 w-full text-xs"
+                  onClick={() => setShowActionPicker(false)}
+                >
                   إلغاء
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" className="w-full border-dashed" onClick={() => setShowActionPicker(true)}>
+              <Button
+                variant="outline"
+                className="w-full border-dashed"
+                onClick={() => setShowActionPicker(true)}
+              >
                 <Plus className="h-4 w-4 ml-1" />
                 إضافة خطوة
               </Button>
@@ -551,12 +725,17 @@ export default function FlowBuilder() {
 
         {/* Actions */}
         <div className="flex gap-3 justify-end pb-6">
-          <Button variant="outline" onClick={() => navigate({ to: "/legacy/flows" })}>إلغاء</Button>
+          <Button variant="outline" onClick={() => navigate({ to: "/legacy/flows" })}>
+            إلغاء
+          </Button>
           <Button variant="secondary" onClick={() => handleSave(true)}>
             <Save className="h-4 w-4 ml-1" />
             حفظ كمسودة
           </Button>
-          <Button className="gradient-primary text-primary-foreground" onClick={() => handleSave(false)}>
+          <Button
+            className="gradient-primary text-primary-foreground"
+            onClick={() => handleSave(false)}
+          >
             <Play className="h-4 w-4 ml-1" />
             حفظ وتفعيل
           </Button>

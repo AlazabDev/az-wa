@@ -7,7 +7,8 @@ const API_VERSION = Deno.env.get("FOUNDRY_API_VERSION") ?? "v1";
 const API_KEY = Deno.env.get("FOUNDRY_API_KEY") ?? "";
 const AZURE_TENANT_ID = Deno.env.get("AZURE_TENANT_ID") ?? "";
 const AZURE_CLIENT_ID = Deno.env.get("FOUNDRY_CLIENT_ID") ?? Deno.env.get("AZURE_CLIENT_ID") ?? "";
-const AZURE_CLIENT_SECRET = Deno.env.get("FOUNDRY_CLIENT_SECRET") ?? Deno.env.get("AZURE_CLIENT_SECRET") ?? "";
+const AZURE_CLIENT_SECRET =
+  Deno.env.get("FOUNDRY_CLIENT_SECRET") ?? Deno.env.get("AZURE_CLIENT_SECRET") ?? "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const ALLOW_FALLBACK = (Deno.env.get("FINANCE_ALLOW_AI_FALLBACK") ?? "false") === "true";
 
@@ -51,7 +52,11 @@ function parseJson(text: string): Partial<FinanceExtraction> {
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1) return {};
-  try { return JSON.parse(cleaned.slice(start, end + 1)); } catch { return {}; }
+  try {
+    return JSON.parse(cleaned.slice(start, end + 1));
+  } catch {
+    return {};
+  }
 }
 
 function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceExtraction {
@@ -60,15 +65,30 @@ function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceEx
     const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.-]/g, "")) : Number(v);
     return Number.isFinite(n) ? n : null;
   };
-  const str = (v: unknown) => typeof v === "string" && v.trim() ? v.trim() : null;
-  const date = typeof raw.invoice_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invoice_date) ? raw.invoice_date : null;
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const date =
+    typeof raw.invoice_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invoice_date)
+      ? raw.invoice_date
+      : null;
   return {
-    doc_type: str(raw.doc_type), vendor: str(raw.vendor), invoice_number: str(raw.invoice_number), invoice_date: date,
-    currency: str(raw.currency)?.toUpperCase() ?? null, total_amount: num(raw.total_amount), tax_amount: num(raw.tax_amount),
-    payment_method: str(raw.payment_method), reference_number: str(raw.reference_number), bank: str(raw.bank),
-    person: str(raw.person), description: str(raw.description), financial_category: str(raw.financial_category),
-    project_or_cost_center: str(raw.project_or_cost_center), summary: str(raw.summary),
-    line_items: Array.isArray(raw.line_items) ? raw.line_items.slice(0, 100) : [], confidence: num(raw.confidence), provider,
+    doc_type: str(raw.doc_type),
+    vendor: str(raw.vendor),
+    invoice_number: str(raw.invoice_number),
+    invoice_date: date,
+    currency: str(raw.currency)?.toUpperCase() ?? null,
+    total_amount: num(raw.total_amount),
+    tax_amount: num(raw.tax_amount),
+    payment_method: str(raw.payment_method),
+    reference_number: str(raw.reference_number),
+    bank: str(raw.bank),
+    person: str(raw.person),
+    description: str(raw.description),
+    financial_category: str(raw.financial_category),
+    project_or_cost_center: str(raw.project_or_cost_center),
+    summary: str(raw.summary),
+    line_items: Array.isArray(raw.line_items) ? raw.line_items.slice(0, 100) : [],
+    confidence: num(raw.confidence),
+    provider,
   };
 }
 
@@ -82,14 +102,21 @@ async function getEntraToken() {
     scope: "https://ai.azure.com/.default",
     grant_type: "client_credentials",
   });
-  const res = await fetch(`https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form.toString(),
-  });
+  const res = await fetch(
+    `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    },
+  );
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.access_token) throw new Error(`Entra token ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
-  cachedToken = { value: json.access_token, expiresAt: Date.now() + (Number(json.expires_in ?? 3600) * 1000) };
+  if (!res.ok || !json.access_token)
+    throw new Error(`Entra token ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
+  cachedToken = {
+    value: json.access_token,
+    expiresAt: Date.now() + Number(json.expires_in ?? 3600) * 1000,
+  };
   return cachedToken.value;
 }
 
@@ -105,30 +132,54 @@ async function runFoundryAgent(prompt: string): Promise<FinanceExtraction> {
   if (!foundryConfigured()) throw new Error("Foundry finance agent is not configured");
   const headers = await foundryHeaders();
   const qs = `?api-version=${API_VERSION}`;
-  const threadRes = await fetch(`${PROJECT_ENDPOINT}/threads${qs}`, { method: "POST", headers, body: "{}" });
-  if (!threadRes.ok) throw new Error(`Foundry thread ${threadRes.status}: ${(await threadRes.text()).slice(0, 300)}`);
+  const threadRes = await fetch(`${PROJECT_ENDPOINT}/threads${qs}`, {
+    method: "POST",
+    headers,
+    body: "{}",
+  });
+  if (!threadRes.ok)
+    throw new Error(
+      `Foundry thread ${threadRes.status}: ${(await threadRes.text()).slice(0, 300)}`,
+    );
   const threadId = (await threadRes.json()).id;
   const msgRes = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}`, {
-    method: "POST", headers, body: JSON.stringify({ role: "user", content: `${SYSTEM_PROMPT}\n\n---\n${prompt}` }),
+    method: "POST",
+    headers,
+    body: JSON.stringify({ role: "user", content: `${SYSTEM_PROMPT}\n\n---\n${prompt}` }),
   });
-  if (!msgRes.ok) throw new Error(`Foundry message ${msgRes.status}: ${(await msgRes.text()).slice(0, 300)}`);
+  if (!msgRes.ok)
+    throw new Error(`Foundry message ${msgRes.status}: ${(await msgRes.text()).slice(0, 300)}`);
   const runRes = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs${qs}`, {
-    method: "POST", headers, body: JSON.stringify({ assistant_id: AGENT_ID }),
+    method: "POST",
+    headers,
+    body: JSON.stringify({ assistant_id: AGENT_ID }),
   });
-  if (!runRes.ok) throw new Error(`Foundry run ${runRes.status}: ${(await runRes.text()).slice(0, 300)}`);
+  if (!runRes.ok)
+    throw new Error(`Foundry run ${runRes.status}: ${(await runRes.text()).slice(0, 300)}`);
   let run = await runRes.json();
-  for (let i = 0; i < 40 && ["queued", "in_progress", "requires_action"].includes(run.status); i++) {
+  for (
+    let i = 0;
+    i < 40 && ["queued", "in_progress", "requires_action"].includes(run.status);
+    i++
+  ) {
     await new Promise((r) => setTimeout(r, 1500));
-    const poll = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs/${run.id}${qs}`, { headers });
+    const poll = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs/${run.id}${qs}`, {
+      headers,
+    });
     if (!poll.ok) throw new Error(`Foundry poll ${poll.status}`);
     run = await poll.json();
   }
   if (run.status !== "completed") throw new Error(`Foundry run status: ${run.status}`);
-  const listRes = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}&order=desc&limit=5`, { headers });
+  const listRes = await fetch(
+    `${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}&order=desc&limit=5`,
+    { headers },
+  );
   if (!listRes.ok) throw new Error(`Foundry messages ${listRes.status}`);
   const list = await listRes.json();
   const assistantMsg = (list.data ?? []).find((m: any) => m.role === "assistant");
-  const text = (assistantMsg?.content ?? []).map((c: any) => c?.text?.value ?? c?.text ?? "").join("\n");
+  const text = (assistantMsg?.content ?? [])
+    .map((c: any) => c?.text?.value ?? c?.text ?? "")
+    .join("\n");
   return normalize(parseJson(text), "foundry");
 }
 
@@ -138,9 +189,13 @@ async function runGatewayFallback(prompt: string): Promise<FinanceExtraction> {
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "google/gemini-3-flash", messages: [
-      { role: "system", content: SYSTEM_PROMPT }, { role: "user", content: prompt },
-    ] }),
+    body: JSON.stringify({
+      model: "google/gemini-3-flash",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+    }),
   });
   if (!res.ok) {
     const err = new Error(`AI gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -151,7 +206,10 @@ async function runGatewayFallback(prompt: string): Promise<FinanceExtraction> {
   return normalize(parseJson(json?.choices?.[0]?.message?.content ?? ""), "lovable-gateway");
 }
 
-export async function extractFinanceData(ocrText: string, hints: string[] = []): Promise<FinanceExtraction> {
+export async function extractFinanceData(
+  ocrText: string,
+  hints: string[] = [],
+): Promise<FinanceExtraction> {
   const prompt = `نص المستند:\n${ocrText.slice(0, 12000)}\n\nوسوم الصورة: ${hints.join(", ") || "-"}`;
   try {
     return await runFoundryAgent(prompt);

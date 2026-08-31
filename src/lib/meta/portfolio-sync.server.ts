@@ -139,8 +139,14 @@ export async function syncPortfolioComplete(portfolioId: string): Promise<Comple
   });
 
   const [clientWabas, ownedWabas] = await Promise.all([
-    fetchAllPages<WabaNode>(client, `${portfolio.meta_business_id}/client_whatsapp_business_accounts`),
-    fetchAllPages<WabaNode>(client, `${portfolio.meta_business_id}/owned_whatsapp_business_accounts`),
+    fetchAllPages<WabaNode>(
+      client,
+      `${portfolio.meta_business_id}/client_whatsapp_business_accounts`,
+    ),
+    fetchAllPages<WabaNode>(
+      client,
+      `${portfolio.meta_business_id}/owned_whatsapp_business_accounts`,
+    ),
   ]);
 
   if (clientWabas.error && ownedWabas.error) {

@@ -18,9 +18,7 @@ async function runMediaWorker(request: Request): Promise<Response> {
 
   const url = new URL(request.url);
   const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "20", 10);
-  const limit = Number.isFinite(requestedLimit)
-    ? Math.min(100, Math.max(1, requestedLimit))
-    : 20;
+  const limit = Number.isFinite(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 20;
 
   try {
     const results = await drainMediaQueue(limit);

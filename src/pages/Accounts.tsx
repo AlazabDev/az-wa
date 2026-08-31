@@ -10,16 +10,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Phone, MoreVertical, CheckCircle, XCircle, Globe, Settings as SettingsIcon,
-  Trash2, Save, KeyRound, Webhook, Bell, Shield, RefreshCw, X, Loader2,
+  Plus,
+  Phone,
+  MoreVertical,
+  CheckCircle,
+  XCircle,
+  Globe,
+  Settings as SettingsIcon,
+  Trash2,
+  Save,
+  KeyRound,
+  Webhook,
+  Bell,
+  Shield,
+  RefreshCw,
+  X,
+  Loader2,
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface PhoneEntry {
@@ -69,14 +99,18 @@ export default function Accounts() {
     enabled: Boolean(currentTenantId),
     queryFn: async (): Promise<Account[]> => {
       const [accRes, numRes, tmplRes] = await Promise.all([
-        supabase.from("wa_accounts")
+        supabase
+          .from("wa_accounts")
           .select("id,label,waba_id,currency,app_bindings")
-          .eq("tenant_id", currentTenantId!).order("label"),
-        supabase.from("wa_numbers")
-          .select("id,wa_account_id,display_phone_number,phone_e164,verified_name,quality_rating,status")
+          .eq("tenant_id", currentTenantId!)
+          .order("label"),
+        supabase
+          .from("wa_numbers")
+          .select(
+            "id,wa_account_id,display_phone_number,phone_e164,verified_name,quality_rating,status",
+          )
           .eq("tenant_id", currentTenantId!),
-        supabase.from("templates")
-          .select("id,wa_account_id").eq("tenant_id", currentTenantId!),
+        supabase.from("templates").select("id,wa_account_id").eq("tenant_id", currentTenantId!),
       ]);
       if (accRes.error) throw accRes.error;
       if (numRes.error) throw numRes.error;
@@ -101,7 +135,9 @@ export default function Accounts() {
           phones,
           status: phones.some((p) => p.status === "CONNECTED") ? "connected" : "disconnected",
           templates: (tmplRes.data ?? []).filter((t) => t.wa_account_id === acc.id).length,
-          apps: bindings.map((b) => (typeof b === "string" ? b : String((b as { name?: string })?.name ?? ""))).filter(Boolean),
+          apps: bindings
+            .map((b) => (typeof b === "string" ? b : String((b as { name?: string })?.name ?? "")))
+            .filter(Boolean),
         };
       });
     },
@@ -110,20 +146,26 @@ export default function Accounts() {
   const saveMutation = useMutation({
     mutationFn: async (account: Account) => {
       if (!canManage) throw new Error("تحتاج صلاحية operator أو admin");
-      const { error } = await supabase.from("wa_accounts").update({
-        label: account.name,
-        currency: account.currency,
-        app_bindings: account.apps,
-      }).eq("id", account.id);
+      const { error } = await supabase
+        .from("wa_accounts")
+        .update({
+          label: account.name,
+          currency: account.currency,
+          app_bindings: account.apps,
+        })
+        .eq("id", account.id);
       if (error) throw error;
 
       for (const phone of account.phones) {
-        const { error: phoneError } = await supabase.from("wa_numbers").update({
-          display_phone_number: phone.number,
-          verified_name: phone.verifiedName,
-          quality_rating: phone.quality,
-          status: phone.status,
-        }).eq("id", phone.id);
+        const { error: phoneError } = await supabase
+          .from("wa_numbers")
+          .update({
+            display_phone_number: phone.number,
+            verified_name: phone.verifiedName,
+            quality_rating: phone.quality,
+            status: phone.status,
+          })
+          .eq("id", phone.id);
         if (phoneError) throw phoneError;
       }
     },
@@ -159,11 +201,17 @@ export default function Accounts() {
     setWebhookUrl(`${WEBHOOK_BASE}?waba=${acc.wabaId}`);
     setAccessToken("");
   };
-  const closeEdit = () => { setEditId(null); setDraft(null); };
+  const closeEdit = () => {
+    setEditId(null);
+    setDraft(null);
+  };
 
   const updatePhone = (idx: number, patch: Partial<PhoneEntry>) => {
     if (!draft) return;
-    setDraft({ ...draft, phones: draft.phones.map((p, i) => (i === idx ? { ...p, ...patch } : p)) });
+    setDraft({
+      ...draft,
+      phones: draft.phones.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
+    });
   };
   const removePhone = (idx: number) => {
     if (!draft) return;
@@ -184,7 +232,11 @@ export default function Accounts() {
       title="الحسابات"
       subtitle={`إدارة حسابات واتساب الأعمال — ${connectedCount} متصل من ${accounts.length}`}
       actions={
-        <Button size="sm" className="gradient-primary text-primary-foreground" disabled={!canManage}>
+        <Button
+          size="sm"
+          className="gradient-primary text-primary-foreground"
+          disabled={!canManage}
+        >
           <Plus className="h-4 w-4 ml-1" />
           إضافة حساب
         </Button>
@@ -192,94 +244,159 @@ export default function Accounts() {
     >
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-4">
-          <Card className="shadow-card"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-primary">{accounts.length}</p><p className="text-xs text-muted-foreground">حسابات WABA</p></CardContent></Card>
-          <Card className="shadow-card"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-success">{totalPhones}</p><p className="text-xs text-muted-foreground">أرقام مرتبطة</p></CardContent></Card>
-          <Card className="shadow-card"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-info">{totalTemplates}</p><p className="text-xs text-muted-foreground">إجمالي القوالب</p></CardContent></Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-primary">{accounts.length}</p>
+              <p className="text-xs text-muted-foreground">حسابات WABA</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-success">{totalPhones}</p>
+              <p className="text-xs text-muted-foreground">أرقام مرتبطة</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-info">{totalTemplates}</p>
+              <p className="text-xs text-muted-foreground">إجمالي القوالب</p>
+            </CardContent>
+          </Card>
         </div>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">جاري التحميل...</p>
         ) : accounts.length === 0 ? (
-          <Card className="shadow-card"><CardContent className="p-8 text-center text-sm text-muted-foreground">
-            لا توجد حسابات WABA مرتبطة بهذا الـ Tenant بعد.
-          </CardContent></Card>
+          <Card className="shadow-card">
+            <CardContent className="p-8 text-center text-sm text-muted-foreground">
+              لا توجد حسابات WABA مرتبطة بهذا الـ Tenant بعد.
+            </CardContent>
+          </Card>
         ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {accounts.map((account) => (
-            <Card key={account.id} className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-xl gradient-primary flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm">{account.name}</h3>
-                      <p className="text-xs text-muted-foreground" dir="ltr">WABA: {account.wabaId}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={account.status === "connected" ? "default" : "destructive"} className="text-xs">
-                      {account.status === "connected" ? (<><CheckCircle className="h-3 w-3 ml-1" /> متصل</>) : (<><XCircle className="h-3 w-3 ml-1" /> غير متصل</>)}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(account)}>
-                          <SettingsIcon className="h-4 w-4 ml-2" /> تعديل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => qc.invalidateQueries({ queryKey: ["wa-accounts"] })}>
-                          <RefreshCw className="h-4 w-4 ml-2" /> تحديث الحالة
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" disabled={!canManage}
-                          onClick={() => deleteMutation.mutate(account.id)}>
-                          <Trash2 className="h-4 w-4 ml-2" /> حذف
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                {account.phones.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
-                    {account.phones.map((phone) => (
-                      <div key={phone.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-1.5">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs" dir="ltr">{phone.number}</span>
-                          {phone.verifiedName && <span className="text-xs text-muted-foreground">({phone.verifiedName})</span>}
-                        </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality] ?? qualityColors["UNKNOWN"]}`}>
-                          {phone.quality === "GREEN" ? "جودة عالية" : phone.quality === "UNKNOWN" ? "غير محدد" : phone.quality}
-                        </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {accounts.map((account) => (
+              <Card
+                key={account.id}
+                className="shadow-card hover:shadow-card-hover transition-shadow"
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-xl gradient-primary flex items-center justify-center">
+                        <Phone className="h-5 w-5 text-primary-foreground" />
                       </div>
-                    ))}
+                      <div>
+                        <h3 className="font-semibold text-sm">{account.name}</h3>
+                        <p className="text-xs text-muted-foreground" dir="ltr">
+                          WABA: {account.wabaId}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={account.status === "connected" ? "default" : "destructive"}
+                        className="text-xs"
+                      >
+                        {account.status === "connected" ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 ml-1" /> متصل
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3 w-3 ml-1" /> غير متصل
+                          </>
+                        )}
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(account)}>
+                            <SettingsIcon className="h-4 w-4 ml-2" /> تعديل
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => qc.invalidateQueries({ queryKey: ["wa-accounts"] })}
+                          >
+                            <RefreshCw className="h-4 w-4 ml-2" /> تحديث الحالة
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            disabled={!canManage}
+                            onClick={() => deleteMutation.mutate(account.id)}
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" /> حذف
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                )}
 
-                {account.phones.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-3 text-center py-2 rounded-lg bg-muted/30">لا توجد أرقام مرتبطة</p>
-                )}
+                  {account.phones.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {account.phones.map((phone) => (
+                        <div
+                          key={phone.id}
+                          className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-1.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs" dir="ltr">
+                              {phone.number}
+                            </span>
+                            {phone.verifiedName && (
+                              <span className="text-xs text-muted-foreground">
+                                ({phone.verifiedName})
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded-full ${qualityColors[phone.quality] ?? qualityColors["UNKNOWN"]}`}
+                          >
+                            {phone.quality === "GREEN"
+                              ? "جودة عالية"
+                              : phone.quality === "UNKNOWN"
+                                ? "غير محدد"
+                                : phone.quality}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                <div className="mt-3 grid grid-cols-2 gap-3 text-center">
-                  <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-lg font-bold">{account.templates}</p><p className="text-xs text-muted-foreground">قوالب</p></div>
-                  <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-lg font-bold">{account.phones.length}</p><p className="text-xs text-muted-foreground">أرقام</p></div>
-                </div>
+                  {account.phones.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-3 text-center py-2 rounded-lg bg-muted/30">
+                      لا توجد أرقام مرتبطة
+                    </p>
+                  )}
 
-                {account.apps.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-                    <Globe className="h-3 w-3 text-muted-foreground" />
-                    {account.apps.map((app, idx) => (
-                      <Badge key={idx} variant="outline" className="text-[10px]">{app}</Badge>
-                    ))}
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-center">
+                    <div className="rounded-lg bg-muted/50 p-2.5">
+                      <p className="text-lg font-bold">{account.templates}</p>
+                      <p className="text-xs text-muted-foreground">قوالب</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-2.5">
+                      <p className="text-lg font-bold">{account.phones.length}</p>
+                      <p className="text-xs text-muted-foreground">أرقام</p>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                  {account.apps.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                      <Globe className="h-3 w-3 text-muted-foreground" />
+                      {account.apps.map((app, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[10px]">
+                          {app}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
 
@@ -310,7 +427,10 @@ export default function Accounts() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">اسم الحساب</Label>
-                    <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+                    <Input
+                      value={draft.name}
+                      onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">WABA ID</Label>
@@ -318,10 +438,19 @@ export default function Accounts() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">العملة</Label>
-                    <Select value={draft.currency} onValueChange={(v) => setDraft({ ...draft, currency: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={draft.currency}
+                      onValueChange={(v) => setDraft({ ...draft, currency: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        {["USD", "EUR", "SAR", "AED", "EGP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {["USD", "EUR", "SAR", "AED", "EGP"].map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -333,8 +462,12 @@ export default function Accounts() {
                 <Separator />
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <p className="text-sm font-medium flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> إعادة الاتصال التلقائي</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">محاولة إعادة الربط تلقائياً عند انقطاع الاتصال</p>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-primary" /> إعادة الاتصال التلقائي
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      محاولة إعادة الربط تلقائياً عند انقطاع الاتصال
+                    </p>
                   </div>
                   <Switch checked={autoReconnect} onCheckedChange={setAutoReconnect} />
                 </div>
@@ -351,15 +484,34 @@ export default function Accounts() {
                   <div key={p.id} className="rounded-lg border p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold">رقم #{idx + 1}</Label>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removePhone(idx)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => removePhone(idx)}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <Input dir="ltr" placeholder="+1 555 000 0000" value={p.number} onChange={(e) => updatePhone(idx, { number: e.target.value })} />
-                      <Input placeholder="الاسم المعتمد" value={p.verifiedName} onChange={(e) => updatePhone(idx, { verifiedName: e.target.value })} />
-                      <Select value={p.quality} onValueChange={(v) => updatePhone(idx, { quality: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Input
+                        dir="ltr"
+                        placeholder="+1 555 000 0000"
+                        value={p.number}
+                        onChange={(e) => updatePhone(idx, { number: e.target.value })}
+                      />
+                      <Input
+                        placeholder="الاسم المعتمد"
+                        value={p.verifiedName}
+                        onChange={(e) => updatePhone(idx, { verifiedName: e.target.value })}
+                      />
+                      <Select
+                        value={p.quality}
+                        onValueChange={(v) => updatePhone(idx, { quality: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="GREEN">جودة عالية</SelectItem>
                           <SelectItem value="YELLOW">جودة متوسطة</SelectItem>
@@ -367,8 +519,13 @@ export default function Accounts() {
                           <SelectItem value="UNKNOWN">غير محدد</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Select value={p.status} onValueChange={(v) => updatePhone(idx, { status: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={p.status}
+                        onValueChange={(v) => updatePhone(idx, { status: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="CONNECTED">متصل</SelectItem>
                           <SelectItem value="DISCONNECTED">غير متصل</SelectItem>
@@ -383,14 +540,28 @@ export default function Accounts() {
               {/* Integrations */}
               <TabsContent value="integrations" className="space-y-4 mt-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5"><Webhook className="h-3.5 w-3.5" /> رابط Webhook</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Webhook className="h-3.5 w-3.5" /> رابط Webhook
+                  </Label>
                   <Input dir="ltr" className="font-mono text-xs" value={webhookUrl} readOnly />
-                  <p className="text-[11px] text-muted-foreground">ضع هذا الرابط في إعدادات Meta للحساب</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    ضع هذا الرابط في إعدادات Meta للحساب
+                  </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" /> Access Token جديد (اختياري)</Label>
-                  <Input dir="ltr" type="password" placeholder="EAAG..." value={accessToken} onChange={(e) => setAccessToken(e.target.value)} />
-                  <p className="text-[11px] text-muted-foreground">لا يتم تخزين التوكن في المتصفح — يُضبط في أسرار Supabase على الخادم</p>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5" /> Access Token جديد (اختياري)
+                  </Label>
+                  <Input
+                    dir="ltr"
+                    type="password"
+                    placeholder="EAAG..."
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    لا يتم تخزين التوكن في المتصفح — يُضبط في أسرار Supabase على الخادم
+                  </p>
                 </div>
                 <Separator />
                 <div className="space-y-2">
@@ -399,15 +570,30 @@ export default function Accounts() {
                     {draft.apps.map((app) => (
                       <Badge key={app} variant="secondary" className="gap-1">
                         {app}
-                        <button onClick={() => removeApp(app)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                        <button onClick={() => removeApp(app)} className="hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
                       </Badge>
                     ))}
-                    {draft.apps.length === 0 && <span className="text-xs text-muted-foreground">لا توجد تطبيقات</span>}
+                    {draft.apps.length === 0 && (
+                      <span className="text-xs text-muted-foreground">لا توجد تطبيقات</span>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <Input placeholder="اسم التطبيق..." value={newApp} onChange={(e) => setNewApp(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addApp(); } }} />
-                    <Button variant="outline" onClick={addApp}><Plus className="h-4 w-4" /></Button>
+                    <Input
+                      placeholder="اسم التطبيق..."
+                      value={newApp}
+                      onChange={(e) => setNewApp(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addApp();
+                        }
+                      }}
+                    />
+                    <Button variant="outline" onClick={addApp}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </TabsContent>
@@ -415,9 +601,24 @@ export default function Accounts() {
               {/* Notifications */}
               <TabsContent value="notifications" className="space-y-3 mt-4">
                 {[
-                  { label: "إشعار عند تسليم الرسائل", desc: "تنبيه عندما تصل الرسائل للمستلم", val: notifyDelivered, set: setNotifyDelivered },
-                  { label: "إشعار عند قراءة الرسائل", desc: "تنبيه عند قراءة العميل للرسالة", val: notifyRead, set: setNotifyRead },
-                  { label: "إشعار عند فشل الإرسال", desc: "تنبيه فوري عند فشل أي رسالة", val: notifyFailed, set: setNotifyFailed },
+                  {
+                    label: "إشعار عند تسليم الرسائل",
+                    desc: "تنبيه عندما تصل الرسائل للمستلم",
+                    val: notifyDelivered,
+                    set: setNotifyDelivered,
+                  },
+                  {
+                    label: "إشعار عند قراءة الرسائل",
+                    desc: "تنبيه عند قراءة العميل للرسالة",
+                    val: notifyRead,
+                    set: setNotifyRead,
+                  },
+                  {
+                    label: "إشعار عند فشل الإرسال",
+                    desc: "تنبيه فوري عند فشل أي رسالة",
+                    val: notifyFailed,
+                    set: setNotifyFailed,
+                  },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-start gap-3">
@@ -435,13 +636,28 @@ export default function Accounts() {
           )}
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="destructive" disabled={!canManage || !draft || deleteMutation.isPending}
-              onClick={() => draft && deleteMutation.mutate(draft.id)} className="gap-2 ml-auto">
+            <Button
+              variant="destructive"
+              disabled={!canManage || !draft || deleteMutation.isPending}
+              onClick={() => draft && deleteMutation.mutate(draft.id)}
+              className="gap-2 ml-auto"
+            >
               <Trash2 className="h-4 w-4" /> حذف الحساب
             </Button>
-            <Button variant="outline" onClick={closeEdit}>إلغاء</Button>
-            <Button onClick={() => draft && saveMutation.mutate(draft)} disabled={!canManage || saveMutation.isPending} className="gap-2">
-              {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ التغييرات
+            <Button variant="outline" onClick={closeEdit}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => draft && saveMutation.mutate(draft)}
+              disabled={!canManage || saveMutation.isPending}
+              className="gap-2"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}{" "}
+              حفظ التغييرات
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -104,7 +104,9 @@ export async function validatePortfolioCredential(input: {
     .filter((value): value is string => Boolean(value));
 
   if (!permissionsResult.ok) {
-    errors.push(`Unable to read token permissions: ${permissionsResult.errorMessage ?? "Graph error"}`);
+    errors.push(
+      `Unable to read token permissions: ${permissionsResult.errorMessage ?? "Graph error"}`,
+    );
   }
 
   // /debug_token normally expects an app-capable debugger token. Some valid
@@ -134,7 +136,8 @@ export async function validatePortfolioCredential(input: {
   if (expectedAppId && appId && expectedAppId !== appId) {
     errors.push(`Token belongs to Meta App ${appId}, expected ${expectedAppId}`);
   }
-  if (expectedAppId && !appId) warnings.push("Token-to-App binding could not be verified by /debug_token");
+  if (expectedAppId && !appId)
+    warnings.push("Token-to-App binding could not be verified by /debug_token");
   if (missingPermissions.length > 0) {
     errors.push(`Missing permissions: ${missingPermissions.join(", ")}`);
   }

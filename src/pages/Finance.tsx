@@ -9,7 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { CloudDownload, FileImage, FileSpreadsheet, Loader2, Play, Printer, RefreshCw, StopCircle, Upload } from "lucide-react";
+import {
+  CloudDownload,
+  FileImage,
+  FileSpreadsheet,
+  Loader2,
+  Play,
+  Printer,
+  RefreshCw,
+  StopCircle,
+  Upload,
+} from "lucide-react";
 
 const MAX_FILES_PER_UPLOAD = 25;
 const STORAGE_PAGE = 20;
@@ -41,12 +51,35 @@ type FinanceDoc = {
 };
 
 function toCsv(rows: FinanceDoc[]) {
-  const header = ["الملف", "النوع", "المورد", "رقم الفاتورة", "التاريخ", "العملة", "الإجمالي", "الضريبة", "الثقة", "الحالة"];
+  const header = [
+    "الملف",
+    "النوع",
+    "المورد",
+    "رقم الفاتورة",
+    "التاريخ",
+    "العملة",
+    "الإجمالي",
+    "الضريبة",
+    "الثقة",
+    "الحالة",
+  ];
   const escape = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = rows.map((r) => [
-    r.file_name, r.doc_type, r.vendor, r.invoice_number, r.invoice_date,
-    r.currency, r.total_amount, r.tax_amount, r.confidence, r.status,
-  ].map(escape).join(","));
+  const lines = rows.map((r) =>
+    [
+      r.file_name,
+      r.doc_type,
+      r.vendor,
+      r.invoice_number,
+      r.invoice_date,
+      r.currency,
+      r.total_amount,
+      r.tax_amount,
+      r.confidence,
+      r.status,
+    ]
+      .map(escape)
+      .join(","),
+  );
   return "\uFEFF" + [header.map(escape).join(","), ...lines].join("\r\n");
 }
 
@@ -58,18 +91,29 @@ export default function Finance() {
   const [files, setFiles] = useState<File[]>([]);
   const [bucket, setBucket] = useState("media");
   const [prefix, setPrefix] = useState("arabesque_img");
-  const [importProgress, setImportProgress] = useState<{ done: number; created: number } | null>(null);
+  const [importProgress, setImportProgress] = useState<{ done: number; created: number } | null>(
+    null,
+  );
   const [autoRun, setAutoRun] = useState(false);
   const cancelRef = useRef(false);
 
-  const { data: batches, isLoading, isError, error } = useQuery({
+  const {
+    data: batches,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["finance-batches", currentTenantId],
     enabled: Boolean(currentTenantId),
     queryFn: async () => {
-      const { data, error } = await supabase.from("finance_batches")
-        .select("id,name,status,total_documents,processed_documents,failed_documents,currency,total_amount,created_at")
+      const { data, error } = await supabase
+        .from("finance_batches")
+        .select(
+          "id,name,status,total_documents,processed_documents,failed_documents,currency,total_amount,created_at",
+        )
         .eq("tenant_id", currentTenantId!)
-        .order("created_at", { ascending: false }).limit(30);
+        .order("created_at", { ascending: false })
+        .limit(30);
       if (error) throw error;
       return data ?? [];
     },
@@ -80,9 +124,14 @@ export default function Finance() {
     queryKey: ["finance-documents", currentTenantId],
     enabled: Boolean(currentTenantId),
     queryFn: async () => {
-      const { data, error } = await supabase.from("finance_documents")
-        .select("id,batch_id,file_name,status,doc_type,vendor,invoice_number,invoice_date,currency,total_amount,tax_amount,confidence,error_message,created_at")
-        .eq("tenant_id", currentTenantId!).order("created_at", { ascending: false }).limit(500);
+      const { data, error } = await supabase
+        .from("finance_documents")
+        .select(
+          "id,batch_id,file_name,status,doc_type,vendor,invoice_number,invoice_date,currency,total_amount,tax_amount,confidence,error_message,created_at",
+        )
+        .eq("tenant_id", currentTenantId!)
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       return (data ?? []) as FinanceDoc[];
     },
@@ -100,13 +149,19 @@ export default function Finance() {
       if (!canOperate) throw new Error("تحتاج صلاحية operator أو admin");
       if (!files.length) throw new Error("اختر صورة واحدة على الأقل");
       const selected = files.slice(0, MAX_FILES_PER_UPLOAD);
-      const encoded = await Promise.all(selected.map(async (file) => ({
-        file_name: file.name,
-        mime: file.type || "image/jpeg",
-        data_base64: await fileToBase64(file),
-      })));
+      const encoded = await Promise.all(
+        selected.map(async (file) => ({
+          file_name: file.name,
+          mime: file.type || "image/jpeg",
+          data_base64: await fileToBase64(file),
+        })),
+      );
       const { data, error } = await supabase.functions.invoke("finance-ingest", {
-        body: { tenant_id: currentTenantId, batch_name: batchName.trim() || undefined, files: encoded },
+        body: {
+          tenant_id: currentTenantId,
+          batch_name: batchName.trim() || undefined,
+          files: encoded,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -158,7 +213,10 @@ export default function Finance() {
       setImportProgress(null);
       invalidate();
     },
-    onError: (e: Error) => { setImportProgress(null); toast.error(e.message); },
+    onError: (e: Error) => {
+      setImportProgress(null);
+      toast.error(e.message);
+    },
   });
 
   const workerMutation = useMutation({
@@ -177,7 +235,10 @@ export default function Finance() {
         const res = data as any;
         if (res?.error) throw new Error(res.error);
         if (res?.paused) throw new Error(res.paused_reason || "تم إيقاف المعالجة مؤقتاً");
-        if (res?.skipped) { await new Promise((r) => setTimeout(r, 3000)); continue; }
+        if (res?.skipped) {
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
         processed += res.processed ?? 0;
         remaining = res.remaining ?? 0;
         qc.invalidateQueries({ queryKey: ["finance-documents"] });
@@ -211,7 +272,10 @@ export default function Finance() {
   };
 
   const exportCsv = (rows: FinanceDoc[], name: string) => {
-    if (!rows.length) { toast.error("لا توجد بيانات للتصدير"); return; }
+    if (!rows.length) {
+      toast.error("لا توجد بيانات للتصدير");
+      return;
+    }
     const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -227,14 +291,38 @@ export default function Finance() {
     <AppLayout title="المالية" subtitle="استقبال صور المستندات → Milano → Azure Vision → Foundry">
       <div className="space-y-6">
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Upload className="h-4 w-4" /> دفعة صور جديدة</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Upload className="h-4 w-4" /> دفعة صور جديدة
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <Input value={batchName} onChange={(e) => setBatchName(e.target.value)} placeholder="اسم الدفعة (اختياري)" disabled={!canOperate} />
-            <Input type="file" accept="image/*" multiple onChange={handleFiles} disabled={!canOperate || busy} />
+            <Input
+              value={batchName}
+              onChange={(e) => setBatchName(e.target.value)}
+              placeholder="اسم الدفعة (اختياري)"
+              disabled={!canOperate}
+            />
+            <Input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFiles}
+              disabled={!canOperate || busy}
+            />
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs text-muted-foreground">{files.length} صورة محددة — الحد {MAX_FILES_PER_UPLOAD} في الرفع الواحد</span>
-              <Button onClick={() => uploadMutation.mutate()} disabled={!canOperate || !files.length || uploadMutation.isPending}>
-                {uploadMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Upload className="h-4 w-4 ml-2" />}
+              <span className="text-xs text-muted-foreground">
+                {files.length} صورة محددة — الحد {MAX_FILES_PER_UPLOAD} في الرفع الواحد
+              </span>
+              <Button
+                onClick={() => uploadMutation.mutate()}
+                disabled={!canOperate || !files.length || uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 ml-2" />
+                )}
                 رفع إلى Milano
               </Button>
             </div>
@@ -242,24 +330,52 @@ export default function Finance() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CloudDownload className="h-4 w-4" /> استيراد مجلد كامل من مخزن Supabase</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CloudDownload className="h-4 w-4" /> استيراد مجلد كامل من مخزن Supabase
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input value={bucket} onChange={(e) => setBucket(e.target.value)} placeholder="اسم الـ bucket" disabled={!canOperate || busy} />
-              <Input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="مسار المجلد مثل arabesque_img" disabled={!canOperate || busy} />
+              <Input
+                value={bucket}
+                onChange={(e) => setBucket(e.target.value)}
+                placeholder="اسم الـ bucket"
+                disabled={!canOperate || busy}
+              />
+              <Input
+                value={prefix}
+                onChange={(e) => setPrefix(e.target.value)}
+                placeholder="مسار المجلد مثل arabesque_img"
+                disabled={!canOperate || busy}
+              />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-muted-foreground">
-                {importProgress ? `تمت معالجة ${importProgress.done} عنصر — أُضيف ${importProgress.created}` : "يستورد كل الملفات على دفعات ويتخطى المكرر تلقائياً"}
+                {importProgress
+                  ? `تمت معالجة ${importProgress.done} عنصر — أُضيف ${importProgress.created}`
+                  : "يستورد كل الملفات على دفعات ويتخطى المكرر تلقائياً"}
               </span>
               <div className="flex gap-2">
                 {importMutation.isPending && (
-                  <Button variant="outline" onClick={() => { cancelRef.current = true; }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      cancelRef.current = true;
+                    }}
+                  >
                     <StopCircle className="h-4 w-4 ml-1" /> إيقاف
                   </Button>
                 )}
-                <Button onClick={() => importMutation.mutate()} disabled={!canOperate || busy || !bucket || !prefix}>
-                  {importMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <CloudDownload className="h-4 w-4 ml-2" />}
+                <Button
+                  onClick={() => importMutation.mutate()}
+                  disabled={!canOperate || busy || !bucket || !prefix}
+                >
+                  {importMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  ) : (
+                    <CloudDownload className="h-4 w-4 ml-2" />
+                  )}
                   استيراد الكل
                 </Button>
               </div>
@@ -271,7 +387,11 @@ export default function Finance() {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">الدفعات</h2>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => exportCsv(recentDocs ?? [], "finance-all")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportCsv(recentDocs ?? [], "finance-all")}
+              >
                 <FileSpreadsheet className="h-4 w-4 ml-1" /> تصدير الكل
               </Button>
               <Button variant="outline" size="sm" onClick={() => window.print()}>
@@ -283,61 +403,141 @@ export default function Finance() {
             </div>
           </div>
           {isError ? (
-            <Card><CardContent className="p-6 text-sm text-destructive">تعذر تحميل الدفعات: {(error as Error).message}</CardContent></Card>
-          ) : isLoading ? <p className="text-sm text-muted-foreground">جاري التحميل...</p> : !batches?.length ? (
-            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">لا توجد دفعات مالية حتى الآن.</CardContent></Card>
-          ) : batches.map((batch) => {
-            const pct = batch.total_documents ? Math.round(((batch.processed_documents + batch.failed_documents) / batch.total_documents) * 100) : 0;
-            const docs = byBatch.get(batch.id) ?? [];
-            return (
-              <Card key={batch.id}>
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2"><h3 className="font-semibold">{batch.name}</h3><Badge variant="outline">{batch.status}</Badge></div>
-                      <p className="text-xs text-muted-foreground mt-1">{new Date(batch.created_at).toLocaleString("ar-EG")}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => exportCsv(docs, batch.name)}>
-                        <FileSpreadsheet className="h-4 w-4 ml-1" /> تصدير
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => workerMutation.mutate({ batchId: batch.id })} disabled={!canOperate || busy || batch.status === "completed"}>
-                        <Play className="h-4 w-4 ml-1" /> معالجة 5
-                      </Button>
-                      {autoRun ? (
-                        <Button size="sm" variant="destructive" onClick={() => { cancelRef.current = true; }}>
-                          <StopCircle className="h-4 w-4 ml-1" /> إيقاف
-                        </Button>
-                      ) : (
-                        <Button size="sm" onClick={() => workerMutation.mutate({ batchId: batch.id, all: true })} disabled={!canOperate || busy || batch.status === "completed"}>
-                          {workerMutation.isPending ? <Loader2 className="h-4 w-4 ml-1 animate-spin" /> : <Play className="h-4 w-4 ml-1" />}
-                          معالجة الدفعة كاملة
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <Progress value={pct} />
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    <div>الإجمالي: <b>{batch.total_documents}</b></div>
-                    <div>تم: <b>{batch.processed_documents}</b></div>
-                    <div>فشل: <b>{batch.failed_documents}</b></div>
-                    <div>القيمة: <b>{batch.currency ? `${batch.total_amount} ${batch.currency}` : "حسب العملة"}</b></div>
-                  </div>
-                  {docs.length > 0 && <div className="border rounded-md overflow-hidden">
-                    {docs.slice(0, 10).map((doc) => <div key={doc.id} className="flex items-center justify-between gap-3 px-3 py-2 border-b last:border-b-0 text-xs">
-                      <div className="flex items-center gap-2 min-w-0"><FileImage className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{doc.file_name || doc.invoice_number || doc.id}</span></div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span>{doc.vendor || doc.doc_type || "—"}</span>
-                        {doc.total_amount != null && <span>{doc.total_amount} {doc.currency ?? ""}</span>}
-                        <Badge variant={doc.status === "failed" ? "destructive" : "outline"}>{doc.status}</Badge>
+            <Card>
+              <CardContent className="p-6 text-sm text-destructive">
+                تعذر تحميل الدفعات: {(error as Error).message}
+              </CardContent>
+            </Card>
+          ) : isLoading ? (
+            <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+          ) : !batches?.length ? (
+            <Card>
+              <CardContent className="p-8 text-center text-sm text-muted-foreground">
+                لا توجد دفعات مالية حتى الآن.
+              </CardContent>
+            </Card>
+          ) : (
+            batches.map((batch) => {
+              const pct = batch.total_documents
+                ? Math.round(
+                    ((batch.processed_documents + batch.failed_documents) / batch.total_documents) *
+                      100,
+                  )
+                : 0;
+              const docs = byBatch.get(batch.id) ?? [];
+              return (
+                <Card key={batch.id}>
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{batch.name}</h3>
+                          <Badge variant="outline">{batch.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(batch.created_at).toLocaleString("ar-EG")}
+                        </p>
                       </div>
-                    </div>)}
-                    {docs.length > 10 && <div className="px-3 py-2 text-xs text-muted-foreground">و{docs.length - 10} مستند آخر — استخدم التصدير للاطلاع الكامل.</div>}
-                  </div>}
-                </CardContent>
-              </Card>
-            );
-          })}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => exportCsv(docs, batch.name)}
+                        >
+                          <FileSpreadsheet className="h-4 w-4 ml-1" /> تصدير
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => workerMutation.mutate({ batchId: batch.id })}
+                          disabled={!canOperate || busy || batch.status === "completed"}
+                        >
+                          <Play className="h-4 w-4 ml-1" /> معالجة 5
+                        </Button>
+                        {autoRun ? (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              cancelRef.current = true;
+                            }}
+                          >
+                            <StopCircle className="h-4 w-4 ml-1" /> إيقاف
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => workerMutation.mutate({ batchId: batch.id, all: true })}
+                            disabled={!canOperate || busy || batch.status === "completed"}
+                          >
+                            {workerMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                            ) : (
+                              <Play className="h-4 w-4 ml-1" />
+                            )}
+                            معالجة الدفعة كاملة
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <Progress value={pct} />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        الإجمالي: <b>{batch.total_documents}</b>
+                      </div>
+                      <div>
+                        تم: <b>{batch.processed_documents}</b>
+                      </div>
+                      <div>
+                        فشل: <b>{batch.failed_documents}</b>
+                      </div>
+                      <div>
+                        القيمة:{" "}
+                        <b>
+                          {batch.currency
+                            ? `${batch.total_amount} ${batch.currency}`
+                            : "حسب العملة"}
+                        </b>
+                      </div>
+                    </div>
+                    {docs.length > 0 && (
+                      <div className="border rounded-md overflow-hidden">
+                        {docs.slice(0, 10).map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center justify-between gap-3 px-3 py-2 border-b last:border-b-0 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileImage className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {doc.file_name || doc.invoice_number || doc.id}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span>{doc.vendor || doc.doc_type || "—"}</span>
+                              {doc.total_amount != null && (
+                                <span>
+                                  {doc.total_amount} {doc.currency ?? ""}
+                                </span>
+                              )}
+                              <Badge variant={doc.status === "failed" ? "destructive" : "outline"}>
+                                {doc.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                        {docs.length > 10 && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground">
+                            و{docs.length - 10} مستند آخر — استخدم التصدير للاطلاع الكامل.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
       </div>
     </AppLayout>
