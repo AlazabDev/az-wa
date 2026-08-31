@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Production deploy for AzWA.
+# Production deploy for AzWA using native Node.js + systemd.
 # Usage on the server from the repository root: ./deploy/deploy.sh
 set -euo pipefail
 
@@ -34,14 +34,62 @@ for var_name in "${required_vars[@]}"; do
   fi
 done
 
-echo "==> Pulling latest code"
-git pull --ff-only
+NODE_BIN="$(command -v node || true)"
+BUN_BIN="$(command -v bun || true)"
 
-echo "==> Building TanStack Node image"
-docker compose build --pull
+if [ -z "$NODE_BIN" ]; then
+  echo "ERROR: Node.js is not installed or not in PATH" >&2
+  exit 1
+fi
 
-echo "==> Restarting container"
-docker compose up -d --remove-orphans
+if [ -z "$BUN_BIN" ]; then
+  echo "ERROR: Bun is not installed or not in PATH" >&2
+  exit 1
+fi
+
+NODE_MAJOR="$($NODE_BIN -p 'process.versions.node.split(".")[0]')"
+if [ "$NODE_MAJOR" -lt 24 ]; then
+  echo "ERROR: Node.js 24+ is required; found $($NODE_BIN --version)" >&2
+  exit 1
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
+  SUDO=()
+else
+  SUDO=(sudo)
+fi
+
+chmod 600 .env
+
+if [ -z "$(git status --porcelain)" ]; then
+  echo "==> Pulling latest code"
+  git pull --ff-only
+else
+  echo "==> Local modifications detected; preserving them and skipping git pull"
+fi
+
+echo "==> Installing locked dependencies"
+"$BUN_BIN" install --frozen-lockfile
+
+echo "==> Building TanStack/Nitro production output"
+"$BUN_BIN" run build
+
+echo "==> TypeScript validation"
+"$BUN_BIN" run typecheck
+
+echo "==> Lint validation"
+"$BUN_BIN" run lint
+
+echo "==> Installing systemd service"
+sed \
+  -e "s|__APP_DIR__|$APP_DIR|g" \
+  -e "s|__NODE_BIN__|$NODE_BIN|g" \
+  deploy/az-wa.service \
+  | "${SUDO[@]}" tee /etc/systemd/system/az-wa.service >/dev/null
+
+"${SUDO[@]}" systemctl daemon-reload
+"${SUDO[@]}" systemctl enable az-wa.service >/dev/null
+"${SUDO[@]}" systemctl restart az-wa.service
 
 echo "==> Waiting for liveness"
 for i in $(seq 1 45); do
@@ -49,8 +97,9 @@ for i in $(seq 1 45); do
     break
   fi
   if [ "$i" -eq 45 ]; then
-    echo "ERROR: container did not become live" >&2
-    docker compose logs --tail 120 web >&2
+    echo "ERROR: AzWA did not become live" >&2
+    "${SUDO[@]}" systemctl status az-wa.service --no-pager >&2 || true
+    "${SUDO[@]}" journalctl -u az-wa.service -n 120 --no-pager >&2 || true
     exit 1
   fi
   sleep 1
@@ -60,12 +109,13 @@ echo "==> Waiting for readiness"
 for i in $(seq 1 30); do
   if curl -fsS http://127.0.0.1:8085/readyz >/dev/null; then
     echo "AzWA is ready after ${i}s"
-    docker image prune -f >/dev/null || true
+    "${SUDO[@]}" systemctl --no-pager --full status az-wa.service
     exit 0
   fi
   if [ "$i" -eq 30 ]; then
     echo "ERROR: application is live but not ready" >&2
-    docker compose logs --tail 120 web >&2
+    "${SUDO[@]}" systemctl status az-wa.service --no-pager >&2 || true
+    "${SUDO[@]}" journalctl -u az-wa.service -n 120 --no-pager >&2 || true
     exit 1
   fi
   sleep 1
