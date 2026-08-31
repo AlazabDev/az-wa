@@ -13,7 +13,7 @@ export type MetaAppConfigInput = {
 
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { portfolioId: string }) => input)
+  .validator((input: { portfolioId: string }) => input)
   .handler(async ({ data, context }) => {
     const { data: portfolio, error: portfolioError } = await context.supabase
       .from("business_portfolios")
@@ -35,7 +35,7 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
 
 export const testWhatsappNumber = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { numberId: string }) => input)
+  .validator((input: { numberId: string }) => input)
   .handler(async ({ data, context }) => {
     const { data: number, error: numberError } = await context.supabase
       .from("whatsapp_numbers")
@@ -56,7 +56,7 @@ export const testWhatsappNumber = createServerFn({ method: "POST" })
 
 export const getMetaAppConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: Record<string, never>) => input)
+  .validator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
     const { data: membership, error: membershipError } = await context.supabase
       .from("organization_members")
@@ -133,7 +133,7 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
 
 export const saveMetaAppConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: MetaAppConfigInput) => input)
+  .validator((input: MetaAppConfigInput) => input)
   .handler(async ({ data, context }) => {
     const appId = data.appId.trim();
     if (!appId) throw new Error("Meta App ID is required");
