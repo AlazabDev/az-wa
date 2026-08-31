@@ -129,11 +129,23 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
 
     const explicitComponents = Array.isArray(data.components) ? data.components : [];
     const bodyComponent = bodyRuntimeComponent(data.bodyParameters ?? []);
-    const runtimeComponents = explicitComponents.length > 0
-      ? explicitComponents
-      : bodyComponent
-        ? [bodyComponent]
-        : [];
+    const mpmComponents = data.productList ? mpmRuntimeComponents(data.productList) : [];
+
+    const runtimeComponents: Record<string, unknown>[] = mpmComponents.length > 0
+      ? [
+          ...mpmComponents.filter((component) => component.type === "header"),
+          ...explicitComponents.filter(
+            (component) => String(component["type"] ?? "").toLowerCase() === "body",
+          ),
+          ...(explicitComponents.length === 0 && bodyComponent ? [bodyComponent] : []),
+          ...mpmComponents.filter((component) => component.type === "button"),
+        ]
+      : explicitComponents.length > 0
+        ? explicitComponents
+        : bodyComponent
+          ? [bodyComponent]
+          : [];
+
 
     const requestPayload = {
       messaging_product: "whatsapp",
