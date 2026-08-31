@@ -34,8 +34,8 @@ SUPABASE_SERVICE_ROLE_KEY='<service-role-or-secret-key>'
 
 META_GRAPH_VERSION=v26.0
 META_WEBHOOK_PUBLIC_URL=https://wa.alazab.com/webhooks/meta/whatsapp
-LOVABLE_CRON_SECRET='<long-random-secret>'
-LOVABLE_CRON_SECRET_PREVIOUS=
+AZWA_CRON_SECRET='<long-random-secret>'
+AZWA_CRON_SECRET_PREVIOUS=
 
 VITE_ENABLE_LEGACY_UI=false
 ```
@@ -242,7 +242,7 @@ Webhook ingestion immediately attempts to drain the media queue. The protected w
 The worker must source `/mnt/apps/az-wa/.env` at runtime and send:
 
 ```text
-Authorization: Bearer $LOVABLE_CRON_SECRET
+Authorization: Bearer $AZWA_CRON_SECRET
 ```
 
 to:
