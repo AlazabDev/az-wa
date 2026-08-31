@@ -24,7 +24,7 @@ required_vars=(
   SUPABASE_PUBLISHABLE_KEY
   SUPABASE_SERVICE_ROLE_KEY
   META_WEBHOOK_PUBLIC_URL
-  LOVABLE_CRON_SECRET
+  AZWA_CRON_SECRET
 )
 
 for var_name in "${required_vars[@]}"; do
