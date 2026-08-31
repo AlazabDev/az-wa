@@ -16,6 +16,6 @@ services:
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
-      PORT: 3000
+      PORT: 8085
     ports:
-      - "127.0.0.1:8085:3000"
+      - "127.0.0.1:8085:8085"
