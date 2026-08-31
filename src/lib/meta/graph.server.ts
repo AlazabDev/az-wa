@@ -148,6 +148,63 @@ export class MetaGraphClient {
       durationMs,
     };
   }
+
+  /**
+   * Multipart Graph request used by endpoints that explicitly require form-data
+   * (currently WhatsApp Flow asset uploads). The browser never receives the token.
+   * Do not set Content-Type manually: fetch must add the multipart boundary.
+   */
+  async requestFormData<T>(
+    path: string,
+    formData: FormData,
+    init: { method?: string; query?: Record<string, string> } = {},
+  ): Promise<GraphResult<T>> {
+    const method = init.method ?? "POST";
+    const url = new URL(`${GRAPH_BASE}/${path.replace(/^\//, "")}`);
+    for (const [k, v] of Object.entries(init.query ?? {})) url.searchParams.set(k, v);
+
+    const started = Date.now();
+    let status = 0;
+    let payload: Record<string, unknown> | null = null;
+    try {
+      const res = await fetch(url.toString(), {
+        method,
+        headers: { Authorization: `Bearer ${this.token}` },
+        body: formData,
+      });
+      status = res.status;
+      payload = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    } catch (e) {
+      const durationMs = Date.now() - started;
+      const message = e instanceof Error ? e.message : "network error";
+      await logRequest(path, method, 0, durationMs, this.scope, "network", message);
+      return { ok: false, status: 0, data: null, errorMessage: message, durationMs };
+    }
+
+    const durationMs = Date.now() - started;
+    const err = (payload?.["error"] ?? null) as { code?: number; message?: string } | null;
+    await logRequest(
+      path,
+      method,
+      status,
+      durationMs,
+      this.scope,
+      err?.code != null ? String(err.code) : undefined,
+      err?.message,
+    );
+
+    if (status >= 200 && status < 300 && !err) {
+      return { ok: true, status, data: payload as T, durationMs };
+    }
+    return {
+      ok: false,
+      status,
+      data: null,
+      errorCode: err?.code != null ? String(err.code) : String(status),
+      errorMessage: err?.message ?? `HTTP ${status}`,
+      durationMs,
+    };
+  }
 }
 
 export type NumberScope = {
