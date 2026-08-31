@@ -93,12 +93,7 @@ export const createFlow = createServerFn({ method: "POST" })
 export const updateFlowMetadata = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
-    (input: {
-      flowId: string;
-      name: string;
-      categories: string[];
-      endpointUri?: string;
-    }) => {
+    (input: { flowId: string; name: string; categories: string[]; endpointUri?: string }) => {
       if (!input?.flowId) throw new Error("Flow is required");
       if (!input?.name?.trim()) throw new Error("Flow name is required");
       return {
