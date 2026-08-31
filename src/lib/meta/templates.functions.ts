@@ -48,7 +48,7 @@ async function assertWabaPermission(
 
 export const syncTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { wabaId: string }) => {
+  .validator((input: { wabaId: string }) => {
     if (!input?.wabaId) throw new Error("A WABA is required");
     return { wabaId: input.wabaId };
   })
@@ -62,7 +62,7 @@ export const syncTemplates = createServerFn({ method: "POST" })
 
 export const createTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: CreateTemplateInput) => {
+  .validator((input: CreateTemplateInput) => {
     if (!input?.wabaId) throw new Error("A WABA is required");
 
     const name = input.name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -115,7 +115,7 @@ export const createTemplate = createServerFn({ method: "POST" })
 
 export const deleteTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { templateId: string }) => {
+  .validator((input: { templateId: string }) => {
     if (!input?.templateId) throw new Error("A template is required");
     return { templateId: input.templateId };
   })

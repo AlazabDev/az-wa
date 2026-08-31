@@ -13,7 +13,7 @@ export type MetaAppConfigInput = {
 
 export const syncBusinessPortfolio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { portfolioId: string }) => input)
+  .validator((input: { portfolioId: string }) => input)
   .handler(async ({ data, context }) => {
     const { data: portfolio, error: portfolioError } = await context.supabase
       .from("business_portfolios")
@@ -35,7 +35,7 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
 
 export const testWhatsappNumber = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { numberId: string }) => input)
+  .validator((input: { numberId: string }) => input)
   .handler(async ({ data, context }) => {
     const { data: number, error: numberError } = await context.supabase
       .from("whatsapp_numbers")
@@ -56,7 +56,7 @@ export const testWhatsappNumber = createServerFn({ method: "POST" })
 
 export const getMetaAppConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: Record<string, never>) => input)
+  .validator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
     const { data: membership, error: membershipError } = await context.supabase
       .from("organization_members")
@@ -85,7 +85,9 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
 
     const { data: endpoint } = await supabaseAdmin
       .from("webhook_endpoints")
-      .select("id, url, status, verification_status, verify_token_credential_id, app_secret_credential_id")
+      .select(
+        "id, url, status, verification_status, verify_token_credential_id, app_secret_credential_id",
+      )
       .eq("organization_id", organizationId)
       .eq("endpoint_type", "meta_whatsapp")
       .order("created_at", { ascending: true })
@@ -133,7 +135,7 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
 
 export const saveMetaAppConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: MetaAppConfigInput) => input)
+  .validator((input: MetaAppConfigInput) => input)
   .handler(async ({ data, context }) => {
     const appId = data.appId.trim();
     if (!appId) throw new Error("Meta App ID is required");
@@ -239,16 +241,20 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       secret: string,
       portfolioId: string | null,
     ) => {
-      const { data: credentialId, error } = await supabaseAdmin.rpc("backend_store_meta_credential", {
-        p_organization_id: organizationId,
-        p_credential_type: credentialType,
-        p_name: name,
-        p_secret: secret,
-        p_meta_app_id: metaAppInternalId,
-        ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
-        p_scopes: [],
-      });
-      if (error || !credentialId) throw new Error(error?.message ?? `Unable to store ${credentialType}`);
+      const { data: credentialId, error } = await supabaseAdmin.rpc(
+        "backend_store_meta_credential",
+        {
+          p_organization_id: organizationId,
+          p_credential_type: credentialType,
+          p_name: name,
+          p_secret: secret,
+          p_meta_app_id: metaAppInternalId,
+          ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
+          p_scopes: [],
+        },
+      );
+      if (error || !credentialId)
+        throw new Error(error?.message ?? `Unable to store ${credentialType}`);
       return credentialId;
     };
 
@@ -258,13 +264,28 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
     let appAccessTokenCredentialId = await existingCredential("access_token");
 
     if (data.verifyToken?.trim()) {
-      verifyCredentialId = await storeCredential("verify_token", "Meta Webhook Verify Token", data.verifyToken.trim(), null);
+      verifyCredentialId = await storeCredential(
+        "verify_token",
+        "Meta Webhook Verify Token",
+        data.verifyToken.trim(),
+        null,
+      );
     }
     if (data.appSecret?.trim()) {
-      appSecretCredentialId = await storeCredential("app_secret", "Meta App Secret", data.appSecret.trim(), null);
+      appSecretCredentialId = await storeCredential(
+        "app_secret",
+        "Meta App Secret",
+        data.appSecret.trim(),
+        null,
+      );
     }
     if (data.appAccessToken?.trim()) {
-      appAccessTokenCredentialId = await storeCredential("access_token", "Meta App Access Token", data.appAccessToken.trim(), null);
+      appAccessTokenCredentialId = await storeCredential(
+        "access_token",
+        "Meta App Access Token",
+        data.appAccessToken.trim(),
+        null,
+      );
     }
     if (data.systemUserToken?.trim()) {
       systemTokenCredentialId = await storeCredential(
@@ -277,10 +298,13 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
 
     if (!verifyCredentialId) throw new Error("Verify Token is required for initial setup");
     if (!appSecretCredentialId) throw new Error("App Secret is required for initial setup");
-    if (!appAccessTokenCredentialId) throw new Error("App Access Token is required for initial setup");
-    if (!systemTokenCredentialId) throw new Error("System User Token is required for initial setup");
+    if (!appAccessTokenCredentialId)
+      throw new Error("App Access Token is required for initial setup");
+    if (!systemTokenCredentialId)
+      throw new Error("System User Token is required for initial setup");
 
-    const webhookUrl = process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";
+    const webhookUrl =
+      process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";
     if (existingEndpoint) {
       const { error } = await supabaseAdmin
         .from("webhook_endpoints")

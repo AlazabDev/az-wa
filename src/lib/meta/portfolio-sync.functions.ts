@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const syncBusinessPortfolioComplete = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { portfolioId: string }) => {
+  .validator((input: { portfolioId: string }) => {
     if (!input?.portfolioId) throw new Error("Business Portfolio is required");
     return { portfolioId: input.portfolioId };
   })
