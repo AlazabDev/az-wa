@@ -58,23 +58,23 @@ WABA IDPhone Number IDWhatsApp Number9229648608456191328521857002632+20111572393
 العلاقة الصحيحة:
 
 Business Portfolio
-        │
-        ├── WABA
-        │    ├── Phone Number
-        │    ├── Phone Number
-        │    └── ...
-        │
-        ├── WABA
-        │    └── Phone Number
-        │
-        └── ...
+│
+├── WABA
+│ ├── Phone Number
+│ ├── Phone Number
+│ └── ...
+│
+├── WABA
+│ └── Phone Number
+│
+└── ...
 
 ممنوع إنشاء علاقة One-to-One بين WABA ورقم WhatsApp.
 
 يجب أن تكون:
 
 Business Portfolio 1:N WABAs
-WABA               1:N Phone Numbers
+WABA 1:N Phone Numbers
 
 3. قاعدة أساسية غير قابلة للتفاوض
 
@@ -301,17 +301,17 @@ Configuration
 Workflow:
 
 Business Portfolio
-        ↓
+↓
 Discover / Sync WABAs
-        ↓
+↓
 Discover / Sync Phone Numbers
-        ↓
+↓
 Compare With PostgreSQL
-        ↓
+↓
 Insert New
 Update Existing
 Mark Missing
-        ↓
+↓
 Sync Report
 
 الأرقام التسعة المذكورة تستخدم كـInitial Production Import فقط.
@@ -1305,33 +1305,33 @@ Storage
 البنية:
 
 React Frontend
-       ↓
+↓
 Internal Backend API
-       ↓
+↓
 Application Services
-       ↓
+↓
 Meta Integration Layer
-       ↓
+↓
 Meta Graph API
 
 والاستقبال:
 
 Meta Webhooks
-      ↓
+↓
 Webhook Gateway
-      ↓
+↓
 Signature Validation
-      ↓
+↓
 Raw Event Persistence
-      ↓
+↓
 Deduplication
-      ↓
+↓
 Queue
-      ↓
+↓
 Workers
-      ↓
+↓
 PostgreSQL
-      ↓
+↓
 Realtime UI
 
 45. Security
@@ -1490,38 +1490,38 @@ Business Portfolio:
 31443701205
 
 ├── 922964860845619
-│   └── +201115723930
-│       Phone Number ID: 1328521857002632
+│ └── +201115723930
+│ Phone Number ID: 1328521857002632
 │
 ├── 2154838801923462
-│   └── +201092750351
-│       Phone Number ID: 1011864912017679
+│ └── +201092750351
+│ Phone Number ID: 1011864912017679
 │
 ├── 1527103499063250
-│   └── +201146395966
-│       Phone Number ID: 1197837903405393
+│ └── +201146395966
+│ Phone Number ID: 1197837903405393
 │
 ├── 1303965001665007
-│   └── +201146397010
-│       Phone Number ID: 1061490140383829
+│ └── +201146397010
+│ Phone Number ID: 1061490140383829
 │
 ├── 2144651456337012
-│   └── +12054605650
-│       Phone Number ID: 1020054711186921
+│ └── +12054605650
+│ Phone Number ID: 1020054711186921
 │
 ├── 1458856398934130
-│   ├── +12064795608
-│   │   Phone Number ID: 1032441389943808
-│   │
-│   └── +12083799564
-│       Phone Number ID: 952530191273396
+│ ├── +12064795608
+│ │ Phone Number ID: 1032441389943808
+│ │
+│ └── +12083799564
+│ Phone Number ID: 952530191273396
 │
 └── 459851797218855
-    ├── +15557285727
-    │   Phone Number ID: 644995285354639
-    │
-    └── +15557245001
-        Phone Number ID: 527697617099639
+├── +15557285727
+│ Phone Number ID: 644995285354639
+│
+└── +15557245001
+Phone Number ID: 527697617099639
 
 ثم اختبر لكل رقم:
 

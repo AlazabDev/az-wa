@@ -54,7 +54,8 @@ async function loadAppRuntime(organizationId: string) {
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (endpointError || !endpoint) throw new Error("No active Meta WhatsApp webhook endpoint configured");
+  if (endpointError || !endpoint)
+    throw new Error("No active Meta WhatsApp webhook endpoint configured");
 
   const { data: credential, error: credentialError } = await db
     .from("meta_credentials")
@@ -91,8 +92,11 @@ async function loadAppRuntime(organizationId: string) {
 }
 
 function summarize(subscriptions: AppSubscription[], callbackUrl: string) {
-  const whatsapp = subscriptions.find((item) => item.object === "whatsapp_business_account") ?? null;
-  const fields = new Set((whatsapp?.fields ?? []).map((field) => field.name).filter(Boolean) as string[]);
+  const whatsapp =
+    subscriptions.find((item) => item.object === "whatsapp_business_account") ?? null;
+  const fields = new Set(
+    (whatsapp?.fields ?? []).map((field) => field.name).filter(Boolean) as string[],
+  );
   const missingFields = WHATSAPP_WEBHOOK_FIELDS.filter((field) => !fields.has(field));
   return {
     configured: Boolean(whatsapp),
@@ -102,16 +106,23 @@ function summarize(subscriptions: AppSubscription[], callbackUrl: string) {
     fields: [...fields].sort(),
     missingFields,
     healthy:
-      Boolean(whatsapp?.active) && whatsapp?.callback_url === callbackUrl && missingFields.length === 0,
+      Boolean(whatsapp?.active) &&
+      whatsapp?.callback_url === callbackUrl &&
+      missingFields.length === 0,
   };
 }
 
 export async function inspectMetaAppWebhook(organizationId: string) {
   const runtime = await loadAppRuntime(organizationId);
   const client = new MetaGraphClient(runtime.token, { organizationId });
-  const response = await client.request<{ data?: AppSubscription[] }>(`${runtime.metaAppId}/subscriptions`);
+  const response = await client.request<{ data?: AppSubscription[] }>(
+    `${runtime.metaAppId}/subscriptions`,
+  );
   if (!response.ok) {
-    return { ok: false as const, error: response.errorMessage ?? "Unable to inspect Meta App subscriptions" };
+    return {
+      ok: false as const,
+      error: response.errorMessage ?? "Unable to inspect Meta App subscriptions",
+    };
   }
   return {
     ok: true as const,
@@ -125,9 +136,15 @@ export async function reconcileMetaAppWebhook(organizationId: string) {
   const runtime = await loadAppRuntime(organizationId);
   const client = new MetaGraphClient(runtime.token, { organizationId });
 
-  const before = await client.request<{ data?: AppSubscription[] }>(`${runtime.metaAppId}/subscriptions`);
+  const before = await client.request<{ data?: AppSubscription[] }>(
+    `${runtime.metaAppId}/subscriptions`,
+  );
   if (!before.ok) {
-    return { ok: false as const, changed: false, error: before.errorMessage ?? "Unable to inspect subscriptions" };
+    return {
+      ok: false as const,
+      changed: false,
+      error: before.errorMessage ?? "Unable to inspect subscriptions",
+    };
   }
   const state = summarize(before.data?.data ?? [], runtime.callbackUrl);
   if (state.healthy) return { ok: true as const, changed: false, ...state };
@@ -143,15 +160,30 @@ export async function reconcileMetaAppWebhook(organizationId: string) {
     },
   });
   if (!write.ok) {
-    return { ok: false as const, changed: false, error: write.errorMessage ?? "Unable to configure App webhook" };
+    return {
+      ok: false as const,
+      changed: false,
+      error: write.errorMessage ?? "Unable to configure App webhook",
+    };
   }
 
-  const after = await client.request<{ data?: AppSubscription[] }>(`${runtime.metaAppId}/subscriptions`);
+  const after = await client.request<{ data?: AppSubscription[] }>(
+    `${runtime.metaAppId}/subscriptions`,
+  );
   if (!after.ok) {
-    return { ok: false as const, changed: true, error: after.errorMessage ?? "Configured but verification failed" };
+    return {
+      ok: false as const,
+      changed: true,
+      error: after.errorMessage ?? "Configured but verification failed",
+    };
   }
   const verified = summarize(after.data?.data ?? [], runtime.callbackUrl);
   return verified.healthy
     ? { ok: true as const, changed: true, ...verified }
-    : { ok: false as const, changed: true, error: `Webhook still incomplete: ${verified.missingFields.join(", ")}`, ...verified };
+    : {
+        ok: false as const,
+        changed: true,
+        error: `Webhook still incomplete: ${verified.missingFields.join(", ")}`,
+        ...verified,
+      };
 }

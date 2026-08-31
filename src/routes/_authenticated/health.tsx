@@ -42,9 +42,7 @@ function ProductionReadiness() {
     try {
       setResult(await load({ data: {} }));
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Unable to run production readiness check",
-      );
+      setError(cause instanceof Error ? cause.message : "Unable to run production readiness check");
     } finally {
       setLoading(false);
     }

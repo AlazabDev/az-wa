@@ -384,7 +384,10 @@ export async function syncPortfolioComplete(portfolioId: string): Promise<Comple
         };
 
         if (existingNumber) {
-          const { error } = await db.from("whatsapp_numbers").update(patch).eq("id", existingNumber.id);
+          const { error } = await db
+            .from("whatsapp_numbers")
+            .update(patch)
+            .eq("id", existingNumber.id);
           if (error) report.errors.push(`Number ${phone.id}: ${error.message}`);
           else report.numbers.updated += 1;
         } else {
@@ -477,7 +480,10 @@ export async function syncPortfolioComplete(portfolioId: string): Promise<Comple
     .eq("business_portfolio_id", portfolio.id);
   for (const local of localWabas ?? []) {
     if (!seenWabaMetaIds.has(local.meta_waba_id)) {
-      const { error } = await db.from("wabas").update({ status: "missing_from_meta" }).eq("id", local.id);
+      const { error } = await db
+        .from("wabas")
+        .update({ status: "missing_from_meta" })
+        .eq("id", local.id);
       if (error) report.errors.push(`WABA ${local.meta_waba_id}: ${error.message}`);
       else report.wabas.missing += 1;
     }

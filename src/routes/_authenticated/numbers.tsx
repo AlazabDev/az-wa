@@ -129,9 +129,7 @@ function NumbersPage() {
                     <td className="py-2 pr-4 text-xs">{extra?.account_mode ?? "—"}</td>
                     <td className="py-2 pr-4 text-xs">{extra?.platform_type ?? "—"}</td>
                     <td className="py-2 pr-4 text-xs">{extra?.throughput_level ?? "—"}</td>
-                    <td className="py-2 pr-4 text-xs">
-                      {extra?.code_verification_status ?? "—"}
-                    </td>
+                    <td className="py-2 pr-4 text-xs">{extra?.code_verification_status ?? "—"}</td>
                     <td className="py-2 pr-4">
                       <StatusBadge value={n.status} />
                     </td>

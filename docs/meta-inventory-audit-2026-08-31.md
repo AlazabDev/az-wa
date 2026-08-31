@@ -26,29 +26,29 @@ The AzWA application is:
 
 ## Current WABAs
 
-| Meta WABA ID | Name | Phones | Templates | Flows |
-|---|---|---:|---:|---:|
-| `1303965001665007` | Alazab | 1 | 2 | 1 |
-| `1458856398934130` | Azab | 2 | 20 | 4 |
-| `1527103499063250` | Alazab Projects | 1 | 9 | 4 |
-| `2144651456337012` | Mohamed Azab | 1 | 22 | 5 |
-| `2154838801923462` | Alazab Eg | 1 | 0 | 0 |
-| `459851797218855` | UberFix | 2 | 41 | 7 |
+| Meta WABA ID       | Name            | Phones | Templates | Flows |
+| ------------------ | --------------- | -----: | --------: | ----: |
+| `1303965001665007` | Alazab          |      1 |         2 |     1 |
+| `1458856398934130` | Azab            |      2 |        20 |     4 |
+| `1527103499063250` | Alazab Projects |      1 |         9 |     4 |
+| `2144651456337012` | Mohamed Azab    |      1 |        22 |     5 |
+| `2154838801923462` | Alazab Eg       |      1 |         0 |     0 |
+| `459851797218855`  | UberFix         |      2 |        41 |     7 |
 
 Runtime discovery remains authoritative. These IDs/counts are an audit baseline only.
 
 ## Current phone inventory
 
-| Phone Number ID | Number | Audit status |
-|---|---|---|
-| `1061490140383829` | +20 11 46397010 | active |
-| `1032441389943808` | +1 206-479-5608 | active |
-| `952530191273396` | +1 208-379-9564 | active |
-| `1197837903405393` | +20 11 46395966 | active |
-| `1020054711186921` | +1 205-460-5650 | active |
+| Phone Number ID    | Number          | Audit status     |
+| ------------------ | --------------- | ---------------- |
+| `1061490140383829` | +20 11 46397010 | active           |
+| `1032441389943808` | +1 206-479-5608 | active           |
+| `952530191273396`  | +1 208-379-9564 | active           |
+| `1197837903405393` | +20 11 46395966 | active           |
+| `1020054711186921` | +1 205-460-5650 | active           |
 | `1011864912017679` | +20 10 92750351 | **disconnected** |
-| `644995285354639` | +1 555-728-5727 | active |
-| `527697617099639` | +1 555-724-5001 | active |
+| `644995285354639`  | +1 555-728-5727 | active           |
+| `527697617099639`  | +1 555-724-5001 | active           |
 
 `1011864912017679` must not be enabled as a sender until Meta reports it active again. The database trigger in the inventory-completion migration enforces this rule for all non-active numbers.
 

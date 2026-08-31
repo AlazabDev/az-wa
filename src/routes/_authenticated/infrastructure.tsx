@@ -18,7 +18,8 @@ export const Route = createFileRoute("/_authenticated/infrastructure")({
       { title: "Business Portfolio & Infrastructure — AzWA" },
       {
         name: "description",
-        content: "Live Meta infrastructure tree with full Graph API v26 inventory reconciliation and per-number diagnostics.",
+        content:
+          "Live Meta infrastructure tree with full Graph API v26 inventory reconciliation and per-number diagnostics.",
       },
     ],
   }),
@@ -95,10 +96,13 @@ function Infrastructure() {
               actions={
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
-                    {p.last_synced_at ? `Last sync ${new Date(p.last_synced_at).toLocaleString()}` : "Never synced"}
+                    {p.last_synced_at
+                      ? `Last sync ${new Date(p.last_synced_at).toLocaleString()}`
+                      : "Never synced"}
                   </span>
                   <Button size="sm" onClick={() => runSync(p.id)} disabled={busy !== null}>
-                    <RefreshCw className="size-3.5" /> {busy === p.id ? "Syncing…" : "Sync from Meta"}
+                    <RefreshCw className="size-3.5" />{" "}
+                    {busy === p.id ? "Syncing…" : "Sync from Meta"}
                   </Button>
                 </div>
               }
@@ -112,28 +116,43 @@ function Infrastructure() {
                         <span className="font-mono text-xs font-semibold">{w.meta_waba_id}</span>
                         <span className="text-xs text-muted-foreground">{w.name}</span>
                         <StatusBadge value={w.status} />
-                        <span className="ml-auto text-xs text-muted-foreground">{wabaNumbers.length} number{wabaNumbers.length === 1 ? "" : "s"}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {wabaNumbers.length} number{wabaNumbers.length === 1 ? "" : "s"}
+                        </span>
                       </div>
                       <div className="divide-y divide-border">
                         {wabaNumbers.map((n) => (
                           <div key={n.id} className="px-3 py-3">
                             <div className="flex flex-wrap items-center gap-3">
                               <span className="font-medium">{n.display_phone_number}</span>
-                              <span className="font-mono text-xs text-muted-foreground">{n.meta_phone_number_id}</span>
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {n.meta_phone_number_id}
+                              </span>
                               <StatusBadge value={n.health} />
-                              <Button size="sm" variant="outline" className="ml-auto" disabled={busy !== null} onClick={() => runTest(n.id)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-auto"
+                                disabled={busy !== null}
+                                onClick={() => runTest(n.id)}
+                              >
                                 {busy === n.id ? "Testing…" : "Run diagnostics"}
                               </Button>
                             </div>
                             {results[n.id] && (
                               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                                 {(results[n.id] ?? []).map((r) => (
-                                  <div key={r.name} className="rounded-md border border-border bg-muted/30 p-2">
+                                  <div
+                                    key={r.name}
+                                    className="rounded-md border border-border bg-muted/30 p-2"
+                                  >
                                     <div className="flex items-center justify-between gap-2">
                                       <span className="text-xs font-medium">{r.name}</span>
                                       <StatusBadge value={r.status} />
                                     </div>
-                                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{r.detail}</p>
+                                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                                      {r.detail}
+                                    </p>
                                   </div>
                                 ))}
                               </div>

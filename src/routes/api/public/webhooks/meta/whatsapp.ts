@@ -174,8 +174,10 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
             const value = change.value ?? {};
             const metaPhoneId = value.metadata?.phone_number_id ?? null;
             const metaWabaId = entry.id ?? null;
-            const templateEventId = value.message_template_id != null ? String(value.message_template_id) : null;
-            const firstMessageId = value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
+            const templateEventId =
+              value.message_template_id != null ? String(value.message_template_id) : null;
+            const firstMessageId =
+              value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
 
             const { data: ingest, error: ingestError } = await supabaseAdmin.rpc(
               "backend_ingest_webhook_event",
@@ -213,7 +215,12 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
               await refreshFlowsFromWebhook(endpoint.organization_id, metaWabaId);
             }
             if (change.field && OPERATIONAL_ALERT_FIELDS.has(change.field)) {
-              await ensureOperationalAlert(endpoint.organization_id, metaWabaId, change.field, value);
+              await ensureOperationalAlert(
+                endpoint.organization_id,
+                metaWabaId,
+                change.field,
+                value,
+              );
             }
 
             const ingestStatus =
@@ -235,7 +242,9 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
 
             for (const message of value.messages ?? []) {
               const sender = typeof message.from === "string" ? message.from : null;
-              const contact = (value.contacts ?? []).find((candidate) => candidate.wa_id && candidate.wa_id === sender);
+              const contact = (value.contacts ?? []).find(
+                (candidate) => candidate.wa_id && candidate.wa_id === sender,
+              );
               const { data: inbound, error: inboundError } = await supabaseAdmin.rpc(
                 "backend_ingest_inbound_message",
                 {
@@ -250,12 +259,20 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 console.error("[AzWA webhook] inbound message ingest failed", inboundError.message);
                 continue;
               }
-              if (typeof message.type === "string" && MEDIA_MESSAGE_TYPES.has(message.type)) inboundMediaSeen = true;
+              if (typeof message.type === "string" && MEDIA_MESSAGE_TYPES.has(message.type))
+                inboundMediaSeen = true;
               if (
-                inbound && typeof inbound === "object" && "status" in inbound &&
+                inbound &&
+                typeof inbound === "object" &&
+                "status" in inbound &&
                 String((inbound as Record<string, unknown>)["status"]) === "unmapped_number"
               ) {
-                await ensureUnknownNumberAlert(endpoint.organization_id, metaPhoneId, metaWabaId, value.metadata?.display_phone_number ?? null);
+                await ensureUnknownNumberAlert(
+                  endpoint.organization_id,
+                  metaPhoneId,
+                  metaWabaId,
+                  value.metadata?.display_phone_number ?? null,
+                );
               }
             }
 
@@ -273,10 +290,17 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                 continue;
               }
               if (
-                applied && typeof applied === "object" && "status" in applied &&
+                applied &&
+                typeof applied === "object" &&
+                "status" in applied &&
                 String((applied as Record<string, unknown>)["status"]) === "unmapped_number"
               ) {
-                await ensureUnknownNumberAlert(endpoint.organization_id, metaPhoneId, metaWabaId, value.metadata?.display_phone_number ?? null);
+                await ensureUnknownNumberAlert(
+                  endpoint.organization_id,
+                  metaPhoneId,
+                  metaWabaId,
+                  value.metadata?.display_phone_number ?? null,
+                );
               }
             }
           }

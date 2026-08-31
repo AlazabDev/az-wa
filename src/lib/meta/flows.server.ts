@@ -155,11 +155,12 @@ export async function syncWabaFlows(wabaId: string) {
   const seenIds = new Set(result.flows.map((flow) => flow.id));
 
   if (result.flows.length > 0) {
-    const { error } = await db
-      .from("whatsapp_flows")
-      .upsert(result.flows.map((flow) => flowRow(waba, flow, now)), {
+    const { error } = await db.from("whatsapp_flows").upsert(
+      result.flows.map((flow) => flowRow(waba, flow, now)),
+      {
         onConflict: "waba_id,meta_flow_id",
-      });
+      },
+    );
     if (error) return { ok: false as const, synced: 0, missing: 0, error: error.message };
   }
 
@@ -278,9 +279,7 @@ export async function updateWhatsappFlowMetadata(input: {
     return { ok: false as const, error: response.errorMessage ?? "Graph error" };
   }
   const sync = await syncWabaFlows(waba.id);
-  return sync.ok
-    ? { ok: true as const }
-    : { ok: true as const, warning: String(sync.error) };
+  return sync.ok ? { ok: true as const } : { ok: true as const, warning: String(sync.error) };
 }
 
 export async function uploadWhatsappFlowJson(input: { flowId: string; flowJson: string }) {
@@ -364,9 +363,7 @@ async function mutateFlow(flowId: string, action: "publish" | "deprecate") {
   }
 
   const sync = await syncWabaFlows(waba.id);
-  return sync.ok
-    ? { ok: true as const }
-    : { ok: true as const, warning: String(sync.error) };
+  return sync.ok ? { ok: true as const } : { ok: true as const, warning: String(sync.error) };
 }
 
 export function publishWhatsappFlow(flowId: string) {

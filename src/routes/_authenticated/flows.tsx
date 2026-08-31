@@ -43,8 +43,7 @@ export const Route = createFileRoute("/_authenticated/flows")({
       { title: "WhatsApp Flows — AzWA" },
       {
         name: "description",
-        content:
-          "Create, clone, edit, validate, publish and reconcile WABA-scoped WhatsApp Flows.",
+        content: "Create, clone, edit, validate, publish and reconcile WABA-scoped WhatsApp Flows.",
       },
     ],
   }),
@@ -396,7 +395,8 @@ function WhatsappFlowsPage() {
                     </td>
                     <td className="py-3 pr-4 text-xs">{flow.categories?.join(", ") || "—"}</td>
                     <td className="py-3 pr-4 text-xs">
-                      {[flow.json_version, flow.data_api_version].filter(Boolean).join(" / ") || "—"}
+                      {[flow.json_version, flow.data_api_version].filter(Boolean).join(" / ") ||
+                        "—"}
                     </td>
                     <td className="max-w-64 truncate py-3 pr-4 font-mono text-xs text-muted-foreground">
                       {flow.endpoint_uri ?? "—"}

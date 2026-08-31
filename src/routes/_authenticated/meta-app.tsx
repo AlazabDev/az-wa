@@ -16,7 +16,10 @@ export const Route = createFileRoute("/_authenticated/meta-app")({
   head: () => ({
     meta: [
       { title: "Meta App — AzWA" },
-      { name: "description", content: "Configure AzWA Meta credentials and WhatsApp webhook subscriptions." },
+      {
+        name: "description",
+        content: "Configure AzWA Meta credentials and WhatsApp webhook subscriptions.",
+      },
     ],
   }),
   component: MetaAppPage,
@@ -102,11 +105,24 @@ function MetaAppPage() {
     setSaving(true);
     try {
       const result = await saveConfig({
-        data: { appId, displayName, namespace, verifyToken, appSecret, appAccessToken, systemUserToken },
+        data: {
+          appId,
+          displayName,
+          namespace,
+          verifyToken,
+          appSecret,
+          appAccessToken,
+          systemUserToken,
+        },
       });
       setWebhookUrl(result.webhookUrl);
       setWebhookStatus("active");
-      setConfigured({ verifyToken: true, appSecret: true, appAccessToken: true, systemUserToken: true });
+      setConfigured({
+        verifyToken: true,
+        appSecret: true,
+        appAccessToken: true,
+        systemUserToken: true,
+      });
       setVerifyToken("");
       setAppSecret("");
       setAppAccessToken("");
@@ -127,7 +143,8 @@ function MetaAppPage() {
         : await inspectWebhook({ data: {} });
       setWebhookInspection(result as WebhookInspection);
       if (!result.ok) toast.error(result.error ?? "Meta App webhook check failed");
-      else if ("healthy" in result && result.healthy) toast.success(reconcile ? "Meta App webhook reconciled" : "Meta App webhook is healthy");
+      else if ("healthy" in result && result.healthy)
+        toast.success(reconcile ? "Meta App webhook reconciled" : "Meta App webhook is healthy");
       else toast.warning("Meta App webhook needs reconciliation");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Meta App webhook check failed");
@@ -147,26 +164,74 @@ function MetaAppPage() {
         <Panel title="Meta application">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="App ID">
-              <input className={inputClass} value={appId} onChange={(event) => setAppId(event.target.value)} placeholder="Meta App ID" required disabled={loading || saving} />
+              <input
+                className={inputClass}
+                value={appId}
+                onChange={(event) => setAppId(event.target.value)}
+                placeholder="Meta App ID"
+                required
+                disabled={loading || saving}
+              />
             </Field>
             <Field label="Display name">
-              <input className={inputClass} value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="AzWA" disabled={loading || saving} />
+              <input
+                className={inputClass}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="AzWA"
+                disabled={loading || saving}
+              />
             </Field>
             <Field label="Namespace">
-              <input className={inputClass} value={namespace} onChange={(event) => setNamespace(event.target.value)} placeholder="azwhatsapp" disabled={loading || saving} />
+              <input
+                className={inputClass}
+                value={namespace}
+                onChange={(event) => setNamespace(event.target.value)}
+                placeholder="azwhatsapp"
+                disabled={loading || saving}
+              />
             </Field>
-            <Field label="Webhook URL"><input className={inputClass} value={webhookUrl} readOnly /></Field>
+            <Field label="Webhook URL">
+              <input className={inputClass} value={webhookUrl} readOnly />
+            </Field>
           </div>
 
           <div className="my-6 border-t border-border" />
           <div className="grid gap-4">
-            <SecretField label="Verify Token" value={verifyToken} onChange={setVerifyToken} configured={configured.verifyToken} disabled={loading || saving} />
-            <SecretField label="App Secret" value={appSecret} onChange={setAppSecret} configured={configured.appSecret} disabled={loading || saving} />
-            <SecretField label="App Access Token" value={appAccessToken} onChange={setAppAccessToken} configured={configured.appAccessToken} disabled={loading || saving} />
-            <SecretField label="System User Token" value={systemUserToken} onChange={setSystemUserToken} configured={configured.systemUserToken} disabled={loading || saving} />
+            <SecretField
+              label="Verify Token"
+              value={verifyToken}
+              onChange={setVerifyToken}
+              configured={configured.verifyToken}
+              disabled={loading || saving}
+            />
+            <SecretField
+              label="App Secret"
+              value={appSecret}
+              onChange={setAppSecret}
+              configured={configured.appSecret}
+              disabled={loading || saving}
+            />
+            <SecretField
+              label="App Access Token"
+              value={appAccessToken}
+              onChange={setAppAccessToken}
+              configured={configured.appAccessToken}
+              disabled={loading || saving}
+            />
+            <SecretField
+              label="System User Token"
+              value={systemUserToken}
+              onChange={setSystemUserToken}
+              configured={configured.systemUserToken}
+              disabled={loading || saving}
+            />
           </div>
           <div className="mt-6 flex justify-end">
-            <Button type="submit" disabled={loading || saving || !appId.trim()}><Save className="size-4" />{saving ? "Saving…" : "Save Meta App"}</Button>
+            <Button type="submit" disabled={loading || saving || !appId.trim()}>
+              <Save className="size-4" />
+              {saving ? "Saving…" : "Save Meta App"}
+            </Button>
           </div>
         </Panel>
 
@@ -184,19 +249,36 @@ function MetaAppPage() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span>Subscription</span>
-                <StatusBadgeLike healthy={webhookInspection?.healthy ?? false} checked={webhookInspection !== null} />
+                <StatusBadgeLike
+                  healthy={webhookInspection?.healthy ?? false}
+                  checked={webhookInspection !== null}
+                />
               </div>
-              <div className="text-xs text-muted-foreground">DB endpoint: {webhookStatus} · Meta verification: {verificationStatus ?? "not verified"}</div>
+              <div className="text-xs text-muted-foreground">
+                DB endpoint: {webhookStatus} · Meta verification:{" "}
+                {verificationStatus ?? "not verified"}
+              </div>
               {webhookInspection?.missingFields && webhookInspection.missingFields.length > 0 && (
                 <div className="rounded-md border border-border bg-muted/30 p-2 text-xs">
                   Missing fields: {webhookInspection.missingFields.join(", ")}
                 </div>
               )}
               <div className="grid gap-2">
-                <Button type="button" variant="outline" disabled={checkingWebhook || !configured.appAccessToken} onClick={() => checkWebhook(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={checkingWebhook || !configured.appAccessToken}
+                  onClick={() => checkWebhook(false)}
+                >
                   <RefreshCw className="size-4" /> Inspect Meta subscription
                 </Button>
-                <Button type="button" disabled={checkingWebhook || !configured.appAccessToken || !configured.verifyToken} onClick={() => checkWebhook(true)}>
+                <Button
+                  type="button"
+                  disabled={
+                    checkingWebhook || !configured.appAccessToken || !configured.verifyToken
+                  }
+                  onClick={() => checkWebhook(true)}
+                >
                   <ShieldCheck className="size-4" /> Reconcile App webhook
                 </Button>
               </div>
@@ -209,13 +291,38 @@ function MetaAppPage() {
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="space-y-1.5"><span className="text-xs font-medium text-foreground">{label}</span>{children}</label>;
+  return (
+    <label className="space-y-1.5">
+      <span className="text-xs font-medium text-foreground">{label}</span>
+      {children}
+    </label>
+  );
 }
 
-function SecretField({ label, value, onChange, configured, disabled }: { label: string; value: string; onChange: (value: string) => void; configured: boolean; disabled: boolean }) {
+function SecretField({
+  label,
+  value,
+  onChange,
+  configured,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  configured: boolean;
+  disabled: boolean;
+}) {
   return (
     <Field label={label}>
-      <input type="password" autoComplete="new-password" className={inputClass} value={value} onChange={(event) => onChange(event.target.value)} placeholder={configured ? "Configured — leave blank to keep current value" : "Required"} disabled={disabled} />
+      <input
+        type="password"
+        autoComplete="new-password"
+        className={inputClass}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={configured ? "Configured — leave blank to keep current value" : "Required"}
+        disabled={disabled}
+      />
     </Field>
   );
 }
@@ -224,8 +331,11 @@ function CredentialState({ label, ready }: { label: string; ready: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
       <span>{label}</span>
-      <span className={`flex items-center gap-1.5 text-xs font-medium ${ready ? "text-success" : "text-muted-foreground"}`}>
-        {ready ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}{ready ? "Configured" : "Missing"}
+      <span
+        className={`flex items-center gap-1.5 text-xs font-medium ${ready ? "text-success" : "text-muted-foreground"}`}
+      >
+        {ready ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}
+        {ready ? "Configured" : "Missing"}
       </span>
     </div>
   );
@@ -233,8 +343,14 @@ function CredentialState({ label, ready }: { label: string; ready: boolean }) {
 
 function StatusBadgeLike({ healthy, checked }: { healthy: boolean; checked: boolean }) {
   return (
-    <span className={`flex items-center gap-1.5 text-xs font-medium ${checked && healthy ? "text-success" : "text-muted-foreground"}`}>
-      {checked && healthy ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}
+    <span
+      className={`flex items-center gap-1.5 text-xs font-medium ${checked && healthy ? "text-success" : "text-muted-foreground"}`}
+    >
+      {checked && healthy ? (
+        <CheckCircle2 className="size-4" />
+      ) : (
+        <CircleAlert className="size-4" />
+      )}
       {!checked ? "Not checked" : healthy ? "Healthy" : "Needs reconcile"}
     </span>
   );

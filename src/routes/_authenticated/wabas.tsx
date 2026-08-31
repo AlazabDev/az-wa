@@ -123,8 +123,7 @@ function WabasPage() {
                     <td className="py-2 pr-4 tabular-nums">
                       {
                         flows.filter(
-                          (flow) =>
-                            flow.waba_id === w.id && flow.status !== "MISSING_FROM_META",
+                          (flow) => flow.waba_id === w.id && flow.status !== "MISSING_FROM_META",
                         ).length
                       }
                     </td>
@@ -252,9 +251,7 @@ function WabasPage() {
                       <StatusBadge value={user.status} />
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {user.last_synced_at
-                        ? new Date(user.last_synced_at).toLocaleString()
-                        : "—"}
+                      {user.last_synced_at ? new Date(user.last_synced_at).toLocaleString() : "—"}
                     </td>
                   </tr>
                 );
@@ -264,7 +261,8 @@ function WabasPage() {
           {visibleUsers.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               No assigned-user rows are available. The audited Meta inventory returned permission
-              errors for this edge; check Health after Portfolio Sync instead of assuming zero users.
+              errors for this edge; check Health after Portfolio Sync instead of assuming zero
+              users.
             </p>
           )}
         </div>

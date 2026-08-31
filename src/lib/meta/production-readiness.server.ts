@@ -10,45 +10,54 @@ export async function buildMetaProductionReadiness(
   organizationId: string,
 ): Promise<MetaProductionReadiness> {
   const db = supabaseAdmin as any;
-  const [apps, portfolios, credentials, endpoints, wabas, numbers, templates, flows, subscriptions] =
-    await Promise.all([
-      db.from("meta_apps").select("id,meta_app_id,status").eq("organization_id", organizationId),
-      db
-        .from("business_portfolios")
-        .select("id,meta_business_id,status")
-        .eq("organization_id", organizationId),
-      db
-        .from("meta_credentials")
-        .select("credential_type,status")
-        .eq("organization_id", organizationId),
-      db
-        .from("webhook_endpoints")
-        .select("url,status,verification_status")
-        .eq("organization_id", organizationId)
-        .eq("endpoint_type", "meta_whatsapp"),
-      db
-        .from("wabas")
-        .select("id,meta_waba_id,status,last_synced_at")
-        .eq("organization_id", organizationId),
-      db
-        .from("whatsapp_numbers")
-        .select(
-          "id,waba_id,meta_phone_number_id,display_phone_number,status,is_enabled,last_synced_at",
-        )
-        .eq("organization_id", organizationId),
-      db
-        .from("templates")
-        .select("id,waba_id,status,last_synced_at")
-        .eq("organization_id", organizationId),
-      db
-        .from("whatsapp_flows")
-        .select("id,waba_id,status,last_synced_at")
-        .eq("organization_id", organizationId),
-      db
-        .from("waba_subscribed_apps")
-        .select("id,waba_id,meta_app_id,is_azwa,status,last_synced_at")
-        .eq("organization_id", organizationId),
-    ]);
+  const [
+    apps,
+    portfolios,
+    credentials,
+    endpoints,
+    wabas,
+    numbers,
+    templates,
+    flows,
+    subscriptions,
+  ] = await Promise.all([
+    db.from("meta_apps").select("id,meta_app_id,status").eq("organization_id", organizationId),
+    db
+      .from("business_portfolios")
+      .select("id,meta_business_id,status")
+      .eq("organization_id", organizationId),
+    db
+      .from("meta_credentials")
+      .select("credential_type,status")
+      .eq("organization_id", organizationId),
+    db
+      .from("webhook_endpoints")
+      .select("url,status,verification_status")
+      .eq("organization_id", organizationId)
+      .eq("endpoint_type", "meta_whatsapp"),
+    db
+      .from("wabas")
+      .select("id,meta_waba_id,status,last_synced_at")
+      .eq("organization_id", organizationId),
+    db
+      .from("whatsapp_numbers")
+      .select(
+        "id,waba_id,meta_phone_number_id,display_phone_number,status,is_enabled,last_synced_at",
+      )
+      .eq("organization_id", organizationId),
+    db
+      .from("templates")
+      .select("id,waba_id,status,last_synced_at")
+      .eq("organization_id", organizationId),
+    db
+      .from("whatsapp_flows")
+      .select("id,waba_id,status,last_synced_at")
+      .eq("organization_id", organizationId),
+    db
+      .from("waba_subscribed_apps")
+      .select("id,waba_id,meta_app_id,is_azwa,status,last_synced_at")
+      .eq("organization_id", organizationId),
+  ]);
 
   const errors = [
     apps,
@@ -109,9 +118,7 @@ export async function buildMetaProductionReadiness(
   const publishedFlows = liveFlows.filter(
     (row: any) => String(row.status).toUpperCase() === "PUBLISHED",
   );
-  const draftFlows = liveFlows.filter(
-    (row: any) => String(row.status).toUpperCase() === "DRAFT",
-  );
+  const draftFlows = liveFlows.filter((row: any) => String(row.status).toUpperCase() === "DRAFT");
   const externalActiveSubscriptions = subscriptionRows.filter(
     (row: any) => !row.is_azwa && row.status === "active",
   );
@@ -138,9 +145,7 @@ export async function buildMetaProductionReadiness(
   const missingBaselinePhones: string[] = [...baselinePhoneIds].filter(
     (id) => !discoveredPhoneIds.has(id),
   );
-  const extraPhones: string[] = [...discoveredPhoneIds].filter(
-    (id) => !baselinePhoneIds.has(id),
-  );
+  const extraPhones: string[] = [...discoveredPhoneIds].filter((id) => !baselinePhoneIds.has(id));
   const expectedActiveButUnavailable = META_INVENTORY_BASELINE.phones.filter((phone) => {
     if (phone.expectedStatus !== "active") return false;
     const live = numberByMetaId.get(phone.metaPhoneId);
@@ -163,7 +168,8 @@ export async function buildMetaProductionReadiness(
         liveCredentialDetail += `; warnings: ${validation.warnings.join("; ")}`;
       }
     } catch (cause) {
-      liveCredentialDetail = cause instanceof Error ? cause.message : "Live token validation failed";
+      liveCredentialDetail =
+        cause instanceof Error ? cause.message : "Live token validation failed";
     }
   }
 
@@ -196,12 +202,15 @@ export async function buildMetaProductionReadiness(
       label: "AzWA Meta App",
       ok: String(activeApp?.meta_app_id ?? "") === META_INVENTORY_BASELINE.azwaAppId,
       severity: "critical",
-      detail: activeApp ? `Active App ID ${activeApp.meta_app_id}` : "No active Meta App configured",
+      detail: activeApp
+        ? `Active App ID ${activeApp.meta_app_id}`
+        : "No active Meta App configured",
     },
     {
       key: "business-portfolio",
       label: "Business Portfolio",
-      ok: String(primaryPortfolio?.meta_business_id ?? "") === META_INVENTORY_BASELINE.businessMetaId,
+      ok:
+        String(primaryPortfolio?.meta_business_id ?? "") === META_INVENTORY_BASELINE.businessMetaId,
       severity: "critical",
       detail: primaryPortfolio
         ? `Business ID ${primaryPortfolio.meta_business_id}`
@@ -308,12 +317,8 @@ export async function buildMetaProductionReadiness(
     },
   ];
 
-  const criticalFailures = checks.filter(
-    (check) => !check.ok && check.severity === "critical",
-  );
-  const warningFailures = checks.filter(
-    (check) => !check.ok && check.severity === "warning",
-  );
+  const criticalFailures = checks.filter((check) => !check.ok && check.severity === "critical");
+  const warningFailures = checks.filter((check) => !check.ok && check.severity === "warning");
   const passed = checks.filter((check) => check.ok).length;
 
   return {

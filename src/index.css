@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 @layer base {
   :root {
@@ -57,7 +56,7 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
 }
 
@@ -78,9 +77,13 @@
     background: linear-gradient(135deg, hsl(25 95% 53%), hsl(15 80% 45%));
   }
   .shadow-card {
-    box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.04), 0 1px 2px -1px hsl(0 0% 0% / 0.04);
+    box-shadow:
+      0 1px 3px 0 hsl(0 0% 0% / 0.04),
+      0 1px 2px -1px hsl(0 0% 0% / 0.04);
   }
   .shadow-card-hover {
-    box-shadow: 0 4px 12px 0 hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.04);
+    box-shadow:
+      0 4px 12px 0 hsl(0 0% 0% / 0.08),
+      0 2px 4px -1px hsl(0 0% 0% / 0.04);
   }
 }
