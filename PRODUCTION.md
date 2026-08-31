@@ -145,15 +145,17 @@ GET /readyz
 
 ## 6. Host Nginx
 
-Install the supplied reverse proxy config:
+Install the supplied reverse proxy config. The repository uses exactly one extensionless Nginx site file: `deploy/wa.alazab.com`.
 
 ```bash
-sudo cp deploy/wa.alazab.com.conf /etc/nginx/sites-available/wa.alazab.com
+sudo cp deploy/wa.alazab.com /etc/nginx/sites-available/wa.alazab.com
 sudo ln -sfn /etc/nginx/sites-available/wa.alazab.com /etc/nginx/sites-enabled/wa.alazab.com
 sudo certbot --nginx -d wa.alazab.com
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+Do not create or reference any additional `.conf` variant for this site.
 
 ## 7. Media worker schedule
 
