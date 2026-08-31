@@ -16,7 +16,7 @@ The old Supabase Edge `wa-webhook`, `wa-send`, and `wa-health` functions are leg
 
 ## 1. Create production environment
 
-On the server, create `.env.production` from `.env.example`. It is intentionally ignored by Git.
+On the server, create `.env` from `.env.example`. It is intentionally ignored by Git.
 
 Required values:
 
@@ -120,8 +120,8 @@ First deployment:
 ```bash
 git clone https://github.com/AlazabDev/az-wa.git /opt/az-wa
 cd /opt/az-wa
-cp .env.example .env.production
-# fill .env.production
+cp .env.example .env
+# fill .env
 ./deploy/deploy.sh
 ```
 
