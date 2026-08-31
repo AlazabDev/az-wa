@@ -13,17 +13,54 @@ export async function buildMetaProductionReadiness(
   const [apps, portfolios, credentials, endpoints, wabas, numbers, templates, flows, subscriptions] =
     await Promise.all([
       db.from("meta_apps").select("id,meta_app_id,status").eq("organization_id", organizationId),
-      db.from("business_portfolios").select("id,meta_business_id,status").eq("organization_id", organizationId),
-      db.from("meta_credentials").select("credential_type,status").eq("organization_id", organizationId),
-      db.from("webhook_endpoints").select("url,status,verification_status").eq("organization_id", organizationId).eq("endpoint_type", "meta_whatsapp"),
-      db.from("wabas").select("id,meta_waba_id,status,last_synced_at").eq("organization_id", organizationId),
-      db.from("whatsapp_numbers").select("id,waba_id,meta_phone_number_id,display_phone_number,status,is_enabled,last_synced_at").eq("organization_id", organizationId),
-      db.from("templates").select("id,waba_id,status,last_synced_at").eq("organization_id", organizationId),
-      db.from("whatsapp_flows").select("id,waba_id,status,last_synced_at").eq("organization_id", organizationId),
-      db.from("waba_subscribed_apps").select("id,waba_id,meta_app_id,is_azwa,status,last_synced_at").eq("organization_id", organizationId),
+      db
+        .from("business_portfolios")
+        .select("id,meta_business_id,status")
+        .eq("organization_id", organizationId),
+      db
+        .from("meta_credentials")
+        .select("credential_type,status")
+        .eq("organization_id", organizationId),
+      db
+        .from("webhook_endpoints")
+        .select("url,status,verification_status")
+        .eq("organization_id", organizationId)
+        .eq("endpoint_type", "meta_whatsapp"),
+      db
+        .from("wabas")
+        .select("id,meta_waba_id,status,last_synced_at")
+        .eq("organization_id", organizationId),
+      db
+        .from("whatsapp_numbers")
+        .select(
+          "id,waba_id,meta_phone_number_id,display_phone_number,status,is_enabled,last_synced_at",
+        )
+        .eq("organization_id", organizationId),
+      db
+        .from("templates")
+        .select("id,waba_id,status,last_synced_at")
+        .eq("organization_id", organizationId),
+      db
+        .from("whatsapp_flows")
+        .select("id,waba_id,status,last_synced_at")
+        .eq("organization_id", organizationId),
+      db
+        .from("waba_subscribed_apps")
+        .select("id,waba_id,meta_app_id,is_azwa,status,last_synced_at")
+        .eq("organization_id", organizationId),
     ]);
 
-  const errors = [apps, portfolios, credentials, endpoints, wabas, numbers, templates, flows, subscriptions]
+  const errors = [
+    apps,
+    portfolios,
+    credentials,
+    endpoints,
+    wabas,
+    numbers,
+    templates,
+    flows,
+    subscriptions,
+  ]
     .map((result) => result.error?.message)
     .filter(Boolean) as string[];
   if (errors.length) throw new Error(`Production readiness query failed: ${errors.join("; ")}`);
@@ -39,9 +76,10 @@ export async function buildMetaProductionReadiness(
   const subscriptionRows = subscriptions.data ?? [];
 
   const activeApp = appRows.find((row: any) => row.status === "active");
-  const primaryPortfolio = portfolioRows.find(
-    (row: any) => row.meta_business_id === META_INVENTORY_BASELINE.businessMetaId,
-  ) ?? portfolioRows[0];
+  const primaryPortfolio =
+    portfolioRows.find(
+      (row: any) => row.meta_business_id === META_INVENTORY_BASELINE.businessMetaId,
+    ) ?? portfolioRows[0];
   const activeCredentialTypes = new Set<string>(
     credentialRows
       .filter((row: any) => row.status === "active")
@@ -62,6 +100,21 @@ export async function buildMetaProductionReadiness(
   const unsafeSenders = numberRows.filter(
     (row: any) => row.status !== "active" && row.is_enabled === true,
   );
+  const approvedTemplates = templateRows.filter(
+    (row: any) => String(row.status).toUpperCase() === "APPROVED",
+  );
+  const liveFlows = flowRows.filter(
+    (row: any) => !["MISSING_FROM_META", "DELETED"].includes(String(row.status).toUpperCase()),
+  );
+  const publishedFlows = liveFlows.filter(
+    (row: any) => String(row.status).toUpperCase() === "PUBLISHED",
+  );
+  const draftFlows = liveFlows.filter(
+    (row: any) => String(row.status).toUpperCase() === "DRAFT",
+  );
+  const externalActiveSubscriptions = subscriptionRows.filter(
+    (row: any) => !row.is_azwa && row.status === "active",
+  );
   const azwaSubscribedWabas = new Set<string>(
     subscriptionRows
       .filter((row: any) => row.is_azwa && row.status === "active")
@@ -79,12 +132,20 @@ export async function buildMetaProductionReadiness(
   const discoveredPhoneIds = new Set<string>(
     numberRows.map((row: any) => String(row.meta_phone_number_id)),
   );
+  const numberByMetaId = new Map<string, any>(
+    numberRows.map((row: any) => [String(row.meta_phone_number_id), row]),
+  );
   const missingBaselinePhones: string[] = [...baselinePhoneIds].filter(
     (id) => !discoveredPhoneIds.has(id),
   );
   const extraPhones: string[] = [...discoveredPhoneIds].filter(
     (id) => !baselinePhoneIds.has(id),
   );
+  const expectedActiveButUnavailable = META_INVENTORY_BASELINE.phones.filter((phone) => {
+    if (phone.expectedStatus !== "active") return false;
+    const live = numberByMetaId.get(phone.metaPhoneId);
+    return live && String(live.status).toLowerCase() !== "active";
+  });
 
   let liveCredentialOk = false;
   let liveCredentialDetail = "Business Portfolio is not configured";
@@ -195,6 +256,15 @@ export async function buildMetaProductionReadiness(
       detail: `${nonMissingNumbers.length} discovered; missing baseline ${missingBaselinePhones.length}; new since audit ${extraPhones.length}`,
     },
     {
+      key: "expected-active-numbers",
+      label: "Audited active sender state",
+      ok: expectedActiveButUnavailable.length === 0,
+      severity: "critical",
+      detail: expectedActiveButUnavailable.length
+        ? `Expected active but unavailable: ${expectedActiveButUnavailable.map((phone) => phone.number).join(", ")}`
+        : "All seven phone numbers audited as active are still operational",
+    },
+    {
       key: "sender-safety",
       label: "Sender safety",
       ok: unsafeSenders.length === 0,
@@ -205,19 +275,27 @@ export async function buildMetaProductionReadiness(
     },
     {
       key: "templates",
-      label: "Template inventory",
-      ok: templateRows.length >= META_INVENTORY_BASELINE.counts.templates,
+      label: "Approved template inventory",
+      ok: approvedTemplates.length >= META_INVENTORY_BASELINE.counts.approvedTemplates,
       severity: "warning",
-      detail: `${templateRows.length} local templates; audited snapshot ${META_INVENTORY_BASELINE.counts.templates}`,
+      detail: `${approvedTemplates.length} approved templates; audited snapshot ${META_INVENTORY_BASELINE.counts.approvedTemplates}; total local rows ${templateRows.length}`,
     },
     {
       key: "flows",
-      label: "WhatsApp Flows",
+      label: "WhatsApp Flow inventory",
       ok:
-        flowRows.filter((row: any) => row.status !== "MISSING_FROM_META").length >=
-        META_INVENTORY_BASELINE.counts.flows,
+        liveFlows.length >= META_INVENTORY_BASELINE.counts.flows &&
+        publishedFlows.length >= META_INVENTORY_BASELINE.counts.publishedFlows &&
+        draftFlows.length >= META_INVENTORY_BASELINE.counts.draftFlows,
       severity: "warning",
-      detail: `${flowRows.length} local flow records; audited snapshot ${META_INVENTORY_BASELINE.counts.flows}`,
+      detail: `${liveFlows.length} live flows (${publishedFlows.length} published, ${draftFlows.length} draft); audited ${META_INVENTORY_BASELINE.counts.flows} (${META_INVENTORY_BASELINE.counts.publishedFlows} published, ${META_INVENTORY_BASELINE.counts.draftFlows} draft)`,
+    },
+    {
+      key: "external-subscriptions",
+      label: "External subscribed-app inventory",
+      ok: externalActiveSubscriptions.length >= META_INVENTORY_BASELINE.counts.subscribedApps,
+      severity: "warning",
+      detail: `${externalActiveSubscriptions.length} external active app subscriptions; audited snapshot ${META_INVENTORY_BASELINE.counts.subscribedApps}`,
     },
     {
       key: "subscriptions",
@@ -252,8 +330,8 @@ export async function buildMetaProductionReadiness(
     totals: {
       wabas: activeWabas.length,
       numbers: nonMissingNumbers.length,
-      templates: templateRows.length,
-      flows: flowRows.length,
+      templates: approvedTemplates.length,
+      flows: liveFlows.length,
       subscribedApps: subscriptionRows.filter((row: any) => row.status === "active").length,
     },
     criticalFailures: criticalFailures.length,
