@@ -53,7 +53,7 @@ async function resolveFlowWaba(flowId: string) {
 
 export const syncWhatsappFlows = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { wabaId: string }) => {
+  .validator((input: { wabaId: string }) => {
     if (!input?.wabaId) throw new Error("WABA is required");
     return input;
   })
@@ -65,7 +65,7 @@ export const syncWhatsappFlows = createServerFn({ method: "POST" })
 
 export const createFlow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (input: {
       wabaId: string;
       name: string;
@@ -92,7 +92,7 @@ export const createFlow = createServerFn({ method: "POST" })
 
 export const updateFlowMetadata = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (input: {
       flowId: string;
       name: string;
@@ -118,7 +118,7 @@ export const updateFlowMetadata = createServerFn({ method: "POST" })
 
 export const uploadFlowJson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { flowId: string; flowJson: string }) => {
+  .validator((input: { flowId: string; flowJson: string }) => {
     if (!input?.flowId) throw new Error("Flow is required");
     if (!input?.flowJson?.trim()) throw new Error("Flow JSON is required");
     if (input.flowJson.length > 2_000_000) {
@@ -135,7 +135,7 @@ export const uploadFlowJson = createServerFn({ method: "POST" })
 
 export const publishFlow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { flowId: string }) => input)
+  .validator((input: { flowId: string }) => input)
   .handler(async ({ data, context }) => {
     const wabaId = await resolveFlowWaba(data.flowId);
     await requireWabaManage(context, wabaId);
@@ -145,7 +145,7 @@ export const publishFlow = createServerFn({ method: "POST" })
 
 export const deprecateFlow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { flowId: string }) => input)
+  .validator((input: { flowId: string }) => input)
   .handler(async ({ data, context }) => {
     const wabaId = await resolveFlowWaba(data.flowId);
     await requireWabaManage(context, wabaId);
@@ -155,7 +155,7 @@ export const deprecateFlow = createServerFn({ method: "POST" })
 
 export const deleteDraftFlow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { flowId: string }) => input)
+  .validator((input: { flowId: string }) => input)
   .handler(async ({ data, context }) => {
     const wabaId = await resolveFlowWaba(data.flowId);
     await requireWabaManage(context, wabaId);
