@@ -13,9 +13,7 @@ export async function authenticateCronRequest(request: Request): Promise<Respons
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { createHash, timingSafeEqual } = await import(
-    "node:crypto",
-  );
+  const { createHash, timingSafeEqual } = await import("node:crypto");
   const digest = (value: string) =>
     createHash("sha256").update(value, "utf8").digest();
   const providedDigest = digest(token);
