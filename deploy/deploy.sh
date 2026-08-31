@@ -6,14 +6,14 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$APP_DIR"
 
-if [ ! -f ".env.production" ]; then
-  echo "ERROR: .env.production is missing. Copy .env.example and fill production values." >&2
+if [ ! -f ".env" ]; then
+  echo "ERROR: .env is missing. Copy .env.example to .env and fill production values." >&2
   exit 1
 fi
 
 set -a
 # shellcheck disable=SC1091
-source .env.production
+source .env
 set +a
 
 required_vars=(
