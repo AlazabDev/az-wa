@@ -5,8 +5,10 @@ This runbook applies to the unified TanStack Start application in this repositor
 ## Production sources of truth
 
 - Web/server runtime: TanStack Start + Nitro `node-server`
+- Runtime process manager: systemd (`az-wa.service`)
 - Runtime Node version: Node.js 24
 - Dependency/build manager: Bun using `bun.lock`
+- Application listener: `127.0.0.1:8085`
 - Supabase project: `pmhuylckjwrongxlrgrx`
 - Canonical web host: `https://wa.alazab.com`
 - Canonical public Meta webhook: `https://wa.alazab.com/webhooks/meta/whatsapp`
@@ -177,15 +179,18 @@ The GitHub **Production CI** workflow performs build, TypeScript and lint valida
 
 A remaining audit item in a build-only/dev dependency must be evaluated by dependency path and runtime exposure; do not force incompatible package overrides merely to suppress an audit result.
 
-## 6. Container deployment
+## 6. Native systemd deployment
 
 Server prerequisites:
 
-- Docker Engine
-- Docker Compose plugin
+- Node.js 24+
+- Bun
+- systemd
 - Nginx
 - certbot
 - DNS A/AAAA records for `wa.alazab.com`
+
+Docker is not required by AzWA production deployment.
 
 Production checkout:
 
@@ -196,12 +201,44 @@ chmod 600 .env
 ./deploy/deploy.sh
 ```
 
-`deploy/deploy.sh` and `docker-compose.yml` both consume the existing `.env` file. Do not create `.env.production`.
+`deploy/deploy.sh` consumes the existing `.env` file. Do not create `.env.production`.
 
-The container runs the generated Nitro Node server on port `3000` and is bound only to:
+The deploy script performs the production sequence in this order:
+
+```text
+bun install --frozen-lockfile
+bun run build
+bun run typecheck
+bun run lint
+install/update az-wa.service
+systemctl restart az-wa.service
+health/readiness probes
+```
+
+The generated Nitro Node server runs directly on the host under `az-wa.service` and binds only to:
 
 ```text
 127.0.0.1:8085
+```
+
+The repository service template is:
+
+```text
+deploy/az-wa.service
+```
+
+The deploy script resolves the actual checkout path and Node binary before installing it as:
+
+```text
+/etc/systemd/system/az-wa.service
+```
+
+Useful runtime commands:
+
+```bash
+systemctl status az-wa.service --no-pager
+journalctl -u az-wa.service -n 120 --no-pager
+systemctl restart az-wa.service
 ```
 
 Liveness:
