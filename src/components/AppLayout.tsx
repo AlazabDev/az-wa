@@ -2,7 +2,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AppLayoutProps {
@@ -47,7 +53,12 @@ export function AppLayout({ children, title, subtitle, actions }: AppLayoutProps
               <Button variant="ghost" size="icon" className="relative" title="الإشعارات">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => void signOut()} title={`تسجيل الخروج${user?.email ? ` — ${user.email}` : ""}`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => void signOut()}
+                title={`تسجيل الخروج${user?.email ? ` — ${user.email}` : ""}`}
+              >
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>

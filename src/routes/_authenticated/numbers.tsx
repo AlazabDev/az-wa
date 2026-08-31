@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNumbers, useWabas } from "@/lib/azwa-data";
+import { useNumberAccountModes } from "@/lib/meta/inventory-data";
 import { numbersInScope, useScope } from "@/lib/scope";
 import { testWhatsappNumber } from "@/lib/meta/meta.functions";
 
@@ -18,13 +19,8 @@ export const Route = createFileRoute("/_authenticated/numbers")({
       { title: "WhatsApp Numbers — AzWA" },
       {
         name: "description",
-        content:
-          "Every current and future WhatsApp phone number with quality rating, messaging limit, webhook state, API health and diagnostics.",
+        content: "Every WhatsApp phone number with account mode, quality, messaging limit, webhook state and API diagnostics.",
       },
-      { property: "og:title", content: "WhatsApp Numbers — AzWA" },
-      { property: "og:description", content: "Operational registry of all WhatsApp phone numbers." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: NumbersPage,
@@ -33,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/numbers")({
 function NumbersPage() {
   const { scope } = useScope();
   const { data: allNumbers = [] } = useNumbers();
+  const { data: accountModes = {} } = useNumberAccountModes();
   const { data: wabas = [] } = useWabas();
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,11 +41,11 @@ function NumbersPage() {
     const needle = q.trim().toLowerCase();
     if (!needle) return scoped;
     return scoped.filter((n) =>
-      [n.display_phone_number, n.meta_phone_number_id, n.internal_name, n.verified_name, n.department]
+      [n.display_phone_number, n.meta_phone_number_id, n.internal_name, n.verified_name, n.department, accountModes[n.id]]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(needle)),
     );
-  }, [allNumbers, scope, q]);
+  }, [accountModes, allNumbers, scope, q]);
 
   async function runTest(id: string) {
     setBusy(id);
@@ -69,10 +66,10 @@ function NumbersPage() {
     <>
       <PageHeader
         title="WhatsApp Numbers"
-        description="Numbers are discovered and imported, never hardcoded. Adding a tenth number requires no code change."
+        description="Numbers are discovered and imported from Meta. Missing or disconnected numbers are retained and surfaced instead of silently removed."
         actions={
           <Input
-            placeholder="Search number, ID, internal name…"
+            placeholder="Search number, ID, name, mode…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="w-72"
@@ -89,6 +86,7 @@ function NumbersPage() {
                 <th className="py-2 pr-4 font-medium">Verified Name</th>
                 <th className="py-2 pr-4 font-medium">Phone Number ID</th>
                 <th className="py-2 pr-4 font-medium">WABA ID</th>
+                <th className="py-2 pr-4 font-medium">Mode</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 pr-4 font-medium">Quality</th>
                 <th className="py-2 pr-4 font-medium">Limit</th>
@@ -105,36 +103,18 @@ function NumbersPage() {
                   <td className="py-2 pr-4 font-medium">{n.display_phone_number}</td>
                   <td className="py-2 pr-4 text-xs">{n.internal_name ?? "—"}</td>
                   <td className="py-2 pr-4 text-xs">{n.verified_name ?? "—"}</td>
-                  <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
-                    {n.meta_phone_number_id}
-                  </td>
-                  <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
-                    {wabas.find((w) => w.id === n.waba_id)?.meta_waba_id ?? "—"}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <StatusBadge value={n.status} />
-                  </td>
+                  <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{n.meta_phone_number_id}</td>
+                  <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">{wabas.find((w) => w.id === n.waba_id)?.meta_waba_id ?? "—"}</td>
+                  <td className="py-2 pr-4 text-xs">{accountModes[n.id] ?? "—"}</td>
+                  <td className="py-2 pr-4"><StatusBadge value={n.status} /></td>
                   <td className="py-2 pr-4 text-xs">{n.quality_rating ?? "—"}</td>
                   <td className="py-2 pr-4 text-xs">{n.messaging_limit ?? "—"}</td>
+                  <td className="py-2 pr-4"><StatusBadge value={n.webhook_status} /></td>
+                  <td className="py-2 pr-4"><StatusBadge value={n.api_health} /></td>
+                  <td className="py-2 pr-4 text-xs text-muted-foreground">{n.last_incoming_at ? new Date(n.last_incoming_at).toLocaleString() : "—"}</td>
+                  <td className="py-2 pr-4 text-xs text-muted-foreground">{n.last_outgoing_at ? new Date(n.last_outgoing_at).toLocaleString() : "—"}</td>
                   <td className="py-2 pr-4">
-                    <StatusBadge value={n.webhook_status} />
-                  </td>
-                  <td className="py-2 pr-4">
-                    <StatusBadge value={n.api_health} />
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-muted-foreground">
-                    {n.last_incoming_at ? new Date(n.last_incoming_at).toLocaleString() : "—"}
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-muted-foreground">
-                    {n.last_outgoing_at ? new Date(n.last_outgoing_at).toLocaleString() : "—"}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy !== null}
-                      onClick={() => runTest(n.id)}
-                    >
+                    <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => runTest(n.id)}>
                       {busy === n.id ? "Testing…" : "Test API"}
                     </Button>
                   </td>

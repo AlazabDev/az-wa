@@ -418,8 +418,6 @@ function TemplateDetail({
     numberId && senders.some((number) => number.id === numberId)
       ? numberId
       : (senders[0]?.id ?? "");
-  const authTemplate = template.category === "AUTHENTICATION";
-  const [authenticationCode, setAuthenticationCode] = useState("");
 
   const handleSendTest = async () => {
     if (template.status !== "approved") {
@@ -552,35 +550,17 @@ function TemplateDetail({
                 inputMode="tel"
               />
             </Field>
-            {authTemplate && (
-              <Field label="Authentication code">
+            {variables.map((name) => (
+              <Field key={name} label={`{{${name}}}`}>
                 <input
                   className={inputClass}
-                  value={authenticationCode}
-                  onChange={(event) => setAuthenticationCode(event.target.value)}
-                  inputMode="numeric"
-                  placeholder="123456"
+                  value={variableValues[name] ?? ""}
+                  onChange={(event) =>
+                    setVariableValues((current) => ({ ...current, [name]: event.target.value }))
+                  }
                 />
               </Field>
-            )}
-            {!authTemplate &&
-              runtimeVariables.map((variable) => (
-                <Field key={variable.id} label={variable.label}>
-                  <input
-                    className={inputClass}
-                    value={variableValues[variable.id] ?? ""}
-                    onChange={(event) =>
-                      setVariableValues((current) => ({
-                        ...current,
-                        [variable.id]: event.target.value,
-                      }))
-                    }
-                    placeholder={
-                      variable.parameterType === "text" ? undefined : "https://… or Meta media ID"
-                    }
-                  />
-                </Field>
-              ))}
+            ))}
             <Button
               className="w-full"
               onClick={() => void handleSendTest()}
@@ -608,6 +588,272 @@ function formatDate(value: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function CreateTemplateDialog({
+  wabas,
+  onClose,
+  onCreated,
+}: {
+  wabas: { id: string; label: string }[];
+  onClose: () => void;
+  onCreated: () => void | Promise<void>;
+}) {
+  const create = useServerFn(createTemplate);
+  const [wabaId, setWabaId] = useState(wabas[0]?.id ?? "");
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("UTILITY");
+  const [language, setLanguage] = useState<(typeof LANGUAGES)[number]>("ar");
+  const [header, setHeader] = useState("");
+  const [body, setBody] = useState("");
+  const [footer, setFooter] = useState("");
+  const [buttons, setButtons] = useState("");
+  const [exampleValues, setExampleValues] = useState("");
+  const [advancedComponents, setAdvancedComponents] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const bodyVariables = useMemo(() => placeholdersOf([{ type: "BODY", text: body }]), [body]);
+  const examples = useMemo(
+    () =>
+      exampleValues
+        .split("\n")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [exampleValues],
+  );
+
+  const components = useMemo<TemplateComponent[]>(() => {
+    const result: TemplateComponent[] = [];
+    if (header.trim()) result.push({ type: "HEADER", format: "TEXT", text: header.trim() });
+    if (body.trim()) {
+      result.push({
+        type: "BODY",
+        text: body.trim(),
+        ...(bodyVariables.length > 0
+          ? {
+              example: {
+                body_text: [
+                  bodyVariables.map((name, index) => examples[index] ?? `sample_${name}`),
+                ],
+              },
+            }
+          : {}),
+      });
+    }
+    if (footer.trim()) result.push({ type: "FOOTER", text: footer.trim() });
+
+    const buttonList = buttons
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (buttonList.length > 0) {
+      result.push({
+        type: "BUTTONS",
+        buttons: buttonList.map((text) => ({ type: "QUICK_REPLY", text })),
+      });
+    }
+    return result;
+  }, [header, body, footer, buttons, bodyVariables, examples]);
+
+  const parsedAdvanced = useMemo<TemplateComponent[] | null>(() => {
+    if (!advancedComponents.trim()) return null;
+    try {
+      const parsed = JSON.parse(advancedComponents) as unknown;
+      return Array.isArray(parsed) ? (parsed as TemplateComponent[]) : null;
+    } catch {
+      return null;
+    }
+  }, [advancedComponents]);
+
+  const effectiveComponents = advancedComponents.trim() ? (parsedAdvanced ?? []) : components;
+
+  const submit = async () => {
+    if (!wabaId) {
+      toast.error("Select a WABA");
+      return;
+    }
+    if (!name.trim()) {
+      toast.error("Template name is required");
+      return;
+    }
+    if (advancedComponents.trim() && !parsedAdvanced) {
+      toast.error("Advanced components JSON is invalid");
+      return;
+    }
+    if (
+      !effectiveComponents.some(
+        (component) => String(component.type ?? "").toUpperCase() === "BODY",
+      )
+    ) {
+      toast.error("A BODY component is required");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await create({
+        data: {
+          wabaId,
+          name,
+          category,
+          language,
+          components: effectiveComponents,
+          allowCategoryChange: true,
+        },
+      });
+      if (!result.ok) throw new Error(result.error ?? "Submission failed");
+      toast.success("Template submitted to Meta for review");
+      await onCreated();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <FileText className="h-4 w-4" /> New message template
+          </h2>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="space-y-4">
+            <Field label="WABA">
+              <select
+                className={inputClass}
+                value={wabaId}
+                onChange={(event) => setWabaId(event.target.value)}
+              >
+                {wabas.map((waba) => (
+                  <option key={waba.id} value={waba.id}>
+                    {waba.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Name">
+                <input
+                  className={inputClass}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="service_request_update"
+                />
+              </Field>
+              <Field label="Category">
+                <select
+                  className={inputClass}
+                  value={category}
+                  onChange={(event) =>
+                    setCategory(event.target.value as (typeof CATEGORIES)[number])
+                  }
+                >
+                  {CATEGORIES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Language">
+                <select
+                  className={inputClass}
+                  value={language}
+                  onChange={(event) =>
+                    setLanguage(event.target.value as (typeof LANGUAGES)[number])
+                  }
+                >
+                  {LANGUAGES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Header (optional)">
+              <input
+                className={inputClass}
+                value={header}
+                onChange={(event) => setHeader(event.target.value)}
+              />
+            </Field>
+            <Field label="Body">
+              <textarea
+                className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder="مرحبًا {{1}}، تم تحديث حالة الطلب {{2}}."
+              />
+            </Field>
+            {bodyVariables.length > 0 && (
+              <Field
+                label={`Review examples — one line per variable (${bodyVariables.map((name) => `{{${name}}}`).join(", ")})`}
+              >
+                <textarea
+                  className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={exampleValues}
+                  onChange={(event) => setExampleValues(event.target.value)}
+                  placeholder={"محمد\nAUF-1024"}
+                />
+              </Field>
+            )}
+            <Field label="Footer (optional)">
+              <input
+                className={inputClass}
+                value={footer}
+                onChange={(event) => setFooter(event.target.value)}
+              />
+            </Field>
+            <Field label="Quick reply buttons — one per line (optional)">
+              <textarea
+                className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={buttons}
+                onChange={(event) => setButtons(event.target.value)}
+                placeholder={"متابعة الطلب\nالتواصل مع الدعم"}
+              />
+            </Field>
+            <Field label="Advanced Meta components JSON (optional — Authentication / media / CTA / Flow / Catalog)">
+              <textarea
+                className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+                value={advancedComponents}
+                onChange={(event) => setAdvancedComponents(event.target.value)}
+                placeholder='[{"type":"BODY","text":"..."},{"type":"BUTTONS","buttons":[...]}]'
+              />
+            </Field>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              WhatsApp preview
+            </p>
+            <Preview components={effectiveComponents} />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Variables: {placeholdersOf(effectiveComponents).join(", ") || "none"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button onClick={() => void submit()} disabled={submitting}>
+            {submitting ? "Submitting…" : "Submit to Meta"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

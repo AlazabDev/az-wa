@@ -7,6 +7,7 @@ export type MetaAppConfigInput = {
   namespace?: string;
   verifyToken?: string;
   appSecret?: string;
+  appAccessToken?: string;
   systemUserToken?: string;
 };
 
@@ -22,19 +23,14 @@ export const syncBusinessPortfolio = createServerFn({ method: "POST" })
 
     if (portfolioError || !portfolio) throw new Error("Portfolio not found or not accessible");
 
-
-
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
-      {
-        p_org_id: portfolio.organization_id,
-        p_permission: "wabas.manage",
-      },
+      { p_org_id: portfolio.organization_id, p_permission: "wabas.manage" },
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
-    const { syncPortfolio } = await import("./operations.server");
-    return syncPortfolio(data.portfolioId);
+    const { syncPortfolioComplete } = await import("./portfolio-sync.server");
+    return syncPortfolioComplete(data.portfolioId);
   });
 
 export const testWhatsappNumber = createServerFn({ method: "POST" })
@@ -46,15 +42,11 @@ export const testWhatsappNumber = createServerFn({ method: "POST" })
       .select("id, organization_id")
       .eq("id", data.numberId)
       .maybeSingle();
-
     if (numberError || !number) throw new Error("WhatsApp number not found or not accessible");
 
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
-      {
-        p_org_id: number.organization_id,
-        p_permission: "health.read",
-      },
+      { p_org_id: number.organization_id, p_permission: "health.read" },
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
@@ -73,16 +65,12 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
-
     if (membershipError || !membership) throw new Error("No active organization membership");
 
     const organizationId = membership.organization_id;
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
-      {
-        p_org_id: organizationId,
-        p_permission: "credentials.manage",
-      },
+      { p_org_id: organizationId, p_permission: "credentials.manage" },
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
@@ -97,27 +85,32 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
 
     const { data: endpoint } = await supabaseAdmin
       .from("webhook_endpoints")
-      .select(
-        "id, url, status, verification_status, verify_token_credential_id, app_secret_credential_id",
-      )
+      .select("id, url, status, verification_status, verify_token_credential_id, app_secret_credential_id")
       .eq("organization_id", organizationId)
       .eq("endpoint_type", "meta_whatsapp")
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
 
-    const { data: systemToken } = app
-      ? await supabaseAdmin
-          .from("meta_credentials")
-          .select("id")
-          .eq("organization_id", organizationId)
-          .eq("meta_app_id", app.id)
-          .eq("credential_type", "system_user_token")
-          .eq("status", "active")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : { data: null };
+    const credentialState = async (credentialType: "system_user_token" | "access_token") => {
+      if (!app) return null;
+      const { data } = await supabaseAdmin
+        .from("meta_credentials")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("meta_app_id", app.id)
+        .eq("credential_type", credentialType)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    };
+
+    const [systemToken, appAccessToken] = await Promise.all([
+      credentialState("system_user_token"),
+      credentialState("access_token"),
+    ]);
 
     return {
       organizationId,
@@ -133,6 +126,7 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
       verificationStatus: endpoint?.verification_status ?? null,
       hasVerifyToken: Boolean(endpoint?.verify_token_credential_id),
       hasAppSecret: Boolean(endpoint?.app_secret_credential_id),
+      hasAppAccessToken: Boolean(appAccessToken?.id),
       hasSystemUserToken: Boolean(systemToken?.id),
     };
   });
@@ -151,21 +145,16 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
-
     if (membershipError || !membership) throw new Error("No active organization membership");
 
     const organizationId = membership.organization_id;
     const { data: allowed, error: permissionError } = await context.supabase.rpc(
       "azwa_has_org_permission",
-      {
-        p_org_id: organizationId,
-        p_permission: "credentials.manage",
-      },
+      { p_org_id: organizationId, p_permission: "credentials.manage" },
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
     const { data: existingApp, error: existingAppError } = await supabaseAdmin
       .from("meta_apps")
       .select("id, business_portfolio_id")
@@ -230,19 +219,22 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       .maybeSingle();
     if (endpointLookupError) throw new Error(endpointLookupError.message);
 
-    const { data: existingSystemToken } = await supabaseAdmin
-      .from("meta_credentials")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .eq("meta_app_id", metaAppInternalId)
-      .eq("credential_type", "system_user_token")
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const existingCredential = async (credentialType: "system_user_token" | "access_token") => {
+      const { data: credential } = await supabaseAdmin
+        .from("meta_credentials")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("meta_app_id", metaAppInternalId)
+        .eq("credential_type", credentialType)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return credential?.id ?? null;
+    };
 
     const storeCredential = async (
-      credentialType: "verify_token" | "app_secret" | "system_user_token",
+      credentialType: "verify_token" | "app_secret" | "system_user_token" | "access_token",
       name: string,
       secret: string,
       portfolioId: string | null,
@@ -256,31 +248,23 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
         ...(portfolioId ? { p_business_portfolio_id: portfolioId } : {}),
         p_scopes: [],
       });
-      if (error || !credentialId) {
-        throw new Error(error?.message ?? `Unable to store ${credentialType}`);
-      }
+      if (error || !credentialId) throw new Error(error?.message ?? `Unable to store ${credentialType}`);
       return credentialId;
     };
 
     let verifyCredentialId = existingEndpoint?.verify_token_credential_id ?? null;
     let appSecretCredentialId = existingEndpoint?.app_secret_credential_id ?? null;
-    let systemTokenCredentialId = existingSystemToken?.id ?? null;
+    let systemTokenCredentialId = await existingCredential("system_user_token");
+    let appAccessTokenCredentialId = await existingCredential("access_token");
 
     if (data.verifyToken?.trim()) {
-      verifyCredentialId = await storeCredential(
-        "verify_token",
-        "Meta Webhook Verify Token",
-        data.verifyToken.trim(),
-        null,
-      );
+      verifyCredentialId = await storeCredential("verify_token", "Meta Webhook Verify Token", data.verifyToken.trim(), null);
     }
     if (data.appSecret?.trim()) {
-      appSecretCredentialId = await storeCredential(
-        "app_secret",
-        "Meta App Secret",
-        data.appSecret.trim(),
-        null,
-      );
+      appSecretCredentialId = await storeCredential("app_secret", "Meta App Secret", data.appSecret.trim(), null);
+    }
+    if (data.appAccessToken?.trim()) {
+      appAccessTokenCredentialId = await storeCredential("access_token", "Meta App Access Token", data.appAccessToken.trim(), null);
     }
     if (data.systemUserToken?.trim()) {
       systemTokenCredentialId = await storeCredential(
@@ -293,11 +277,10 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
 
     if (!verifyCredentialId) throw new Error("Verify Token is required for initial setup");
     if (!appSecretCredentialId) throw new Error("App Secret is required for initial setup");
+    if (!appAccessTokenCredentialId) throw new Error("App Access Token is required for initial setup");
     if (!systemTokenCredentialId) throw new Error("System User Token is required for initial setup");
 
-    const webhookUrl =
-      process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";
-
+    const webhookUrl = process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";
     if (existingEndpoint) {
       const { error } = await supabaseAdmin
         .from("webhook_endpoints")
@@ -339,6 +322,7 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
 
     await deactivatePrevious("verify_token", verifyCredentialId);
     await deactivatePrevious("app_secret", appSecretCredentialId);
+    await deactivatePrevious("access_token", appAccessTokenCredentialId);
     await deactivatePrevious("system_user_token", systemTokenCredentialId);
 
     return {
@@ -347,6 +331,7 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       webhookUrl,
       hasVerifyToken: true,
       hasAppSecret: true,
+      hasAppAccessToken: true,
       hasSystemUserToken: true,
     };
   });

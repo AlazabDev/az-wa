@@ -12,7 +12,7 @@ services:
     container_name: az-wa-web
     restart: unless-stopped
     env_file:
-      - .env.production
+      - .env
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0

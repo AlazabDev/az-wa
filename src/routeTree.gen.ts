@@ -12,16 +12,28 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as LegacyRouteImport } from './routes/legacy'
+import { Route as ReadyzRouteImport } from './routes/readyz'
+import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedApiLogsRouteImport } from './routes/_authenticated/api-logs'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedAutomationRouteImport } from './routes/_authenticated/automation'
+import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
+import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDeadLetterRouteImport } from './routes/_authenticated/dead-letter'
+import { Route as AuthenticatedErrorsRouteImport } from './routes/_authenticated/errors'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
+import { Route as AuthenticatedMediaRouteImport } from './routes/_authenticated/media'
 import { Route as AuthenticatedMetaAppRouteImport } from './routes/_authenticated/meta-app'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
@@ -59,10 +71,30 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegacyRoute = LegacyRouteImport.update({
   id: '/legacy',
   path: '/legacy',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ReadyzRoute = ReadyzRouteImport.update({
+  id: '/readyz',
+  path: '/readyz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
   id: '/api-logs',
@@ -72,6 +104,21 @@ const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAutomationRoute = AuthenticatedAutomationRouteImport.update({
+  id: '/automation',
+  path: '/automation',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCampaignsRoute = AuthenticatedCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCredentialsRoute =
@@ -85,9 +132,24 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDeadLetterRoute = AuthenticatedDeadLetterRouteImport.update({
+  id: '/dead-letter',
+  path: '/dead-letter',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedErrorsRoute = AuthenticatedErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
   id: '/health',
   path: '/health',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedInfrastructureRoute =
@@ -96,6 +158,11 @@ const AuthenticatedInfrastructureRoute =
     path: '/infrastructure',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMediaRoute = AuthenticatedMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMetaAppRoute = AuthenticatedMetaAppRouteImport.update({
   id: '/meta-app',
   path: '/meta-app',
@@ -109,6 +176,11 @@ const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
 const AuthenticatedQueuesRoute = AuthenticatedQueuesRouteImport.update({
   id: '/queues',
   path: '/queues',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -226,16 +298,28 @@ const ApiPublicWebhooksMetaWhatsappRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/healthz': typeof HealthzRoute
   '/legacy': typeof LegacyRouteWithChildren
+  '/readyz': typeof ReadyzRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/automation': typeof AuthenticatedAutomationRoute
+  '/campaigns': typeof AuthenticatedCampaignsRoute
+  '/contacts': typeof AuthenticatedContactsRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dead-letter': typeof AuthenticatedDeadLetterRoute
+  '/errors': typeof AuthenticatedErrorsRoute
   '/health': typeof AuthenticatedHealthRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -262,15 +346,27 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/healthz': typeof HealthzRoute
+  '/readyz': typeof ReadyzRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/automation': typeof AuthenticatedAutomationRoute
+  '/campaigns': typeof AuthenticatedCampaignsRoute
+  '/contacts': typeof AuthenticatedContactsRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dead-letter': typeof AuthenticatedDeadLetterRoute
+  '/errors': typeof AuthenticatedErrorsRoute
   '/health': typeof AuthenticatedHealthRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -298,16 +394,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/healthz': typeof HealthzRoute
   '/legacy': typeof LegacyRouteWithChildren
+  '/readyz': typeof ReadyzRoute
+  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/api-logs': typeof AuthenticatedApiLogsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
+  '/_authenticated/automation': typeof AuthenticatedAutomationRoute
+  '/_authenticated/campaigns': typeof AuthenticatedCampaignsRoute
+  '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dead-letter': typeof AuthenticatedDeadLetterRoute
+  '/_authenticated/errors': typeof AuthenticatedErrorsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
+  '/_authenticated/media': typeof AuthenticatedMediaRoute
   '/_authenticated/meta-app': typeof AuthenticatedMetaAppRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
@@ -336,16 +444,28 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/healthz'
     | '/legacy'
+    | '/readyz'
+    | '/alerts'
+    | '/analytics'
     | '/api-logs'
     | '/audit'
+    | '/automation'
+    | '/campaigns'
+    | '/contacts'
     | '/credentials'
     | '/dashboard'
+    | '/dead-letter'
+    | '/errors'
     | '/health'
+    | '/inbox'
     | '/infrastructure'
+    | '/media'
     | '/meta-app'
     | '/numbers'
     | '/queues'
+    | '/reports'
     | '/settings'
     | '/templates'
     | '/users'
@@ -372,15 +492,27 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/healthz'
+    | '/readyz'
+    | '/alerts'
+    | '/analytics'
     | '/api-logs'
     | '/audit'
+    | '/automation'
+    | '/campaigns'
+    | '/contacts'
     | '/credentials'
     | '/dashboard'
+    | '/dead-letter'
+    | '/errors'
     | '/health'
+    | '/inbox'
     | '/infrastructure'
+    | '/media'
     | '/meta-app'
     | '/numbers'
     | '/queues'
+    | '/reports'
     | '/settings'
     | '/templates'
     | '/users'
@@ -407,16 +539,28 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/healthz'
     | '/legacy'
+    | '/readyz'
+    | '/_authenticated/alerts'
+    | '/_authenticated/analytics'
     | '/_authenticated/api-logs'
     | '/_authenticated/audit'
+    | '/_authenticated/automation'
+    | '/_authenticated/campaigns'
+    | '/_authenticated/contacts'
     | '/_authenticated/credentials'
     | '/_authenticated/dashboard'
+    | '/_authenticated/dead-letter'
+    | '/_authenticated/errors'
     | '/_authenticated/health'
+    | '/_authenticated/inbox'
     | '/_authenticated/infrastructure'
+    | '/_authenticated/media'
     | '/_authenticated/meta-app'
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
+    | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/templates'
     | '/_authenticated/users'
@@ -445,7 +589,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  HealthzRoute: typeof HealthzRoute
   LegacyRoute: typeof LegacyRouteWithChildren
+  ReadyzRoute: typeof ReadyzRoute
   ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
   ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -473,12 +619,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/legacy': {
       id: '/legacy'
       path: '/legacy'
       fullPath: '/legacy'
       preLoaderRoute: typeof LegacyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/readyz': {
+      id: '/readyz'
+      path: '/readyz'
+      fullPath: '/readyz'
+      preLoaderRoute: typeof ReadyzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/alerts': {
+      id: '/_authenticated/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/api-logs': {
       id: '/_authenticated/api-logs'
@@ -492,6 +666,27 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/automation': {
+      id: '/_authenticated/automation'
+      path: '/automation'
+      fullPath: '/automation'
+      preLoaderRoute: typeof AuthenticatedAutomationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/campaigns': {
+      id: '/_authenticated/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof AuthenticatedCampaignsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contacts': {
+      id: '/_authenticated/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/credentials': {
@@ -508,6 +703,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dead-letter': {
+      id: '/_authenticated/dead-letter'
+      path: '/dead-letter'
+      fullPath: '/dead-letter'
+      preLoaderRoute: typeof AuthenticatedDeadLetterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/errors': {
+      id: '/_authenticated/errors'
+      path: '/errors'
+      fullPath: '/errors'
+      preLoaderRoute: typeof AuthenticatedErrorsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/health': {
       id: '/_authenticated/health'
       path: '/health'
@@ -515,11 +724,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHealthRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/infrastructure': {
       id: '/_authenticated/infrastructure'
       path: '/infrastructure'
       fullPath: '/infrastructure'
       preLoaderRoute: typeof AuthenticatedInfrastructureRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/media': {
+      id: '/_authenticated/media'
+      path: '/media'
+      fullPath: '/media'
+      preLoaderRoute: typeof AuthenticatedMediaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/meta-app': {
@@ -541,6 +764,13 @@ declare module '@tanstack/react-router' {
       path: '/queues'
       fullPath: '/queues'
       preLoaderRoute: typeof AuthenticatedQueuesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -701,15 +931,25 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedApiLogsRoute: typeof AuthenticatedApiLogsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
+  AuthenticatedAutomationRoute: typeof AuthenticatedAutomationRoute
+  AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRoute
+  AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDeadLetterRoute: typeof AuthenticatedDeadLetterRoute
+  AuthenticatedErrorsRoute: typeof AuthenticatedErrorsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
+  AuthenticatedMediaRoute: typeof AuthenticatedMediaRoute
   AuthenticatedMetaAppRoute: typeof AuthenticatedMetaAppRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
@@ -718,15 +958,25 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedApiLogsRoute: AuthenticatedApiLogsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
+  AuthenticatedAutomationRoute: AuthenticatedAutomationRoute,
+  AuthenticatedCampaignsRoute: AuthenticatedCampaignsRoute,
+  AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDeadLetterRoute: AuthenticatedDeadLetterRoute,
+  AuthenticatedErrorsRoute: AuthenticatedErrorsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
+  AuthenticatedMediaRoute: AuthenticatedMediaRoute,
   AuthenticatedMetaAppRoute: AuthenticatedMetaAppRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
@@ -790,7 +1040,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  HealthzRoute: HealthzRoute,
   LegacyRoute: LegacyRouteWithChildren,
+  ReadyzRoute: ReadyzRoute,
   ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
   ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }

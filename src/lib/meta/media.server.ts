@@ -68,17 +68,10 @@ function cleanExtension(value: string | null | undefined): string | null {
 
 function extensionFor(mime: string | null, filename: string | null) {
   const fromName = filename?.includes(".") ? filename.split(".").pop() : null;
-  return (
-    cleanExtension(fromName) ??
-    (mime ? EXTENSIONS[mime.toLowerCase()] : null) ??
-    "bin"
-  );
+  return cleanExtension(fromName) ?? (mime ? EXTENSIONS[mime.toLowerCase()] : null) ?? "bin";
 }
 
-function folderFor(
-  mime: string | null,
-  extension: string,
-) {
+function folderFor(mime: string | null, extension: string) {
   if (mime?.toLowerCase().startsWith("image/")) return "img";
   return extension;
 }
@@ -139,9 +132,7 @@ export type MediaDownloadResult = {
 };
 
 /** Downloads one media row. Idempotent: already-stored rows are skipped. */
-export async function downloadMedia(
-  mediaRowId: string,
-): Promise<MediaDownloadResult> {
+export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadResult> {
   const startedAt = new Date().toISOString();
   const { data: media } = await supabaseAdmin
     .from("media")
@@ -230,8 +221,7 @@ export async function downloadMedia(
   }
 
   const bytes = new Uint8Array(await binRes.arrayBuffer());
-  const mime =
-    meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
+  const mime = meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
   const object = storagePath({
     timestamp: media.received_at ?? media.created_at,
     mediaId: media.id,
@@ -247,10 +237,7 @@ export async function downloadMedia(
       contentType: mime ?? "application/octet-stream",
     });
   } catch (error) {
-    return fail(
-      error instanceof Error ? error.message : "MinIO upload failed",
-      null,
-    );
+    return fail(error instanceof Error ? error.message : "MinIO upload failed", null);
   }
 
   const currentMetadata = objectMetadata(media.metadata);
@@ -331,8 +318,7 @@ export async function drainMediaQueue(limit = 50) {
         await supabaseAdmin.rpc("backend_complete_job", { p_job_id: job.id });
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "unexpected error";
+      const message = error instanceof Error ? error.message : "unexpected error";
       results.push({
         mediaId: payload.media_id,
         status: "failed",

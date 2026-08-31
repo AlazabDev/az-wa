@@ -12,6 +12,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   FileText,
+  GitBranch,
   Inbox,
   Image,
   KeyRound,
@@ -47,6 +48,7 @@ const NAV: NavGroup[] = [
       { label: "Contacts", to: "/contacts", icon: Users },
       { label: "Media", to: "/media", icon: Image },
       { label: "Templates", to: "/templates", icon: FileText },
+      { label: "WhatsApp Flows", to: "/flows", icon: GitBranch },
       { label: "Campaigns", to: "/campaigns", icon: Megaphone },
       { label: "Automation", to: "/automation", icon: Bot },
     ],
@@ -117,15 +119,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       >
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
-            A
-          </div>
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">A</div>
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold tracking-tight">AzWA</div>
-              <div className="truncate text-[10px] uppercase tracking-widest opacity-70">
-                Operations OS
-              </div>
+              <div className="truncate text-[10px] uppercase tracking-widest opacity-70">Operations OS</div>
             </div>
           )}
         </div>
@@ -134,9 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV.map((group, groupIndex) => (
             <div key={groupIndex}>
               {group.section && !collapsed && (
-                <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest opacity-50">
-                  {group.section}
-                </div>
+                <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest opacity-50">{group.section}</div>
               )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {

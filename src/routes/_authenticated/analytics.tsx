@@ -13,7 +13,9 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <div className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
       <div className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">{value}</div>
     </div>
   );
@@ -32,7 +34,8 @@ function AnalyticsPage() {
   const outgoing = counters?.outgoing ?? 0;
   const deliveryRate = sent > 0 ? `${((delivered / sent) * 100).toFixed(1)}%` : "—";
   const readRate = delivered > 0 ? `${((read / delivered) * 100).toFixed(1)}%` : "—";
-  const inboundShare = incoming + outgoing > 0 ? `${((incoming / (incoming + outgoing)) * 100).toFixed(1)}%` : "—";
+  const inboundShare =
+    incoming + outgoing > 0 ? `${((incoming / (incoming + outgoing)) * 100).toFixed(1)}%` : "—";
 
   return (
     <>
@@ -41,7 +44,7 @@ function AnalyticsPage() {
         description={`Live 24-hour operational metrics for ${scope.label}. No exported snapshot is used on this page.`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Messages (24h)" value={isLoading ? "…" : counters?.messagesToday ?? 0} />
+        <Metric label="Messages (24h)" value={isLoading ? "…" : (counters?.messagesToday ?? 0)} />
         <Metric label="Incoming" value={counters?.incoming ?? 0} />
         <Metric label="Outgoing" value={counters?.outgoing ?? 0} />
         <Metric label="Failed" value={counters?.failed ?? 0} />

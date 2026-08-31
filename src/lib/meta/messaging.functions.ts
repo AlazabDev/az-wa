@@ -21,7 +21,8 @@ export const sendTextMessage = createServerFn({ method: "POST" })
     const body = data.body.trim();
 
     if (!data.numberId) throw new Error("Send-from number is required");
-    if (recipient.length < 7 || recipient.length > 20) throw new Error("Recipient number is invalid");
+    if (recipient.length < 7 || recipient.length > 20)
+      throw new Error("Recipient number is invalid");
     if (!body) throw new Error("Message body is required");
     if (body.length > 4096) throw new Error("Text message exceeds 4096 characters");
 
@@ -29,10 +30,14 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       "azwa_can_send_number",
       { p_number_id: data.numberId },
     );
-    if (permissionError || !allowed) throw new Error("You are not allowed to send from this number");
+    if (permissionError || !allowed)
+      throw new Error("You are not allowed to send from this number");
 
-    const { client, number } = await import("./graph.server").then((m) => m.clientForNumber(data.numberId));
-    if (!client || !number) throw new Error("No active Meta credential is available for this number");
+    const { client, number } = await import("./graph.server").then((m) =>
+      m.clientForNumber(data.numberId),
+    );
+    if (!client || !number)
+      throw new Error("No active Meta credential is available for this number");
 
     const requestPayload = {
       messaging_product: "whatsapp",
@@ -42,9 +47,8 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       text: { preview_url: false, body },
     };
 
-    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
     const idempotencyKey = `ui:${context.userId}:${crypto.randomUUID()}`;
 
     // Interactive sends are performed synchronously by this authenticated
