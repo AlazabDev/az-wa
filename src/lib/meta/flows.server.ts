@@ -83,7 +83,11 @@ async function collectFlows(client: MetaGraphClient, metaWabaId: string) {
 
     const response = await client.request<MetaFlowPage>(`${metaWabaId}/flows`, { query });
     if (!response.ok) {
-      return { ok: false as const, flows: collected, error: response.errorMessage ?? "Graph error" };
+      return {
+        ok: false as const,
+        flows: collected,
+        error: response.errorMessage ?? "Graph error",
+      };
     }
 
     collected.push(...(response.data?.data ?? []));
@@ -140,7 +144,9 @@ export async function syncWabaFlows(wabaId: string) {
     const fallback = await client.request<MetaFlowPage>(`${waba.meta_waba_id}/flows`, {
       query: { limit: "100", fields: "id,name,status,categories,validation_errors" },
     });
-    if (!fallback.ok) return { ok: false as const, synced: 0, missing: 0, error: result.error };
+    if (!fallback.ok) {
+      return { ok: false as const, synced: 0, missing: 0, error: result.error };
+    }
     result = { ok: true as const, flows: fallback.data?.data ?? [] };
   }
 
@@ -162,7 +168,12 @@ export async function syncWabaFlows(wabaId: string) {
     .select("id,meta_flow_id,status")
     .eq("waba_id", waba.id);
   if (localError) {
-    return { ok: false as const, synced: result.flows.length, missing: 0, error: localError.message };
+    return {
+      ok: false as const,
+      synced: result.flows.length,
+      missing: 0,
+      error: localError.message,
+    };
   }
 
   let missing = 0;
@@ -199,7 +210,9 @@ export async function createWhatsappFlow(input: {
   const waba = await loadWabaScope(input.wabaId);
   if (!waba) return { ok: false as const, error: "WABA not found" };
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  }
 
   const body: Record<string, unknown> = {
     name: input.name.trim(),
@@ -213,12 +226,15 @@ export async function createWhatsappFlow(input: {
     body,
   });
   if (!response.ok || !response.data?.id) {
-    return { ok: false as const, error: response.errorMessage ?? "Meta did not return a Flow ID" };
+    return {
+      ok: false as const,
+      error: response.errorMessage ?? "Meta did not return a Flow ID",
+    };
   }
 
   const sync = await syncWabaFlows(waba.id);
   if (!sync.ok) {
-    return { ok: true as const, metaFlowId: response.data.id, warning: sync.error };
+    return { ok: true as const, metaFlowId: response.data.id, warning: String(sync.error) };
   }
   const db = supabaseAdmin as any;
   const { data: local } = await db
@@ -244,7 +260,9 @@ export async function updateWhatsappFlowMetadata(input: {
   const waba = await loadWabaScope(flow.waba_id);
   if (!waba) return { ok: false as const, error: "WABA not found" };
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  }
 
   const body: Record<string, unknown> = {
     name: input.name.trim(),
@@ -256,9 +274,13 @@ export async function updateWhatsappFlowMetadata(input: {
     method: "POST",
     body,
   });
-  if (!response.ok) return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  if (!response.ok) {
+    return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  }
   const sync = await syncWabaFlows(waba.id);
-  return sync.ok ? { ok: true as const } : { ok: true as const, warning: sync.error };
+  return sync.ok
+    ? { ok: true as const }
+    : { ok: true as const, warning: String(sync.error) };
 }
 
 export async function uploadWhatsappFlowJson(input: { flowId: string; flowJson: string }) {
@@ -280,7 +302,9 @@ export async function uploadWhatsappFlowJson(input: { flowId: string; flowJson: 
   const waba = await loadWabaScope(flow.waba_id);
   if (!waba) return { ok: false as const, error: "WABA not found" };
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  }
 
   const form = new FormData();
   form.append("file", new Blob([input.flowJson], { type: "application/json" }), "flow.json");
@@ -291,7 +315,9 @@ export async function uploadWhatsappFlowJson(input: { flowId: string; flowJson: 
     success?: boolean;
     validation_errors?: unknown[];
   }>(`${flow.meta_flow_id}/assets`, form, { method: "POST" });
-  if (!response.ok) return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  if (!response.ok) {
+    return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  }
 
   const validationErrors = response.data?.validation_errors ?? [];
   const db = supabaseAdmin as any;
@@ -299,16 +325,24 @@ export async function uploadWhatsappFlowJson(input: { flowId: string; flowJson: 
     .from("whatsapp_flows")
     .update({
       validation_errors: validationErrors,
-      metadata: { source: "meta_graph_v26", flow_json_uploaded_at: new Date().toISOString() },
+      metadata: {
+        source: "meta_graph_v26",
+        flow_json_uploaded_at: new Date().toISOString(),
+      },
       last_synced_at: new Date().toISOString(),
     })
     .eq("id", flow.id);
+
   const sync = await syncWabaFlows(waba.id);
-  return {
-    ok: true as const,
-    validationErrors,
-    warning: sync.ok ? undefined : sync.error,
-  };
+  const validationErrorCount = validationErrors.length;
+  if (!sync.ok) {
+    return {
+      ok: true as const,
+      validationErrorCount,
+      warning: String(sync.error),
+    };
+  }
+  return { ok: true as const, validationErrorCount };
 }
 
 async function mutateFlow(flowId: string, action: "publish" | "deprecate") {
@@ -318,15 +352,21 @@ async function mutateFlow(flowId: string, action: "publish" | "deprecate") {
   const waba = await loadWabaScope(flow.waba_id);
   if (!waba) return { ok: false as const, error: "WABA not found" };
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  }
 
   const response = await client.request<{ success?: boolean }>(`${flow.meta_flow_id}/${action}`, {
     method: "POST",
   });
-  if (!response.ok) return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  if (!response.ok) {
+    return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  }
 
   const sync = await syncWabaFlows(waba.id);
-  return sync.ok ? { ok: true as const } : { ok: true as const, warning: sync.error };
+  return sync.ok
+    ? { ok: true as const }
+    : { ok: true as const, warning: String(sync.error) };
 }
 
 export function publishWhatsappFlow(flowId: string) {
@@ -347,10 +387,16 @@ export async function deleteDraftWhatsappFlow(flowId: string) {
   const waba = await loadWabaScope(flow.waba_id);
   if (!waba) return { ok: false as const, error: "WABA not found" };
   const client = await clientForWaba(waba);
-  if (!client) return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  if (!client) {
+    return { ok: false as const, error: "No Meta credential resolved for this WABA" };
+  }
 
-  const response = await client.request<{ success?: boolean }>(flow.meta_flow_id, { method: "DELETE" });
-  if (!response.ok) return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  const response = await client.request<{ success?: boolean }>(flow.meta_flow_id, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    return { ok: false as const, error: response.errorMessage ?? "Graph error" };
+  }
 
   const db = supabaseAdmin as any;
   await db
