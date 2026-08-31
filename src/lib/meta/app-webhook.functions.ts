@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Access Token, App Secret or Verify Token to the browser.
 export const inspectMetaWebhookSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(() => z.object({}))
+  .inputValidator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
     const { data: membership, error } = await context.supabase
       .from("organization_members")
@@ -28,7 +28,7 @@ export const inspectMetaWebhookSubscription = createServerFn({ method: "POST" })
 
 export const reconcileMetaWebhookSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(() => z.object({}))
+  .inputValidator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
     const { data: membership, error } = await context.supabase
       .from("organization_members")
