@@ -309,7 +309,6 @@ export async function createWabaTemplate(input: {
       language: input.language,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
-
   });
 
   if (versionError) {
