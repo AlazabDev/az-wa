@@ -89,6 +89,34 @@ create trigger trg_waba_assigned_users_updated_at
   before update on public.waba_assigned_users
   for each row execute function public.set_updated_at();
 
+-- A disconnected/restricted/missing number can never remain an enabled sender.
+-- Returning to active does NOT re-enable it automatically; manual operator intent is preserved.
+create or replace function private.enforce_whatsapp_sender_status()
+returns trigger
+language plpgsql
+security invoker
+set search_path = pg_catalog
+as $$
+begin
+  if new.status <> 'active' then
+    new.is_enabled := false;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function private.enforce_whatsapp_sender_status() from public, anon, authenticated;
+grant execute on function private.enforce_whatsapp_sender_status() to service_role;
+
+drop trigger if exists trg_whatsapp_numbers_sender_status on public.whatsapp_numbers;
+create trigger trg_whatsapp_numbers_sender_status
+  before insert or update of status, is_enabled on public.whatsapp_numbers
+  for each row execute function private.enforce_whatsapp_sender_status();
+
+update public.whatsapp_numbers
+set is_enabled = false, updated_at = now()
+where status <> 'active' and is_enabled is true;
+
 -- Browser reads inherit WABA scope. All writes remain backend/service-role only.
 alter table public.whatsapp_flows enable row level security;
 drop policy if exists whatsapp_flows_read_scope on public.whatsapp_flows;
