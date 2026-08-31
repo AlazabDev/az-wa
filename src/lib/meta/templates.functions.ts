@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { validateTemplateDefinition } from "./template-schema";
 
 export type TemplateComponentInput = Record<string, unknown>;
 
@@ -81,10 +82,13 @@ export const createTemplate = createServerFn({ method: "POST" })
       throw new Error("At least a BODY component is required");
     }
 
-    const hasBody = input.components.some(
-      (component) => String(component["type"] ?? "").toUpperCase() === "BODY",
-    );
-    if (!hasBody) throw new Error("A BODY component is required");
+    const validationErrors = validateTemplateDefinition({
+      category,
+      components: input.components,
+    });
+    if (validationErrors.length > 0) {
+      throw new Error(validationErrors[0] as string);
+    }
 
     return {
       ...input,

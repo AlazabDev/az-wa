@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FileText, Plus, RefreshCw, Search, Send, Trash2, X } from "lucide-react";
+import { Plus, RefreshCw, Search, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { CreateTemplateDialog } from "@/components/azwa/create-template-dialog";
 import { EmptyState, PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,14 @@ import {
   buttonsOf,
   componentOf,
   placeholdersOf,
+  runtimeComponentsFromValues,
+  runtimeVariablesOf,
   useTemplates,
   type Template,
   type TemplateComponent,
 } from "@/lib/azwa-templates";
 import { sendTemplateMessage } from "@/lib/meta/template-messaging.functions";
-import { createTemplate, deleteTemplate, syncTemplates } from "@/lib/meta/templates.functions";
+import { deleteTemplate, syncTemplates } from "@/lib/meta/templates.functions";
 import { useScope } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/templates")({
@@ -40,7 +43,6 @@ const inputClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20";
 
 const CATEGORIES = ["UTILITY", "MARKETING", "AUTHENTICATION"] as const;
-const LANGUAGES = ["ar", "ar_EG", "en", "en_US"] as const;
 const STATUSES = [
   "approved",
   "pending",
@@ -410,7 +412,7 @@ function TemplateDetail({
   const [numberId, setNumberId] = useState("");
   const [recipient, setRecipient] = useState("");
   const [sending, setSending] = useState(false);
-  const variables = placeholdersOf(template.components);
+  const runtimeVariables = runtimeVariablesOf(template.components);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const effectiveNumberId =
     numberId && senders.some((number) => number.id === numberId)
@@ -426,10 +428,38 @@ function TemplateDetail({
       toast.error("Choose a sender and recipient");
       return;
     }
-    const bodyParameters = variables.map((name) => (variableValues[name] ?? "").trim());
-    if (bodyParameters.some((value) => !value)) {
-      toast.error("Fill all template variable values");
+
+    let runtimeComponents = runtimeComponentsFromValues(template.components, variableValues);
+    const missing = runtimeVariables.filter(
+      (variable) => !(variableValues[variable.id] ?? "").trim(),
+    );
+    if (missing.length > 0) {
+      toast.error(`Fill runtime value: ${missing[0]?.label ?? "template variable"}`);
       return;
+    }
+
+    if (authTemplate) {
+      const code = authenticationCode.trim();
+      if (!code) {
+        toast.error("Authentication code is required");
+        return;
+      }
+      const otpButtonIndex = buttonsOf(template.components).findIndex(
+        (button) => (button.type ?? "").toUpperCase() === "OTP",
+      );
+      runtimeComponents = [
+        { type: "body", parameters: [{ type: "text", text: code }] },
+        ...(otpButtonIndex >= 0
+          ? [
+              {
+                type: "button",
+                sub_type: "url",
+                index: String(otpButtonIndex),
+                parameters: [{ type: "text", text: code }],
+              },
+            ]
+          : []),
+      ];
     }
 
     setSending(true);
@@ -439,7 +469,7 @@ function TemplateDetail({
           numberId: effectiveNumberId,
           templateId: template.id,
           recipient,
-          bodyParameters,
+          components: runtimeComponents,
         },
       });
       toast.success(`Template sent through Meta: ${result.metaMessageId}`);
@@ -483,7 +513,10 @@ function TemplateDetail({
 
         <dl className="mt-5 space-y-3 text-xs">
           <DetailRow label="Meta template ID" value={template.meta_template_id ?? "—"} />
-          <DetailRow label="Variables" value={variables.join(", ") || "—"} />
+          <DetailRow
+            label="Variables"
+            value={placeholdersOf(template.components).join(", ") || "—"}
+          />
           <DetailRow label="Last synced" value={formatDate(template.last_synced_at)} />
           <DetailRow label="Updated" value={formatDate(template.updated_at)} />
         </dl>
