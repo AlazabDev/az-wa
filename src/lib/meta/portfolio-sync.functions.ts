@@ -3,10 +3,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const syncBusinessPortfolioComplete = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { portfolioId: string }) => {
-    if (!input?.portfolioId) throw new Error("Business Portfolio is required");
-    return { portfolioId: input.portfolioId };
-  })
+  .validator(z.object({
+    portfolioId: z.string().min(1, "Business Portfolio is required"),
+  }))
   .handler(async ({ data, context }) => {
     const { data: portfolio, error: portfolioError } = await context.supabase
       .from("business_portfolios")
