@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { inspectMetaAppWebhook } from "./app-webhook.server";
+import { validatePortfolioCredential } from "./connectivity.server";
 import { GRAPH_VERSION } from "./graph.server";
 import { META_INVENTORY_BASELINE } from "./inventory-baseline";
 import type { MetaProductionReadiness, ReadinessCheck } from "./production-readiness.types";
@@ -84,6 +86,42 @@ export async function buildMetaProductionReadiness(
     (id) => !baselinePhoneIds.has(id),
   );
 
+  let liveCredentialOk = false;
+  let liveCredentialDetail = "Business Portfolio is not configured";
+  if (primaryPortfolio?.id) {
+    try {
+      const validation = await validatePortfolioCredential({
+        organizationId,
+        businessPortfolioId: String(primaryPortfolio.id),
+      });
+      liveCredentialOk = validation.ok;
+      liveCredentialDetail = validation.ok
+        ? `Live token valid via ${validation.source}; ${validation.permissions.length} granted permissions`
+        : validation.errors.join("; ") || "Meta token validation failed";
+      if (validation.warnings.length) {
+        liveCredentialDetail += `; warnings: ${validation.warnings.join("; ")}`;
+      }
+    } catch (cause) {
+      liveCredentialDetail = cause instanceof Error ? cause.message : "Live token validation failed";
+    }
+  }
+
+  let liveWebhookOk = false;
+  let liveWebhookDetail = "Meta App webhook is not configured";
+  try {
+    const webhook = await inspectMetaAppWebhook(organizationId);
+    if (webhook.ok) {
+      liveWebhookOk = webhook.healthy;
+      liveWebhookDetail = webhook.healthy
+        ? `Active callback ${webhook.callbackUrl}; ${webhook.fields.length} subscribed fields`
+        : `Live subscription incomplete; callback match=${webhook.callbackMatches}; missing fields=${webhook.missingFields.join(", ") || "none"}`;
+    } else {
+      liveWebhookDetail = webhook.error;
+    }
+  } catch (cause) {
+    liveWebhookDetail = cause instanceof Error ? cause.message : "Live webhook inspection failed";
+  }
+
   const checks: ReadinessCheck[] = [
     {
       key: "graph-version",
@@ -118,13 +156,27 @@ export async function buildMetaProductionReadiness(
         : "Verify Token, App Secret, App Access Token and System User Token are active",
     },
     {
+      key: "system-token-live",
+      label: "Live System User Token",
+      ok: liveCredentialOk,
+      severity: "critical",
+      detail: liveCredentialDetail,
+    },
+    {
       key: "webhook",
-      label: "Meta webhook endpoint",
+      label: "Webhook database configuration",
       ok: Boolean(activeWebhook?.url),
       severity: "critical",
       detail: activeWebhook
         ? `${activeWebhook.url} (${activeWebhook.verification_status ?? "verification unknown"})`
         : "No active WhatsApp webhook endpoint",
+    },
+    {
+      key: "app-webhook-live",
+      label: "Live Meta App webhook subscription",
+      ok: liveWebhookOk,
+      severity: "critical",
+      detail: liveWebhookDetail,
     },
     {
       key: "wabas",
