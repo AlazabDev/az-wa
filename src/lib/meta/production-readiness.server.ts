@@ -2,16 +2,11 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { GRAPH_VERSION } from "./graph.server";
 import { META_INVENTORY_BASELINE } from "./inventory-baseline";
+import type { MetaProductionReadiness, ReadinessCheck } from "./production-readiness.types";
 
-export type ReadinessCheck = {
-  key: string;
-  label: string;
-  ok: boolean;
-  severity: "critical" | "warning" | "info";
-  detail: string;
-};
-
-export async function buildMetaProductionReadiness(organizationId: string) {
+export async function buildMetaProductionReadiness(
+  organizationId: string,
+): Promise<MetaProductionReadiness> {
   const db = supabaseAdmin as any;
   const [apps, portfolios, credentials, endpoints, wabas, numbers, templates, flows, subscriptions] =
     await Promise.all([
@@ -42,27 +37,52 @@ export async function buildMetaProductionReadiness(organizationId: string) {
   const subscriptionRows = subscriptions.data ?? [];
 
   const activeApp = appRows.find((row: any) => row.status === "active");
-  const primaryPortfolio = portfolioRows.find((row: any) => row.meta_business_id === META_INVENTORY_BASELINE.businessMetaId) ?? portfolioRows[0];
-  const activeCredentialTypes = new Set(
-    credentialRows.filter((row: any) => row.status === "active").map((row: any) => row.credential_type),
+  const primaryPortfolio = portfolioRows.find(
+    (row: any) => row.meta_business_id === META_INVENTORY_BASELINE.businessMetaId,
+  ) ?? portfolioRows[0];
+  const activeCredentialTypes = new Set<string>(
+    credentialRows
+      .filter((row: any) => row.status === "active")
+      .map((row: any) => String(row.credential_type)),
   );
-  const requiredCredentialTypes = ["verify_token", "app_secret", "access_token", "system_user_token"];
-  const missingCredentialTypes = requiredCredentialTypes.filter((type) => !activeCredentialTypes.has(type));
+  const requiredCredentialTypes = [
+    "verify_token",
+    "app_secret",
+    "access_token",
+    "system_user_token",
+  ];
+  const missingCredentialTypes = requiredCredentialTypes.filter(
+    (type) => !activeCredentialTypes.has(type),
+  );
   const activeWebhook = endpointRows.find((row: any) => row.status === "active");
   const activeWabas = wabaRows.filter((row: any) => row.status === "active");
   const nonMissingNumbers = numberRows.filter((row: any) => row.status !== "missing_from_meta");
-  const unsafeSenders = numberRows.filter((row: any) => row.status !== "active" && row.is_enabled === true);
-  const azwaSubscribedWabas = new Set(
-    subscriptionRows.filter((row: any) => row.is_azwa && row.status === "active").map((row: any) => row.waba_id),
+  const unsafeSenders = numberRows.filter(
+    (row: any) => row.status !== "active" && row.is_enabled === true,
   );
-  const missingAzwaSubscriptions = activeWabas.filter((row: any) => !azwaSubscribedWabas.has(row.id));
+  const azwaSubscribedWabas = new Set<string>(
+    subscriptionRows
+      .filter((row: any) => row.is_azwa && row.status === "active")
+      .map((row: any) => String(row.waba_id)),
+  );
+  const missingAzwaSubscriptions = activeWabas.filter(
+    (row: any) => !azwaSubscribedWabas.has(String(row.id)),
+  );
   const staleWabas = wabaRows.filter((row: any) => row.status === "missing_from_meta");
   const staleNumbers = numberRows.filter((row: any) => row.status === "missing_from_meta");
 
-  const baselinePhoneIds = new Set(META_INVENTORY_BASELINE.phones.map((phone) => phone.metaPhoneId));
-  const discoveredPhoneIds = new Set(numberRows.map((row: any) => String(row.meta_phone_number_id)));
-  const missingBaselinePhones = [...baselinePhoneIds].filter((id) => !discoveredPhoneIds.has(id));
-  const extraPhones = [...discoveredPhoneIds].filter((id) => !baselinePhoneIds.has(id));
+  const baselinePhoneIds = new Set<string>(
+    META_INVENTORY_BASELINE.phones.map((phone) => phone.metaPhoneId),
+  );
+  const discoveredPhoneIds = new Set<string>(
+    numberRows.map((row: any) => String(row.meta_phone_number_id)),
+  );
+  const missingBaselinePhones: string[] = [...baselinePhoneIds].filter(
+    (id) => !discoveredPhoneIds.has(id),
+  );
+  const extraPhones: string[] = [...discoveredPhoneIds].filter(
+    (id) => !baselinePhoneIds.has(id),
+  );
 
   const checks: ReadinessCheck[] = [
     {
@@ -84,21 +104,27 @@ export async function buildMetaProductionReadiness(organizationId: string) {
       label: "Business Portfolio",
       ok: String(primaryPortfolio?.meta_business_id ?? "") === META_INVENTORY_BASELINE.businessMetaId,
       severity: "critical",
-      detail: primaryPortfolio ? `Business ID ${primaryPortfolio.meta_business_id}` : "No Business Portfolio configured",
+      detail: primaryPortfolio
+        ? `Business ID ${primaryPortfolio.meta_business_id}`
+        : "No Business Portfolio configured",
     },
     {
       key: "credentials",
       label: "Vault credentials",
       ok: missingCredentialTypes.length === 0,
       severity: "critical",
-      detail: missingCredentialTypes.length ? `Missing: ${missingCredentialTypes.join(", ")}` : "Verify Token, App Secret, App Access Token and System User Token are active",
+      detail: missingCredentialTypes.length
+        ? `Missing: ${missingCredentialTypes.join(", ")}`
+        : "Verify Token, App Secret, App Access Token and System User Token are active",
     },
     {
       key: "webhook",
       label: "Meta webhook endpoint",
       ok: Boolean(activeWebhook?.url),
       severity: "critical",
-      detail: activeWebhook ? `${activeWebhook.url} (${activeWebhook.verification_status ?? "verification unknown"})` : "No active WhatsApp webhook endpoint",
+      detail: activeWebhook
+        ? `${activeWebhook.url} (${activeWebhook.verification_status ?? "verification unknown"})`
+        : "No active WhatsApp webhook endpoint",
     },
     {
       key: "wabas",
@@ -110,7 +136,9 @@ export async function buildMetaProductionReadiness(organizationId: string) {
     {
       key: "numbers",
       label: "Phone number discovery",
-      ok: nonMissingNumbers.length >= META_INVENTORY_BASELINE.counts.phoneNumbers && missingBaselinePhones.length === 0,
+      ok:
+        nonMissingNumbers.length >= META_INVENTORY_BASELINE.counts.phoneNumbers &&
+        missingBaselinePhones.length === 0,
       severity: "critical",
       detail: `${nonMissingNumbers.length} discovered; missing baseline ${missingBaselinePhones.length}; new since audit ${extraPhones.length}`,
     },
@@ -119,7 +147,9 @@ export async function buildMetaProductionReadiness(organizationId: string) {
       label: "Sender safety",
       ok: unsafeSenders.length === 0,
       severity: "critical",
-      detail: unsafeSenders.length ? `${unsafeSenders.length} non-active numbers are still enabled` : "No disconnected/restricted/missing number is enabled for sending",
+      detail: unsafeSenders.length
+        ? `${unsafeSenders.length} non-active numbers are still enabled`
+        : "No disconnected/restricted/missing number is enabled for sending",
     },
     {
       key: "templates",
@@ -131,7 +161,9 @@ export async function buildMetaProductionReadiness(organizationId: string) {
     {
       key: "flows",
       label: "WhatsApp Flows",
-      ok: flowRows.filter((row: any) => row.status !== "MISSING_FROM_META").length >= META_INVENTORY_BASELINE.counts.flows,
+      ok:
+        flowRows.filter((row: any) => row.status !== "MISSING_FROM_META").length >=
+        META_INVENTORY_BASELINE.counts.flows,
       severity: "warning",
       detail: `${flowRows.length} local flow records; audited snapshot ${META_INVENTORY_BASELINE.counts.flows}`,
     },
@@ -140,12 +172,18 @@ export async function buildMetaProductionReadiness(organizationId: string) {
       label: "AzWA WABA subscriptions",
       ok: missingAzwaSubscriptions.length === 0 && activeWabas.length > 0,
       severity: "critical",
-      detail: missingAzwaSubscriptions.length ? `${missingAzwaSubscriptions.length} active WABAs are not subscribed to AzWA` : `AzWA subscription present on all ${activeWabas.length} active WABAs`,
+      detail: missingAzwaSubscriptions.length
+        ? `${missingAzwaSubscriptions.length} active WABAs are not subscribed to AzWA`
+        : `AzWA subscription present on all ${activeWabas.length} active WABAs`,
     },
   ];
 
-  const criticalFailures = checks.filter((check) => !check.ok && check.severity === "critical");
-  const warningFailures = checks.filter((check) => !check.ok && check.severity === "warning");
+  const criticalFailures = checks.filter(
+    (check) => !check.ok && check.severity === "critical",
+  );
+  const warningFailures = checks.filter(
+    (check) => !check.ok && check.severity === "warning",
+  );
   const passed = checks.filter((check) => check.ok).length;
 
   return {
@@ -154,8 +192,8 @@ export async function buildMetaProductionReadiness(organizationId: string) {
     auditedAt: META_INVENTORY_BASELINE.generatedAt,
     checks,
     drift: {
-      staleWabas: staleWabas.map((row: any) => row.meta_waba_id),
-      staleNumbers: staleNumbers.map((row: any) => row.meta_phone_number_id),
+      staleWabas: staleWabas.map((row: any) => String(row.meta_waba_id)),
+      staleNumbers: staleNumbers.map((row: any) => String(row.meta_phone_number_id)),
       missingBaselinePhones,
       extraPhones,
     },
