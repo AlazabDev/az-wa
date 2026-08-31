@@ -1,0 +1,34 @@
+export const META_INVENTORY_BASELINE = {
+  generatedAt: "2026-08-31T09:31:34Z",
+  graphVersion: "v26.0",
+  businessMetaId: "314437023701205",
+  azwaAppId: "1061494059972503",
+  counts: {
+    wabas: 6,
+    phoneNumbers: 8,
+    templates: 94,
+    flows: 21,
+    subscribedApps: 17,
+  },
+  wabas: [
+    { metaWabaId: "1303965001665007", name: "Alazab", phones: 1, templates: 2, flows: 1 },
+    { metaWabaId: "1458856398934130", name: "Azab", phones: 2, templates: 20, flows: 4 },
+    { metaWabaId: "1527103499063250", name: "Alazab Projects", phones: 1, templates: 9, flows: 4 },
+    { metaWabaId: "2144651456337012", name: "Mohamed Azab", phones: 1, templates: 22, flows: 5 },
+    { metaWabaId: "2154838801923462", name: "Alazab Eg", phones: 1, templates: 0, flows: 0 },
+    { metaWabaId: "459851797218855", name: "UberFix", phones: 2, templates: 41, flows: 7 },
+  ],
+  phones: [
+    { metaPhoneId: "1061490140383829", number: "+20 11 46397010", expectedStatus: "active" },
+    { metaPhoneId: "1032441389943808", number: "+1 206-479-5608", expectedStatus: "active" },
+    { metaPhoneId: "952530191273396", number: "+1 208-379-9564", expectedStatus: "active" },
+    { metaPhoneId: "1197837903405393", number: "+20 11 46395966", expectedStatus: "active" },
+    { metaPhoneId: "1020054711186921", number: "+1 205-460-5650", expectedStatus: "active" },
+    { metaPhoneId: "1011864912017679", number: "+20 10 92750351", expectedStatus: "disconnected" },
+    { metaPhoneId: "644995285354639", number: "+1 555-728-5727", expectedStatus: "active" },
+    { metaPhoneId: "527697617099639", number: "+1 555-724-5001", expectedStatus: "active" },
+  ],
+} as const;
+
+// This file is an audited comparison snapshot only. Runtime discovery remains the
+// source of truth and no send/sync operation is allowed to depend on these IDs.
