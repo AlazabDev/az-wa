@@ -14,7 +14,9 @@ const ALLOWED_FLOW_CATEGORIES = new Set([
 ]);
 
 function validateCategories(categories: string[]) {
-  const normalized = [...new Set((categories ?? []).map((value) => value.trim().toUpperCase()).filter(Boolean))];
+  const normalized = [
+    ...new Set((categories ?? []).map((value) => value.trim().toUpperCase()).filter(Boolean)),
+  ];
   if (normalized.length === 0) throw new Error("At least one Flow category is required");
   const invalid = normalized.filter((value) => !ALLOWED_FLOW_CATEGORIES.has(value));
   if (invalid.length) throw new Error(`Unsupported Flow categories: ${invalid.join(", ")}`);
@@ -63,23 +65,25 @@ export const syncWhatsappFlows = createServerFn({ method: "POST" })
 
 export const createFlow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    wabaId: string;
-    name: string;
-    categories: string[];
-    endpointUri?: string;
-    cloneFlowId?: string;
-  }) => {
-    if (!input?.wabaId) throw new Error("WABA is required");
-    if (!input?.name?.trim()) throw new Error("Flow name is required");
-    return {
-      ...input,
-      name: input.name.trim(),
-      categories: validateCategories(input.categories),
-      endpointUri: input.endpointUri?.trim() || undefined,
-      cloneFlowId: input.cloneFlowId?.trim() || undefined,
-    };
-  })
+  .inputValidator(
+    (input: {
+      wabaId: string;
+      name: string;
+      categories: string[];
+      endpointUri?: string;
+      cloneFlowId?: string;
+    }) => {
+      if (!input?.wabaId) throw new Error("WABA is required");
+      if (!input?.name?.trim()) throw new Error("Flow name is required");
+      return {
+        wabaId: input.wabaId,
+        name: input.name.trim(),
+        categories: validateCategories(input.categories),
+        endpointUri: input.endpointUri?.trim() || null,
+        cloneFlowId: input.cloneFlowId?.trim() || null,
+      };
+    },
+  )
   .handler(async ({ data, context }) => {
     await requireWabaManage(context, data.wabaId);
     const { createWhatsappFlow } = await import("./flows.server");
@@ -88,21 +92,23 @@ export const createFlow = createServerFn({ method: "POST" })
 
 export const updateFlowMetadata = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    flowId: string;
-    name: string;
-    categories: string[];
-    endpointUri?: string;
-  }) => {
-    if (!input?.flowId) throw new Error("Flow is required");
-    if (!input?.name?.trim()) throw new Error("Flow name is required");
-    return {
-      ...input,
-      name: input.name.trim(),
-      categories: validateCategories(input.categories),
-      endpointUri: input.endpointUri?.trim() || undefined,
-    };
-  })
+  .inputValidator(
+    (input: {
+      flowId: string;
+      name: string;
+      categories: string[];
+      endpointUri?: string;
+    }) => {
+      if (!input?.flowId) throw new Error("Flow is required");
+      if (!input?.name?.trim()) throw new Error("Flow name is required");
+      return {
+        flowId: input.flowId,
+        name: input.name.trim(),
+        categories: validateCategories(input.categories),
+        endpointUri: input.endpointUri?.trim() || null,
+      };
+    },
+  )
   .handler(async ({ data, context }) => {
     const wabaId = await resolveFlowWaba(data.flowId);
     await requireWabaManage(context, wabaId);
@@ -115,7 +121,9 @@ export const uploadFlowJson = createServerFn({ method: "POST" })
   .inputValidator((input: { flowId: string; flowJson: string }) => {
     if (!input?.flowId) throw new Error("Flow is required");
     if (!input?.flowJson?.trim()) throw new Error("Flow JSON is required");
-    if (input.flowJson.length > 2_000_000) throw new Error("Flow JSON exceeds the 2 MB AzWA editor limit");
+    if (input.flowJson.length > 2_000_000) {
+      throw new Error("Flow JSON exceeds the 2 MB AzWA editor limit");
+    }
     return { flowId: input.flowId, flowJson: input.flowJson.trim() };
   })
   .handler(async ({ data, context }) => {
