@@ -42,7 +42,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
           META_GRAPH_VERSION: v26.0
           META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/webhooks/meta/whatsapp
-          LOVABLE_CRON_SECRET: ci-cron-placeholder
+          AZWA_CRON_SECRET: ci-cron-placeholder
         run: bun run build
 
       - name: TypeScript
