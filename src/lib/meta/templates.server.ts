@@ -302,7 +302,8 @@ export async function createWabaTemplate(input: {
     organization_id: waba.organization_id,
     template_id: row.id,
     version_no: 1,
-
+    // Runtime schema is ahead of the generated client types.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     snapshot: {
       components,
       category: (response.data.category ?? input.category).toUpperCase(),
