@@ -25,7 +25,7 @@ function decodeBase64(value: string): Uint8Array {
  */
 export const uploadTemplateHeaderMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: UploadHeaderMediaInput) => {
+  .validator((input: UploadHeaderMediaInput) => {
     if (!input?.wabaId) throw new Error("A WABA is required");
     if (!input.fileName?.trim()) throw new Error("A file name is required");
     if (!input.mimeType?.trim()) throw new Error("A file MIME type is required");
