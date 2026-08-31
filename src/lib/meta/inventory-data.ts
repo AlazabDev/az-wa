@@ -11,6 +11,11 @@ export type WhatsappFlowRow = {
   status: string;
   categories: string[];
   validation_errors: unknown[];
+  json_version: string | null;
+  data_api_version: string | null;
+  endpoint_uri: string | null;
+  preview_url: string | null;
+  metadata: Record<string, unknown>;
   last_synced_at: string | null;
 };
 
@@ -19,7 +24,9 @@ export type WabaSubscribedAppRow = {
   waba_id: string;
   meta_app_id: string;
   app_name: string | null;
+  app_link: string | null;
   app_namespace: string | null;
+  app_category: string | null;
   override_callback_uri: string | null;
   is_azwa: boolean;
   status: string;
@@ -36,6 +43,21 @@ export type WabaAssignedUserRow = {
   last_synced_at: string | null;
 };
 
+export type WabaInventoryExtra = {
+  id: string;
+  message_template_namespace: string | null;
+  currency: string | null;
+  timezone: string | null;
+};
+
+export type NumberInventoryExtra = {
+  id: string;
+  account_mode: string | null;
+  platform_type: string | null;
+  throughput_level: string | null;
+  code_verification_status: string | null;
+};
+
 export function useWhatsappFlows() {
   return useQuery({
     queryKey: ["whatsapp_flows"],
@@ -43,7 +65,9 @@ export function useWhatsappFlows() {
       const db = supabase as any;
       const { data, error } = await db
         .from("whatsapp_flows")
-        .select("id,organization_id,waba_id,meta_flow_id,name,status,categories,validation_errors,last_synced_at")
+        .select(
+          "id,organization_id,waba_id,meta_flow_id,name,status,categories,validation_errors,json_version,data_api_version,endpoint_uri,preview_url,metadata,last_synced_at",
+        )
         .order("name");
       if (error) throw error;
       return data ?? [];
@@ -58,7 +82,9 @@ export function useWabaSubscribedApps() {
       const db = supabase as any;
       const { data, error } = await db
         .from("waba_subscribed_apps")
-        .select("id,waba_id,meta_app_id,app_name,app_namespace,override_callback_uri,is_azwa,status,last_synced_at")
+        .select(
+          "id,waba_id,meta_app_id,app_name,app_link,app_namespace,app_category,override_callback_uri,is_azwa,status,last_synced_at",
+        )
         .order("app_name");
       if (error) throw error;
       return data ?? [];
@@ -81,16 +107,40 @@ export function useWabaAssignedUsers() {
   });
 }
 
-export function useNumberAccountModes() {
+export function useWabaInventoryExtras() {
   return useQuery({
-    queryKey: ["whatsapp_number_account_modes"],
-    queryFn: async (): Promise<Record<string, string | null>> => {
+    queryKey: ["waba_inventory_extras"],
+    queryFn: async (): Promise<Record<string, WabaInventoryExtra>> => {
+      const db = supabase as any;
+      const { data, error } = await db
+        .from("wabas")
+        .select("id,message_template_namespace,currency,timezone");
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map((row: WabaInventoryExtra) => [row.id, row]));
+    },
+  });
+}
+
+export function useNumberInventoryExtras() {
+  return useQuery({
+    queryKey: ["whatsapp_number_inventory_extras"],
+    queryFn: async (): Promise<Record<string, NumberInventoryExtra>> => {
       const db = supabase as any;
       const { data, error } = await db
         .from("whatsapp_numbers")
-        .select("id,account_mode");
+        .select("id,account_mode,platform_type,throughput_level,code_verification_status");
       if (error) throw error;
-      return Object.fromEntries((data ?? []).map((row: any) => [row.id, row.account_mode ?? null]));
+      return Object.fromEntries((data ?? []).map((row: NumberInventoryExtra) => [row.id, row]));
     },
   });
+}
+
+export function useNumberAccountModes() {
+  const query = useNumberInventoryExtras();
+  return {
+    ...query,
+    data: Object.fromEntries(
+      Object.entries(query.data ?? {}).map(([id, row]) => [id, row.account_mode ?? null]),
+    ),
+  };
 }
