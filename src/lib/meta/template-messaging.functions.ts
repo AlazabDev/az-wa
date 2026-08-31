@@ -1,12 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type ProductSectionInput = {
+  title: string;
+  product_items: { product_retailer_id: string }[];
+};
+
+export type ProductListInput = {
+  catalogId: string;
+  thumbnailProductRetailerId: string;
+  sections: ProductSectionInput[];
+};
+
 export type SendTemplateInput = {
   numberId: string;
   templateId: string;
   recipient: string;
   components?: Record<string, unknown>[];
   bodyParameters?: string[];
+  /** Multi-Product Message (MPM) runtime payload. */
+  productList?: ProductListInput;
 };
 
 function normalizeRecipient(value: string) {
@@ -20,6 +33,61 @@ function bodyRuntimeComponent(values: string[]) {
     parameters: values.map((text) => ({ type: "text", text })),
   };
 }
+
+/**
+ * MPM runtime shape: a product HEADER thumbnail plus an `mpm` button action
+ * carrying the catalog sections, exactly as the Cloud API expects.
+ */
+function mpmRuntimeComponents(productList: ProductListInput) {
+  const sections = productList.sections
+    .map((section) => ({
+      title: section.title.trim(),
+      product_items: (section.product_items ?? [])
+        .map((item) => ({ product_retailer_id: String(item.product_retailer_id).trim() }))
+        .filter((item) => item.product_retailer_id.length > 0),
+    }))
+    .filter((section) => section.title.length > 0 && section.product_items.length > 0);
+
+  if (sections.length === 0) {
+    throw new Error("A multi-product template needs at least one section with products");
+  }
+  if (sections.length > 10) {
+    throw new Error("Meta allows at most 10 product sections per multi-product message");
+  }
+  const totalItems = sections.reduce((sum, section) => sum + section.product_items.length, 0);
+  if (totalItems > 30) {
+    throw new Error("Meta allows at most 30 products per multi-product message");
+  }
+
+  const catalogId = productList.catalogId.trim();
+  const thumbnail = productList.thumbnailProductRetailerId.trim();
+  if (!catalogId) throw new Error("A catalog ID is required for multi-product messages");
+  if (!thumbnail) throw new Error("A thumbnail product retailer ID is required");
+
+  return [
+    {
+      type: "header",
+      parameters: [
+        {
+          type: "product",
+          product: { product_retailer_id: thumbnail, catalog_id: catalogId },
+        },
+      ],
+    },
+    {
+      type: "button",
+      sub_type: "mpm",
+      index: "0",
+      parameters: [
+        {
+          type: "action",
+          action: { thumbnail_product_retailer_id: thumbnail, sections },
+        },
+      ],
+    },
+  ];
+}
+
 
 export const sendTemplateMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
