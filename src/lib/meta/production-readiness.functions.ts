@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { MetaProductionReadiness } from "./production-readiness.types";
 
 export const getMetaProductionReadiness = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: Record<string, never>) => input)
-  .handler(async ({ context }) => {
+  .validator((input: Record<string, never>) => input)
+  .handler(async ({ context }): Promise<MetaProductionReadiness> => {
     const { data: membership, error: membershipError } = await context.supabase
       .from("organization_members")
       .select("organization_id")
