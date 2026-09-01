@@ -11,6 +11,7 @@ import {
   reconcileMetaWebhookSubscription,
 } from "@/lib/meta/app-webhook.functions";
 import { getMetaAppConfig, saveMetaAppConfig } from "@/lib/meta/meta.functions";
+import { syncMetaLiveStatus } from "@/lib/meta/live-status.functions";
 
 export const Route = createFileRoute("/_authenticated/meta-app")({
   head: () => ({
