@@ -50,6 +50,12 @@ jobs:
               readme,
               count=1,
           )
+          readme = re.sub(
+              rf"\n[^\n]*Phone Number ID:\s*{OLD_PHONE_ID}[^\n]*",
+              "",
+              readme,
+              count=1,
+          )
           readme = readme.replace(
               "الأرقام التسعة المذكورة تستخدم كـInitial Production Import فقط.",
               "الأرقام الثمانية في المرجع المدقق تستخدم كـInitial Production Import فقط، مع بقاء Runtime discovery هو المصدر التشغيلي.",
