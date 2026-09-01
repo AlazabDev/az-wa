@@ -1,4 +1,4 @@
-name: One-shot production inventory documentation repair
+name: Production inventory reference repair
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
       - name: Repair stale production inventory references
         run: |
           python3 - <<'PY'
@@ -26,12 +27,14 @@ jobs:
           CURRENT_PORTFOLIO = "314437023701205"
           OLD_WABA = "922964860845619"
           OLD_PHONE_ID = "1328521857002632"
+          AUDITED_MARKER = "المرجع الإنتاجي المدقق بتاريخ 2026-08-31:"
+          DISCONNECTED_MARKER = "Audited 2026-08-31: this Meta phone is disconnected"
 
           readme_path = Path("README.md")
           readme = readme_path.read_text(encoding="utf-8")
 
-          if OLD_PORTFOLIO not in readme:
-              raise SystemExit("stale Business Portfolio ID not found in README")
+          # README is a current architecture document. Keep historical identifiers in
+          # PRODUCTION.md / the dated audit document, not in the current baseline.
           readme = readme.replace(OLD_PORTFOLIO, CURRENT_PORTFOLIO)
 
           inventory_pattern = re.compile(
@@ -40,10 +43,10 @@ jobs:
           )
           inventory_replacement = """المرجع الإنتاجي المدقق بتاريخ 2026-08-31:\n\n1 Business Portfolio\n6 WABAs\n8 WhatsApp Phone Numbers\n\nRuntime discovery من Meta هو المصدر التشغيلي النهائي، وهذه الأعداد مرجع تدقيق فقط وليست قيمًا Hardcoded للتوجيه.\n\nللتفاصيل الحالية راجع قسم Audited inventory baseline في `PRODUCTION.md`. الأصول التاريخية التي تختفي من Meta تُعلّم missing/inactive ولا تُحذف من السجل.\n\nالعلاقة الصحيحة:"""
           readme, count = inventory_pattern.subn(inventory_replacement, readme, count=1)
-          if count != 1:
-              raise SystemExit(f"stale inventory block replacements: {count}")
+          if count == 0 and AUDITED_MARKER not in readme:
+              raise SystemExit("README inventory block is neither the stale nor the audited form")
 
-          # Remove the legacy WABA from the later illustrative current-inventory tree.
+          # Remove the legacy WABA from any later illustrative inventory tree.
           readme = re.sub(
               rf"\n[^\n]*{OLD_WABA}[^\n]*\n[^\n]*\+201115723930[^\n]*",
               "",
@@ -56,6 +59,10 @@ jobs:
               readme,
               count=1,
           )
+
+          # Do not leave a retired production ID as a generic architecture example.
+          readme = readme.replace(OLD_WABA, "<META_WABA_ID>")
+          readme = readme.replace(OLD_PHONE_ID, "<META_PHONE_NUMBER_ID>")
           readme = readme.replace(
               "الأرقام التسعة المذكورة تستخدم كـInitial Production Import فقط.",
               "الأرقام الثمانية في المرجع المدقق تستخدم كـInitial Production Import فقط، مع بقاء Runtime discovery هو المصدر التشغيلي.",
@@ -90,15 +97,17 @@ jobs:
 
           anchor = ") AS n(waba, pn_id, display, country) ON n.waba = w.meta_waba_id;\n\nINSERT INTO public.system_settings"
           safe_anchor = ") AS n(waba, pn_id, display, country) ON n.waba = w.meta_waba_id;\n\n-- Audited 2026-08-31: this Meta phone is disconnected and must never be an enabled sender.\nUPDATE public.whatsapp_numbers\nSET platform_status = 'DISCONNECTED', status = 'disabled', enabled = false\nWHERE meta_phone_number_id = '1011864912017679';\n\nINSERT INTO public.system_settings"
-          if anchor not in foundation:
-              raise SystemExit("phone seed anchor not found in foundation reference")
-          foundation = foundation.replace(anchor, safe_anchor, 1)
+          if DISCONNECTED_MARKER not in foundation:
+              if anchor not in foundation:
+                  raise SystemExit("phone seed anchor not found in foundation reference")
+              foundation = foundation.replace(anchor, safe_anchor, 1)
 
           for stale in (OLD_PORTFOLIO, OLD_WABA, OLD_PHONE_ID):
               if stale in foundation:
                   raise SystemExit(f"stale production inventory remains in foundation reference: {stale}")
           foundation_path.write_text(foundation, encoding="utf-8")
           PY
+
       - name: Commit inventory reference repair
         run: |
           if git diff --quiet -- README.md supabase/sql/reference/azwa_foundation.sql; then
