@@ -311,6 +311,47 @@ function MetaAppPage() {
               </div>
             </div>
           </Panel>
+
+          <Panel title="Live Meta status">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span>Production sync</span>
+                <StatusBadgeLike
+                  healthy={liveStatus?.ok ?? false}
+                  checked={liveStatus !== null}
+                />
+              </div>
+              {liveStatus && (
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <div>
+                    Token: {liveStatus.token?.ok ? "valid" : "invalid"}
+                    {liveStatus.token?.appId ? ` · app ${liveStatus.token.appId}` : ""}
+                  </div>
+                  <div>
+                    WABAs subscribed: {liveStatus.wabas.filter((w) => w.subscribed).length}/
+                    {liveStatus.wabas.length}
+                  </div>
+                  {liveStatus.errors.slice(0, 4).map((message) => (
+                    <div
+                      key={message}
+                      className="rounded-md border border-border bg-muted/30 p-2 text-xs text-foreground"
+                    >
+                      {message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={liveSyncing || !configured.systemUserToken}
+                onClick={runLiveStatus}
+              >
+                <RefreshCw className="size-4" />
+                {liveSyncing ? "Syncing…" : "Sync live status with Meta"}
+              </Button>
+            </div>
+          </Panel>
         </div>
       </form>
     </>
