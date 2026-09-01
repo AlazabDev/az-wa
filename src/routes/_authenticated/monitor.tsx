@@ -36,8 +36,18 @@ type LiveReport = {
   ok: boolean;
   checkedAt: string;
   token: { ok: boolean; errors: string[] } | null;
-  webhook: { ok: boolean; healthy?: boolean; error?: string; missingFields?: string[] } | null;
-  wabas: { wabaId: string; metaWabaId: string; name: string | null; subscribed: boolean }[];
+  webhook: {
+    ok: boolean;
+    healthy?: boolean;
+    error?: string;
+    missingFields?: string[];
+  } | null;
+  wabas: {
+    wabaId: string;
+    metaWabaId: string;
+    name: string | null;
+    subscribed: boolean;
+  }[];
   errors: string[];
 };
 
@@ -61,7 +71,12 @@ function usePerNumberMessagesToday(numbers: WhatsappNumber[]) {
       >();
       for (const row of data ?? []) {
         const id = row.whatsapp_number_id as string;
-        const entry = counts.get(id) ?? { total: 0, incoming: 0, outgoing: 0, failed: 0 };
+        const entry = counts.get(id) ?? {
+          total: 0,
+          incoming: 0,
+          outgoing: 0,
+          failed: 0,
+        };
         entry.total += 1;
         if (row.direction === "incoming") entry.incoming += 1;
         if (row.direction === "outgoing") entry.outgoing += 1;
@@ -79,7 +94,11 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
   const items: { label: string; value: string; badge: string }[] = [
     {
       label: "System user token",
-      value: report.token ? (report.token.ok ? "Valid" : "Invalid") : "Not checked",
+      value: report.token
+        ? report.token.ok
+          ? "Valid"
+          : "Invalid"
+        : "Not checked",
       badge: report.token?.ok ? "healthy" : "critical",
     },
     {
@@ -89,13 +108,16 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
           ? "Subscribed"
           : "Needs reconcile"
         : "Not checked",
-      badge: report.webhook?.ok && report.webhook.healthy ? "healthy" : "warning",
+      badge:
+        report.webhook?.ok && report.webhook.healthy ? "healthy" : "warning",
     },
     {
       label: "WABA subscriptions",
       value: `${subscribed}/${report.wabas.length}`,
       badge:
-        report.wabas.length > 0 && subscribed === report.wabas.length ? "healthy" : "warning",
+        report.wabas.length > 0 && subscribed === report.wabas.length
+          ? "healthy"
+          : "warning",
     },
     {
       label: "Overall",
@@ -106,7 +128,10 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label} className="rounded-lg border border-border bg-background p-3">
+        <div
+          key={item.label}
+          className="rounded-lg border border-border bg-background p-3"
+        >
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">{item.label}</span>
             <StatusBadge value={item.badge} />
@@ -169,7 +194,8 @@ function MonitorPage() {
               <MetaStatusSummary report={report} />
               <p className="mt-3 text-xs text-muted-foreground">
                 Last checked {new Date(report.checkedAt).toLocaleString()}
-                {report.errors.length > 0 && ` — ${report.errors.length} issue(s) recorded.`}
+                {report.errors.length > 0 &&
+                  ` — ${report.errors.length} issue(s) recorded.`}
               </p>
             </>
           ) : (
@@ -202,8 +228,13 @@ function MonitorPage() {
                 {numbers.map((n) => {
                   const counts = messageCounts?.get(n.id);
                   return (
-                    <tr key={n.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 pr-4 font-mono text-xs">{n.display_phone_number}</td>
+                    <tr
+                      key={n.id}
+                      className="border-b border-border/60 last:border-0"
+                    >
+                      <td className="py-2 pr-4 font-mono text-xs">
+                        {n.display_phone_number}
+                      </td>
                       <td className="py-2 pr-4">
                         {n.verified_name ?? n.internal_name ?? "—"}
                       </td>
@@ -219,8 +250,12 @@ function MonitorPage() {
                       <td className="py-2 pr-4">
                         <StatusBadge value={n.api_health} />
                       </td>
-                      <td className="py-2 pr-4 text-xs">{n.quality_rating ?? "—"}</td>
-                      <td className="py-2 pr-4 font-semibold">{counts?.total ?? 0}</td>
+                      <td className="py-2 pr-4 text-xs">
+                        {n.quality_rating ?? "—"}
+                      </td>
+                      <td className="py-2 pr-4 font-semibold">
+                        {counts?.total ?? 0}
+                      </td>
                       <td className="py-2 pr-4 text-xs text-muted-foreground">
                         {counts ? `${counts.incoming} / ${counts.outgoing}` : "—"}
                       </td>
@@ -244,7 +279,9 @@ function MonitorPage() {
               </p>
             )}
             {isLoading && (
-              <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Loading…
+              </p>
             )}
           </div>
         </Panel>
