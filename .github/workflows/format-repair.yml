@@ -23,7 +23,7 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Format files introduced by recent merges
         run: |
-          bun exec prettier --write \
+          bunx prettier@3.9.6 --write \
             src/integrations/supabase/types.ts \
             src/integrations/supabase/previewAuthStorage.ts \
             src/lib/meta/live-status.functions.ts \
