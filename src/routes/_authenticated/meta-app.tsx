@@ -45,15 +45,27 @@ type WebhookInspection = {
 const inputClass =
   "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20";
 
+type LiveStatus = {
+  ok: boolean;
+  checkedAt: string;
+  token: { ok: boolean; appId: string | null; missingPermissions: readonly string[] } | null;
+  webhook: { ok: boolean; healthy?: boolean } | null;
+  wabas: readonly { wabaId: string; metaWabaId: string; name: string | null; subscribed: boolean; changed: boolean; error?: string }[];
+  errors: readonly string[];
+};
+
 function MetaAppPage() {
   const loadConfig = useServerFn(getMetaAppConfig);
   const saveConfig = useServerFn(saveMetaAppConfig);
   const inspectWebhook = useServerFn(inspectMetaWebhookSubscription);
   const reconcileWebhook = useServerFn(reconcileMetaWebhookSubscription);
+  const runLiveSync = useServerFn(syncMetaLiveStatus);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checkingWebhook, setCheckingWebhook] = useState(false);
+  const [liveSyncing, setLiveSyncing] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
   const [appId, setAppId] = useState("");
   const [displayName, setDisplayName] = useState("AzWA");
   const [namespace, setNamespace] = useState("");
