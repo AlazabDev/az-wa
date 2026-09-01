@@ -80,23 +80,6 @@ echo "==> TypeScript validation"
 echo "==> Lint validation"
 "$BUN_BIN" run lint
 
-# One-time migration cleanup. Docker is not a runtime dependency; if an old
-# AzWA Compose deployment still exists, remove only its containers after the
-# new build has passed all validation gates and before systemd binds port 8085.
-if command -v docker >/dev/null 2>&1; then
-  mapfile -t legacy_container_ids < <(
-    docker ps -aq --filter "label=com.docker.compose.project=az-wa" 2>/dev/null || true
-  )
-
-  if [ "${#legacy_container_ids[@]}" -gt 0 ]; then
-    echo "==> Removing legacy AzWA Docker containers"
-    docker rm -f "${legacy_container_ids[@]}" >/dev/null
-  elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx 'az-wa-web'; then
-    echo "==> Removing legacy az-wa-web Docker container"
-    docker rm -f az-wa-web >/dev/null
-  fi
-fi
-
 echo "==> Installing systemd service"
 sed \
   -e "s|__APP_DIR__|$APP_DIR|g" \
