@@ -1,0 +1,59 @@
+name: One-shot production inventory documentation repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Repair stale production inventory in README
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("README.md")
+          text = path.read_text(encoding="utf-8")
+
+          old_portfolio = "Meta Business Portfolio ID:\n31443701205"
+          new_portfolio = "Meta Business Portfolio ID:\n314437023701205"
+          if old_portfolio not in text:
+              raise SystemExit("stale Business Portfolio ID block not found")
+          text = text.replace(old_portfolio, new_portfolio, 1)
+
+          pattern = re.compile(
+              r"لدينا حاليًا:\n\n1 Business Portfolio\n7 WABAs\n9 WhatsApp Phone Numbers\n\nالبيانات الحالية:\n\n.*?\n\nالعلاقة الصحيحة:",
+              re.S,
+          )
+          replacement = """المرجع الإنتاجي المدقق بتاريخ 2026-08-31:\n\n1 Business Portfolio\n6 WABAs\n8 WhatsApp Phone Numbers\n\nRuntime discovery من Meta هو المصدر التشغيلي النهائي، وهذه الأعداد مرجع تدقيق فقط وليست قيمًا Hardcoded للتوجيه.\n\nللتفاصيل الحالية راجع قسم Audited inventory baseline في `PRODUCTION.md`. الأصول التاريخية التي تختفي من Meta تُعلّم missing/inactive ولا تُحذف من السجل.\n\nالعلاقة الصحيحة:"""
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"stale 7-WABA/9-number inventory block replacements: {count}")
+
+          if "31443701205" in text or "7 WABAs\n9 WhatsApp Phone Numbers" in text:
+              raise SystemExit("stale production inventory remains in README")
+
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Commit documentation repair
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "No README changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: correct audited Meta production inventory"
+          git pull --rebase origin main
+          git push origin HEAD:main
