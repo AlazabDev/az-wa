@@ -29,6 +29,8 @@ jobs:
           OLD_PHONE_ID = "1328521857002632"
           AUDITED_MARKER = "المرجع الإنتاجي المدقق بتاريخ 2026-08-31:"
           DISCONNECTED_MARKER = "Audited 2026-08-31: this Meta phone is disconnected"
+          OLD_COUNT_PHRASE = "وتحتها الـ7 WABAs والـ9 أرقام الفعلية:"
+          CURRENT_COUNT_PHRASE = "وتحتها الـ6 WABAs والـ8 أرقام الفعلية في المرجع المدقق:"
 
           readme_path = Path("README.md")
           readme = readme_path.read_text(encoding="utf-8")
@@ -60,9 +62,10 @@ jobs:
               count=1,
           )
 
-          # Do not leave a retired production ID as a generic architecture example.
+          # Do not leave retired production identifiers or counts in current examples.
           readme = readme.replace(OLD_WABA, "<META_WABA_ID>")
           readme = readme.replace(OLD_PHONE_ID, "<META_PHONE_NUMBER_ID>")
+          readme = readme.replace(OLD_COUNT_PHRASE, CURRENT_COUNT_PHRASE)
           readme = readme.replace(
               "الأرقام التسعة المذكورة تستخدم كـInitial Production Import فقط.",
               "الأرقام الثمانية في المرجع المدقق تستخدم كـInitial Production Import فقط، مع بقاء Runtime discovery هو المصدر التشغيلي.",
@@ -72,7 +75,13 @@ jobs:
               "أنشئ شاشة مقارنة لكل الأرقام الحالية المكتشفة وأي أرقام مستقبلية.",
           )
 
-          for stale in (OLD_PORTFOLIO, OLD_WABA, OLD_PHONE_ID, "7 WABAs\n9 WhatsApp Phone Numbers"):
+          for stale in (
+              OLD_PORTFOLIO,
+              OLD_WABA,
+              OLD_PHONE_ID,
+              "7 WABAs\n9 WhatsApp Phone Numbers",
+              OLD_COUNT_PHRASE,
+          ):
               if stale in readme:
                   raise SystemExit(f"stale production inventory remains in README: {stale}")
           readme_path.write_text(readme, encoding="utf-8")
