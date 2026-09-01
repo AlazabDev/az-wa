@@ -1,0 +1,51 @@
+name: One-shot formatting repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Format files introduced by recent merges
+        run: |
+          bun exec prettier --write \
+            src/integrations/supabase/types.ts \
+            src/integrations/supabase/previewAuthStorage.ts \
+            src/lib/meta/live-status.functions.ts \
+            src/lib/meta/live-status.server.ts \
+            src/routes/_authenticated/meta-app.tsx \
+            src/routes/_authenticated/monitor.tsx \
+            src/components/azwa/app-shell.tsx
+      - name: Commit formatting repair
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/integrations/supabase/types.ts \
+            src/integrations/supabase/previewAuthStorage.ts \
+            src/lib/meta/live-status.functions.ts \
+            src/lib/meta/live-status.server.ts \
+            src/routes/_authenticated/meta-app.tsx \
+            src/routes/_authenticated/monitor.tsx \
+            src/components/azwa/app-shell.tsx
+          git commit -m "fix: normalize merged source formatting"
+          git push origin HEAD:main
