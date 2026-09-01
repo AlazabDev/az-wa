@@ -166,6 +166,20 @@ function MetaAppPage() {
     }
   }
 
+  async function runLiveStatus() {
+    setLiveSyncing(true);
+    try {
+      const result = (await runLiveSync({ data: {} })) as LiveStatus;
+      setLiveStatus(result);
+      if (result.ok) toast.success("Live Meta status synced");
+      else toast.warning(result.errors[0] ?? "Live Meta sync found issues");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Live Meta sync failed");
+    } finally {
+      setLiveSyncing(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
