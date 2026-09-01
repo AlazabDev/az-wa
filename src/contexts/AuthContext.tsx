@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
 
@@ -30,9 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.getItem(TENANT_KEY),
   );
 
-  const loadMemberships = async (userId?: string) => {
-    const uid = userId ?? session?.user.id;
-    if (!uid) {
+  const loadMemberships = useCallback(async (userId?: string) => {
+    if (!userId) {
       setMemberships([]);
       setTenantId(null);
       localStorage.removeItem(TENANT_KEY);
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from("tenant_members")
       .select("tenant_id, role")
-      .eq("user_id", uid);
+      .eq("user_id", userId);
 
     if (error) throw error;
     const rows = (data ?? []) as TenantMembership[];
@@ -54,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTenantId(next);
     if (next) localStorage.setItem(TENANT_KEY, next);
     else localStorage.removeItem(TENANT_KEY);
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -84,13 +83,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [loadMemberships]);
 
-  const setCurrentTenantId = (tenantId: string) => {
-    if (!memberships.some((m) => m.tenant_id === tenantId)) return;
-    setTenantId(tenantId);
-    localStorage.setItem(TENANT_KEY, tenantId);
-  };
+  const setCurrentTenantId = useCallback(
+    (tenantId: string) => {
+      if (!memberships.some((m) => m.tenant_id === tenantId)) return;
+      setTenantId(tenantId);
+      localStorage.setItem(TENANT_KEY, tenantId);
+    },
+    [memberships],
+  );
+
+  const refreshMemberships = useCallback(
+    () => loadMemberships(session?.user.id),
+    [loadMemberships, session?.user.id],
+  );
 
   const currentRole = memberships.find((m) => m.tenant_id === currentTenantId)?.role ?? null;
 
@@ -103,12 +110,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       currentTenantId,
       currentRole,
       setCurrentTenantId,
-      refreshMemberships: () => loadMemberships(),
+      refreshMemberships,
       signOut: async () => {
         await supabase.auth.signOut();
       },
     }),
-    [session, loading, memberships, currentTenantId, currentRole],
+    [
+      session,
+      loading,
+      memberships,
+      currentTenantId,
+      currentRole,
+      setCurrentTenantId,
+      refreshMemberships,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
