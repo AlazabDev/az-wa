@@ -17,6 +17,17 @@ pmhuylckjwrongxlrgrx
 
 A normal application deployment does not require `db push`. The running TanStack application must target the already-provisioned production schema and must pass `supabase/sql/production_preflight.sql` before traffic is switched.
 
+## Reviewed forward migrations after preflight
+
+Until migration history is baselined, production schema changes remain manual and ordered. The currently required reviewed forward migrations are:
+
+```text
+1. supabase/migrations/20260831130000_meta_inventory_completion.sql
+2. supabase/migrations/20260901070000_waba_sender_safety.sql
+```
+
+Apply them in that order only after reviewing `supabase/sql/production_preflight.sql`. The second migration makes parent-WABA state part of dispatch authorization and disables child senders whenever a WABA becomes non-active; it never re-enables numbers automatically.
+
 ## Before enabling automated migrations
 
 1. Export the live schema and migration history from `pmhuylckjwrongxlrgrx`.
