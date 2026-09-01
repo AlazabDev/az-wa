@@ -105,9 +105,14 @@ export async function buildMetaProductionReadiness(
   );
   const activeWebhook = endpointRows.find((row: any) => row.status === "active");
   const activeWabas = wabaRows.filter((row: any) => row.status === "active");
+  const wabaStatusById = new Map<string, string>(
+    wabaRows.map((row: any) => [String(row.id), String(row.status)]),
+  );
   const nonMissingNumbers = numberRows.filter((row: any) => row.status !== "missing_from_meta");
   const unsafeSenders = numberRows.filter(
-    (row: any) => row.status !== "active" && row.is_enabled === true,
+    (row: any) =>
+      row.is_enabled === true &&
+      (row.status !== "active" || wabaStatusById.get(String(row.waba_id)) !== "active"),
   );
   const approvedTemplates = templateRows.filter(
     (row: any) => String(row.status).toUpperCase() === "APPROVED",
@@ -279,8 +284,8 @@ export async function buildMetaProductionReadiness(
       ok: unsafeSenders.length === 0,
       severity: "critical",
       detail: unsafeSenders.length
-        ? `${unsafeSenders.length} non-active numbers are still enabled`
-        : "No disconnected/restricted/missing number is enabled for sending",
+        ? `${unsafeSenders.length} enabled sender(s) have a non-active number or parent WABA`
+        : "Every enabled sender has both an active number and an active parent WABA",
     },
     {
       key: "templates",
