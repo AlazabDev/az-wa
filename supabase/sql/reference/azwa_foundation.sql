@@ -581,27 +581,25 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.webhook_events;
 
 -- ============ INITIAL PRODUCTION IMPORT ============
 INSERT INTO public.business_portfolios (meta_business_id, name, meta_app_id, namespace, status)
-VALUES ('31443701205', 'Al Azab Business Portfolio', '1061494059972503', 'azwhatsapp', 'active');
+VALUES ('314437023701205', 'Al Azab Business Portfolio', '1061494059972503', 'azwhatsapp', 'active');
 
 INSERT INTO public.wabas (business_portfolio_id, meta_waba_id, name, status)
 SELECT bp.id, w.meta_waba_id, w.name, 'active'::public.entity_status
 FROM public.business_portfolios bp,
 (VALUES
-  ('922964860845619','WABA 922964860845619'),
-  ('2154838801923462','WABA 2154838801923462'),
-  ('1527103499063250','WABA 1527103499063250'),
-  ('1303965001665007','WABA 1303965001665007'),
-  ('2144651456337012','WABA 2144651456337012'),
-  ('1458856398934130','WABA 1458856398934130'),
-  ('459851797218855','WABA 459851797218855')
+  ('2154838801923462','Alazab Eg'),
+  ('1527103499063250','Alazab Projects'),
+  ('1303965001665007','Alazab'),
+  ('2144651456337012','Mohamed Azab'),
+  ('1458856398934130','Azab'),
+  ('459851797218855','UberFix')
 ) AS w(meta_waba_id, name)
-WHERE bp.meta_business_id = '31443701205';
+WHERE bp.meta_business_id = '314437023701205';
 
 INSERT INTO public.whatsapp_numbers (business_portfolio_id, waba_id, meta_phone_number_id, display_phone_number, country)
 SELECT w.business_portfolio_id, w.id, n.pn_id, n.display, n.country
 FROM public.wabas w
 JOIN (VALUES
-  ('922964860845619','1328521857002632','+201115723930','EG'),
   ('2154838801923462','1011864912017679','+201092750351','EG'),
   ('1527103499063250','1197837903405393','+201146395966','EG'),
   ('1303965001665007','1061490140383829','+201146397010','EG'),
@@ -611,6 +609,11 @@ JOIN (VALUES
   ('459851797218855','644995285354639','+15557285727','US'),
   ('459851797218855','527697617099639','+15557245001','US')
 ) AS n(waba, pn_id, display, country) ON n.waba = w.meta_waba_id;
+
+-- Audited 2026-08-31: this Meta phone is disconnected and must never be an enabled sender.
+UPDATE public.whatsapp_numbers
+SET platform_status = 'DISCONNECTED', status = 'disabled', enabled = false
+WHERE meta_phone_number_id = '1011864912017679';
 
 INSERT INTO public.system_settings (key, value) VALUES
   ('meta_app', '{"app_id":"1061494059972503","namespace":"azwhatsapp","domains":["alazab.com","wa.alazab.com"]}'::jsonb),
