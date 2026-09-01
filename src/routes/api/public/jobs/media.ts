@@ -6,7 +6,6 @@ import { drainMediaQueue } from "@/lib/meta/media.server";
 export const Route = createFileRoute("/api/public/jobs/media")({
   server: {
     handlers: {
-      GET: ({ request }) => runMediaWorker(request),
       POST: ({ request }) => runMediaWorker(request),
     },
   },
