@@ -32,6 +32,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
 import { Route as AuthenticatedMediaRouteImport } from './routes/_authenticated/media'
 import { Route as AuthenticatedMetaAppRouteImport } from './routes/_authenticated/meta-app'
+import { Route as AuthenticatedMonitorRouteImport } from './routes/_authenticated/monitor'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -172,6 +173,11 @@ const AuthenticatedMediaRoute = AuthenticatedMediaRouteImport.update({
 const AuthenticatedMetaAppRoute = AuthenticatedMetaAppRouteImport.update({
   id: '/meta-app',
   path: '/meta-app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMonitorRoute = AuthenticatedMonitorRouteImport.update({
+  id: '/monitor',
+  path: '/monitor',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
@@ -324,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
+  '/monitor': typeof AuthenticatedMonitorRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -372,6 +379,7 @@ export interface FileRoutesByTo {
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
+  '/monitor': typeof AuthenticatedMonitorRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -422,6 +430,7 @@ export interface FileRoutesById {
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
   '/_authenticated/media': typeof AuthenticatedMediaRoute
   '/_authenticated/meta-app': typeof AuthenticatedMetaAppRoute
+  '/_authenticated/monitor': typeof AuthenticatedMonitorRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/infrastructure'
     | '/media'
     | '/meta-app'
+    | '/monitor'
     | '/numbers'
     | '/queues'
     | '/reports'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/infrastructure'
     | '/media'
     | '/meta-app'
+    | '/monitor'
     | '/numbers'
     | '/queues'
     | '/reports'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/_authenticated/infrastructure'
     | '/_authenticated/media'
     | '/_authenticated/meta-app'
+    | '/_authenticated/monitor'
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
     | '/_authenticated/reports'
@@ -771,6 +783,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMetaAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/monitor': {
+      id: '/_authenticated/monitor'
+      path: '/monitor'
+      fullPath: '/monitor'
+      preLoaderRoute: typeof AuthenticatedMonitorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/numbers': {
       id: '/_authenticated/numbers'
       path: '/numbers'
@@ -967,6 +986,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
   AuthenticatedMediaRoute: typeof AuthenticatedMediaRoute
   AuthenticatedMetaAppRoute: typeof AuthenticatedMetaAppRoute
+  AuthenticatedMonitorRoute: typeof AuthenticatedMonitorRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -995,6 +1015,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,
   AuthenticatedMediaRoute: AuthenticatedMediaRoute,
   AuthenticatedMetaAppRoute: AuthenticatedMetaAppRoute,
+  AuthenticatedMonitorRoute: AuthenticatedMonitorRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
