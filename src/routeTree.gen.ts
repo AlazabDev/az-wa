@@ -26,6 +26,7 @@ import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeadLetterRouteImport } from './routes/_authenticated/dead-letter'
 import { Route as AuthenticatedErrorsRouteImport } from './routes/_authenticated/errors'
+import { Route as AuthenticatedFlowsRouteImport } from './routes/_authenticated/flows'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authenticated/infrastructure'
@@ -140,6 +141,11 @@ const AuthenticatedDeadLetterRoute = AuthenticatedDeadLetterRouteImport.update({
 const AuthenticatedErrorsRoute = AuthenticatedErrorsRouteImport.update({
   id: '/errors',
   path: '/errors',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFlowsRoute = AuthenticatedFlowsRouteImport.update({
+  id: '/flows',
+  path: '/flows',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/errors': typeof AuthenticatedErrorsRoute
+  '/flows': typeof AuthenticatedFlowsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/errors': typeof AuthenticatedErrorsRoute
+  '/flows': typeof AuthenticatedFlowsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/_authenticated/errors': typeof AuthenticatedErrorsRoute
+  '/_authenticated/flows': typeof AuthenticatedFlowsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/infrastructure': typeof AuthenticatedInfrastructureRoute
@@ -458,6 +467,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dead-letter'
     | '/errors'
+    | '/flows'
     | '/health'
     | '/inbox'
     | '/infrastructure'
@@ -505,6 +515,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dead-letter'
     | '/errors'
+    | '/flows'
     | '/health'
     | '/inbox'
     | '/infrastructure'
@@ -553,6 +564,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/dead-letter'
     | '/_authenticated/errors'
+    | '/_authenticated/flows'
     | '/_authenticated/health'
     | '/_authenticated/inbox'
     | '/_authenticated/infrastructure'
@@ -715,6 +727,13 @@ declare module '@tanstack/react-router' {
       path: '/errors'
       fullPath: '/errors'
       preLoaderRoute: typeof AuthenticatedErrorsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/flows': {
+      id: '/_authenticated/flows'
+      path: '/flows'
+      fullPath: '/flows'
+      preLoaderRoute: typeof AuthenticatedFlowsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/health': {
@@ -942,6 +961,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadLetterRoute: typeof AuthenticatedDeadLetterRoute
   AuthenticatedErrorsRoute: typeof AuthenticatedErrorsRoute
+  AuthenticatedFlowsRoute: typeof AuthenticatedFlowsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedInfrastructureRoute: typeof AuthenticatedInfrastructureRoute
@@ -969,6 +989,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadLetterRoute: AuthenticatedDeadLetterRoute,
   AuthenticatedErrorsRoute: AuthenticatedErrorsRoute,
+  AuthenticatedFlowsRoute: AuthenticatedFlowsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedInfrastructureRoute: AuthenticatedInfrastructureRoute,

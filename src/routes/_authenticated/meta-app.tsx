@@ -11,6 +11,7 @@ import {
   reconcileMetaWebhookSubscription,
 } from "@/lib/meta/app-webhook.functions";
 import { getMetaAppConfig, saveMetaAppConfig } from "@/lib/meta/meta.functions";
+import { syncMetaLiveStatus } from "@/lib/meta/live-status.functions";
 
 export const Route = createFileRoute("/_authenticated/meta-app")({
   head: () => ({
@@ -44,15 +45,34 @@ type WebhookInspection = {
 const inputClass =
   "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20";
 
+type LiveStatus = {
+  ok: boolean;
+  checkedAt: string;
+  token: { ok: boolean; appId: string | null; missingPermissions: readonly string[] } | null;
+  webhook: { ok: boolean; healthy?: boolean } | null;
+  wabas: readonly {
+    wabaId: string;
+    metaWabaId: string;
+    name: string | null;
+    subscribed: boolean;
+    changed: boolean;
+    error?: string;
+  }[];
+  errors: readonly string[];
+};
+
 function MetaAppPage() {
   const loadConfig = useServerFn(getMetaAppConfig);
   const saveConfig = useServerFn(saveMetaAppConfig);
   const inspectWebhook = useServerFn(inspectMetaWebhookSubscription);
   const reconcileWebhook = useServerFn(reconcileMetaWebhookSubscription);
+  const runLiveSync = useServerFn(syncMetaLiveStatus);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checkingWebhook, setCheckingWebhook] = useState(false);
+  const [liveSyncing, setLiveSyncing] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
   const [appId, setAppId] = useState("");
   const [displayName, setDisplayName] = useState("AzWA");
   const [namespace, setNamespace] = useState("");
@@ -150,6 +170,20 @@ function MetaAppPage() {
       toast.error(error instanceof Error ? error.message : "Meta App webhook check failed");
     } finally {
       setCheckingWebhook(false);
+    }
+  }
+
+  async function runLiveStatus() {
+    setLiveSyncing(true);
+    try {
+      const result = (await runLiveSync({ data: {} })) as LiveStatus;
+      setLiveStatus(result);
+      if (result.ok) toast.success("Live Meta status synced");
+      else toast.warning(result.errors[0] ?? "Live Meta sync found issues");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Live Meta sync failed");
+    } finally {
+      setLiveSyncing(false);
     }
   }
 
@@ -282,6 +316,44 @@ function MetaAppPage() {
                   <ShieldCheck className="size-4" /> Reconcile App webhook
                 </Button>
               </div>
+            </div>
+          </Panel>
+
+          <Panel title="Live Meta status">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span>Production sync</span>
+                <StatusBadgeLike healthy={liveStatus?.ok ?? false} checked={liveStatus !== null} />
+              </div>
+              {liveStatus && (
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <div>
+                    Token: {liveStatus.token?.ok ? "valid" : "invalid"}
+                    {liveStatus.token?.appId ? ` · app ${liveStatus.token.appId}` : ""}
+                  </div>
+                  <div>
+                    WABAs subscribed: {liveStatus.wabas.filter((w) => w.subscribed).length}/
+                    {liveStatus.wabas.length}
+                  </div>
+                  {liveStatus.errors.slice(0, 4).map((message) => (
+                    <div
+                      key={message}
+                      className="rounded-md border border-border bg-muted/30 p-2 text-xs text-foreground"
+                    >
+                      {message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={liveSyncing || !configured.systemUserToken}
+                onClick={runLiveStatus}
+              >
+                <RefreshCw className="size-4" />
+                {liveSyncing ? "Syncing…" : "Sync live status with Meta"}
+              </Button>
             </div>
           </Panel>
         </div>
