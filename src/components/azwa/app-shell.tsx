@@ -67,6 +67,7 @@ const NAV: NavGroup[] = [
   {
     section: "Operations",
     items: [
+      { label: "Live Monitor", to: "/monitor", icon: Activity },
       { label: "Health & Diagnostics", to: "/health", icon: Activity },
       { label: "Alerts", to: "/alerts", icon: Bell },
       { label: "Errors", to: "/errors", icon: AlertTriangle },
