@@ -74,13 +74,21 @@ supabase/sql/production_preflight.sql
 
 Every section marked `BLOCKER` must return zero rows. The final count query is informational.
 
-The inventory-completion schema also requires the additive migration:
+The inventory-completion schema requires the additive migration:
 
 ```text
 supabase/migrations/20260831130000_meta_inventory_completion.sql
 ```
 
-Apply it only after the preflight has been reviewed. It adds the Graph v26 inventory entities and sender-safety enforcement; it does not hard-delete historical Meta assets.
+Apply it only after the preflight has been reviewed. It adds the Graph v26 inventory entities and phone-level sender-safety enforcement; it does not hard-delete historical Meta assets.
+
+The parent-WABA sender-safety hardening also requires this forward migration:
+
+```text
+supabase/migrations/20260901070000_waba_sender_safety.sql
+```
+
+Apply it after the inventory-completion migration. It blocks dispatch whenever the parent WABA is non-active, disables child senders when a WABA becomes non-active, repairs any pre-existing unsafe enabled state, and never re-enables numbers automatically when the WABA returns to active.
 
 The current application expects, among others, the following RPCs to already exist:
 
@@ -142,6 +150,7 @@ After saving credentials:
 4. Allow the sync to reconcile templates, flows, subscribed apps and assigned users.
 5. Historical assets that disappear from Meta are marked missing/inactive rather than deleted.
 6. A disconnected/restricted/missing phone number must never remain an enabled sender.
+7. A phone under a non-active WABA must never remain dispatchable, even if the phone row itself is still active.
 
 ## 4. Audited inventory baseline
 
@@ -175,7 +184,7 @@ bun run typecheck
 bun run lint
 ```
 
-The GitHub **Production CI** workflow performs build, TypeScript and lint validation on pull requests and release changes.
+The GitHub **Production CI** workflow performs dependency audit, build/route generation, TypeScript and lint validation on pull requests and release changes.
 
 A remaining audit item in a build-only/dev dependency must be evaluated by dependency path and runtime exposure; do not force incompatible package overrides merely to suppress an audit result.
 
@@ -330,18 +339,19 @@ Then validate through the application and Meta:
 4. App webhook subscription reconciliation succeeds.
 5. Business Portfolio sync discovers the current WABAs and phone numbers.
 6. The disconnected phone remains disabled for sending.
-7. Templates synchronize for every WABA.
-8. WhatsApp Flows synchronize for every WABA and lifecycle actions are correctly scoped.
-9. WABA subscribed-app inventory is visible and AzWA is subscribed to every active WABA.
-10. A signed inbound text message creates/updates webhook, contact, conversation and message state.
-11. A real outbound text message is sent from the selected active number.
-12. An approved template is sent from a number belonging to the same WABA.
-13. Delivery/read callbacks transition the message status history.
-14. An inbound media message is permanently downloaded by the media pipeline.
-15. `/api/public/jobs/media` rejects a missing/wrong cron token.
-16. An unknown Meta phone number raises an alert rather than being discarded.
-17. No production user can enter `/legacy/*` while `VITE_ENABLE_LEGACY_UI=false`.
-18. Health → Meta production readiness has zero critical failures.
+7. A number under a non-active WABA cannot be dispatched and remains disabled until explicitly re-enabled after the WABA is active.
+8. Templates synchronize for every WABA.
+9. WhatsApp Flows synchronize for every WABA and lifecycle actions are correctly scoped.
+10. WABA subscribed-app inventory is visible and AzWA is subscribed to every active WABA.
+11. A signed inbound text message creates/updates webhook, contact, conversation and message state.
+12. A real outbound text message is sent from the selected active number.
+13. An approved template is sent from a number belonging to the same WABA.
+14. Delivery/read callbacks transition the message status history.
+15. An inbound media message is permanently downloaded by the media pipeline.
+16. `/api/public/jobs/media` rejects a missing/wrong cron token.
+17. An unknown Meta phone number raises an alert rather than being discarded.
+18. No production user can enter `/legacy/*` while `VITE_ENABLE_LEGACY_UI=false`.
+19. Health → Meta production readiness has zero critical failures.
 
 ## 11. Release gate
 
@@ -349,12 +359,14 @@ Do not merge/deploy when any of these are true:
 
 - Production CI is not green.
 - `production_preflight.sql` returns a blocker.
-- the inventory-completion migration has not been reviewed/applied where required.
+- `supabase/migrations/20260831130000_meta_inventory_completion.sql` has not been reviewed/applied where required.
+- `supabase/migrations/20260901070000_waba_sender_safety.sql` has not been reviewed/applied after the inventory-completion migration.
 - `/readyz` is not HTTP 200.
 - Meta webhook URL is not the canonical public `/webhooks/meta/whatsapp` route.
 - any required Meta credential is incomplete.
 - AzWA is not subscribed to every active WABA.
 - a non-active phone number is enabled as a sender.
+- a phone under a non-active WABA is dispatchable or remains enabled.
 - Health → Meta production readiness reports a critical failure.
 - the old Supabase `wa-webhook` is still configured in Meta.
 - `VITE_ENABLE_LEGACY_UI` is enabled unintentionally.
