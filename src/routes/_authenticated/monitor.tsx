@@ -94,11 +94,7 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
   const items: { label: string; value: string; badge: string }[] = [
     {
       label: "System user token",
-      value: report.token
-        ? report.token.ok
-          ? "Valid"
-          : "Invalid"
-        : "Not checked",
+      value: report.token ? (report.token.ok ? "Valid" : "Invalid") : "Not checked",
       badge: report.token?.ok ? "healthy" : "critical",
     },
     {
@@ -108,16 +104,12 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
           ? "Subscribed"
           : "Needs reconcile"
         : "Not checked",
-      badge:
-        report.webhook?.ok && report.webhook.healthy ? "healthy" : "warning",
+      badge: report.webhook?.ok && report.webhook.healthy ? "healthy" : "warning",
     },
     {
       label: "WABA subscriptions",
       value: `${subscribed}/${report.wabas.length}`,
-      badge:
-        report.wabas.length > 0 && subscribed === report.wabas.length
-          ? "healthy"
-          : "warning",
+      badge: report.wabas.length > 0 && subscribed === report.wabas.length ? "healthy" : "warning",
     },
     {
       label: "Overall",
@@ -128,10 +120,7 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="rounded-lg border border-border bg-background p-3"
-        >
+        <div key={item.label} className="rounded-lg border border-border bg-background p-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">{item.label}</span>
             <StatusBadge value={item.badge} />
@@ -170,12 +159,7 @@ function MonitorPage() {
         title="Live Monitor"
         description="One view of production Meta status and per-number health: webhook delivery, API reachability and today's message volume."
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void refresh()}
-            disabled={syncing}
-          >
+          <Button type="button" variant="outline" onClick={() => void refresh()} disabled={syncing}>
             <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync live with Meta"}
           </Button>
@@ -194,8 +178,7 @@ function MonitorPage() {
               <MetaStatusSummary report={report} />
               <p className="mt-3 text-xs text-muted-foreground">
                 Last checked {new Date(report.checkedAt).toLocaleString()}
-                {report.errors.length > 0 &&
-                  ` — ${report.errors.length} issue(s) recorded.`}
+                {report.errors.length > 0 && ` — ${report.errors.length} issue(s) recorded.`}
               </p>
             </>
           ) : (
@@ -228,16 +211,9 @@ function MonitorPage() {
                 {numbers.map((n) => {
                   const counts = messageCounts?.get(n.id);
                   return (
-                    <tr
-                      key={n.id}
-                      className="border-b border-border/60 last:border-0"
-                    >
-                      <td className="py-2 pr-4 font-mono text-xs">
-                        {n.display_phone_number}
-                      </td>
-                      <td className="py-2 pr-4">
-                        {n.verified_name ?? n.internal_name ?? "—"}
-                      </td>
+                    <tr key={n.id} className="border-b border-border/60 last:border-0">
+                      <td className="py-2 pr-4 font-mono text-xs">{n.display_phone_number}</td>
+                      <td className="py-2 pr-4">{n.verified_name ?? n.internal_name ?? "—"}</td>
                       <td className="py-2 pr-4">
                         <StatusBadge value={n.status} />
                       </td>
@@ -250,12 +226,8 @@ function MonitorPage() {
                       <td className="py-2 pr-4">
                         <StatusBadge value={n.api_health} />
                       </td>
-                      <td className="py-2 pr-4 text-xs">
-                        {n.quality_rating ?? "—"}
-                      </td>
-                      <td className="py-2 pr-4 font-semibold">
-                        {counts?.total ?? 0}
-                      </td>
+                      <td className="py-2 pr-4 text-xs">{n.quality_rating ?? "—"}</td>
+                      <td className="py-2 pr-4 font-semibold">{counts?.total ?? 0}</td>
                       <td className="py-2 pr-4 text-xs text-muted-foreground">
                         {counts ? `${counts.incoming} / ${counts.outgoing}` : "—"}
                       </td>
@@ -279,9 +251,7 @@ function MonitorPage() {
               </p>
             )}
             {isLoading && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                Loading…
-              </p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
             )}
           </div>
         </Panel>
