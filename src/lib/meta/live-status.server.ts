@@ -4,7 +4,11 @@
  * per-WABA subscribed_apps reconciliation, then records health_checks rows.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { ensureWabaSubscription, recordMetaHealth, validatePortfolioCredential } from "./connectivity.server";
+import {
+  ensureWabaSubscription,
+  recordMetaHealth,
+  validatePortfolioCredential,
+} from "./connectivity.server";
 import { inspectMetaAppWebhook } from "./app-webhook.server";
 
 export type LiveWabaStatus = {
@@ -96,7 +100,8 @@ export async function syncLiveMetaStatus(organizationId: string): Promise<LiveSt
       changed: result.changed,
       ...("error" in result && result.error ? { error: result.error } : {}),
     });
-    if (!result.ok) errors.push(`${waba.name ?? waba.meta_waba_id}: ${result.error ?? "not subscribed"}`);
+    if (!result.ok)
+      errors.push(`${waba.name ?? waba.meta_waba_id}: ${result.error ?? "not subscribed"}`);
     await recordMetaHealth({
       organizationId,
       businessPortfolioId: waba.business_portfolio_id ?? null,

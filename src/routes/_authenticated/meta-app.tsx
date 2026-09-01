@@ -50,7 +50,14 @@ type LiveStatus = {
   checkedAt: string;
   token: { ok: boolean; appId: string | null; missingPermissions: readonly string[] } | null;
   webhook: { ok: boolean; healthy?: boolean } | null;
-  wabas: readonly { wabaId: string; metaWabaId: string; name: string | null; subscribed: boolean; changed: boolean; error?: string }[];
+  wabas: readonly {
+    wabaId: string;
+    metaWabaId: string;
+    name: string | null;
+    subscribed: boolean;
+    changed: boolean;
+    error?: string;
+  }[];
   errors: readonly string[];
 };
 
@@ -316,10 +323,7 @@ function MetaAppPage() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span>Production sync</span>
-                <StatusBadgeLike
-                  healthy={liveStatus?.ok ?? false}
-                  checked={liveStatus !== null}
-                />
+                <StatusBadgeLike healthy={liveStatus?.ok ?? false} checked={liveStatus !== null} />
               </div>
               {liveStatus && (
                 <div className="space-y-2 text-xs text-muted-foreground">
