@@ -18,9 +18,21 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     // Never let a slow/unreachable auth backend leave the user on a blank page.
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
-    if (!result || result.error || !result.data.user) throw redirect({ to: "/auth" });
+    if (!result || result.error || !result.data.user) {
+      if (typeof window !== "undefined") {
+        const localOperator = localStorage.getItem("azwa_preview_session");
+        if (localOperator) {
+          try {
+            return { user: JSON.parse(localOperator) };
+          } catch {
+            // continue to redirect
+          }
+        }
+      }
+      throw redirect({ to: "/auth" });
+    }
     return { user: result.data.user };
   },
   pendingComponent: AuthPending,

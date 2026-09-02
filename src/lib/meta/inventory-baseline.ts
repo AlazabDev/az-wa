@@ -1,11 +1,11 @@
 export const META_INVENTORY_BASELINE = {
   generatedAt: "2026-08-31T09:31:34Z",
   graphVersion: "v26.0",
-  businessMetaId: "314437023701205",
+  businessMetaId: "31443701205",
   azwaAppId: "1061494059972503",
   counts: {
-    wabas: 6,
-    phoneNumbers: 8,
+    wabas: 7,
+    phoneNumbers: 9,
     templates: 94,
     approvedTemplates: 94,
     utilityTemplates: 61,
@@ -14,9 +14,19 @@ export const META_INVENTORY_BASELINE = {
     flows: 21,
     publishedFlows: 15,
     draftFlows: 6,
-    subscribedApps: 17,
+    subscribedApps: 18,
   },
   wabas: [
+    {
+      metaWabaId: "922964860845619",
+      name: "Alazab Primary",
+      phones: 1,
+      templates: 0,
+      flows: 0,
+      publishedFlows: 0,
+      draftFlows: 0,
+      subscribedApps: 1,
+    },
     {
       metaWabaId: "1303965001665007",
       name: "Alazab",
@@ -79,6 +89,7 @@ export const META_INVENTORY_BASELINE = {
     },
   ],
   phones: [
+    { metaPhoneId: "1328521857002632", number: "+20 11 15723930", expectedStatus: "active" },
     { metaPhoneId: "1061490140383829", number: "+20 11 46397010", expectedStatus: "active" },
     { metaPhoneId: "1032441389943808", number: "+1 206-479-5608", expectedStatus: "active" },
     { metaPhoneId: "952530191273396", number: "+1 208-379-9564", expectedStatus: "active" },

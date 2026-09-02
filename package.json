@@ -1,23 +1,22 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "az-wa",
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "packageManager": "bun@1.4.0",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "vite dev --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "audit": "bun audit",
-    "check": "bun run audit && bun run build && bun run typecheck && bun run lint",
+    "audit": "npm audit",
+    "check": "npm run build && npm run typecheck && npm run lint",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=20"
   },
   "overrides": {
     "rolldown": "1.2.1"

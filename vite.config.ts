@@ -4,6 +4,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+  },
   tanstackStart: {
     // Route the server bundle through src/server.ts so catastrophic SSR errors
     // are normalized consistently.

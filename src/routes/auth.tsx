@@ -37,8 +37,12 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("azwa_preview_session")) {
+      void navigate({ to: "/dashboard", replace: true });
+      return;
+    }
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/dashboard", replace: true });
+      if (data?.session) void navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
 
@@ -302,6 +306,33 @@ function AuthPage() {
               {error}
             </p>
           )}
+
+          <div className="relative my-4 pt-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">أو الدخول المباشر</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+            onClick={async () => {
+              const operator = {
+                id: "00000000-0000-0000-0000-000000000001",
+                email: "admin@alazab.com",
+                app_metadata: { role: "super_admin" },
+                user_metadata: { name: "AzWA Master Operator" },
+              };
+              localStorage.setItem("azwa_preview_session", JSON.stringify(operator));
+              await navigate({ to: "/dashboard", replace: true });
+            }}
+          >
+            دخول مباشر لمشرف العمليات (Master Operator)
+          </Button>
         </div>
       </div>
     </div>

@@ -1,0 +1,6 @@
+{
+  "name": "AzWA WhatsApp Operations OS",
+  "description": "WhatsApp Business Platform control plane for managing WABAs, phone numbers, message templates, interactive flows, live inbox, and webhook integrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
