@@ -2,6 +2,7 @@
 /** Meta App webhook subscription inspection/reconciliation — server only. */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MetaGraphClient } from "./graph.server";
+import { META_WEBHOOK_CALLBACK_URL } from "./public-config";
 
 export const WHATSAPP_WEBHOOK_FIELDS = [
   "messages",
@@ -85,7 +86,7 @@ async function loadAppRuntime(organizationId: string) {
   return {
     appInternalId: String(app.id),
     metaAppId: String(app.meta_app_id),
-    callbackUrl: String(endpoint.url),
+    callbackUrl: String(endpoint.url || META_WEBHOOK_CALLBACK_URL),
     verifyToken: String(secretRow.verify_token),
     token: String(appAccessToken),
   };

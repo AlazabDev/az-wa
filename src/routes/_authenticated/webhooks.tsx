@@ -3,7 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
 
-const WEBHOOK_URL = "/api/public/webhooks/meta/whatsapp";
+import {
+  META_WEBHOOK_CALLBACK_URL,
+  META_WEBHOOK_INTERNAL_PATH,
+} from "@/lib/meta/public-config";
 
 export const Route = createFileRoute("/_authenticated/webhooks")({
   head: () => ({
@@ -38,8 +41,10 @@ function WebhooksPage() {
               Callback URL
             </dt>
             <dd className="mt-1 font-mono text-xs break-all">
-              {typeof window !== "undefined" ? window.location.origin : ""}
-              {WEBHOOK_URL}
+              {META_WEBHOOK_CALLBACK_URL}
+              <span className="mt-1 block font-sans text-[11px] text-muted-foreground">
+                Proxied internally to {META_WEBHOOK_INTERNAL_PATH}
+              </span>
             </dd>
           </div>
           <div>
