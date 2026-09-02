@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { META_WEBHOOK_CALLBACK_URL } from "./public-config";
 
 export type MetaAppConfigInput = {
   appId: string;
@@ -123,7 +124,7 @@ export const getMetaAppConfig = createServerFn({ method: "POST" })
       webhookUrl:
         endpoint?.url ??
         process.env["META_WEBHOOK_PUBLIC_URL"] ??
-        "https://wa.alazab.com/webhooks/meta/whatsapp",
+        META_WEBHOOK_CALLBACK_URL,
       webhookStatus: endpoint?.status ?? "unconfigured",
       verificationStatus: endpoint?.verification_status ?? null,
       hasVerifyToken: Boolean(endpoint?.verify_token_credential_id),
@@ -304,7 +305,7 @@ export const saveMetaAppConfig = createServerFn({ method: "POST" })
       throw new Error("System User Token is required for initial setup");
 
     const webhookUrl =
-      process.env["META_WEBHOOK_PUBLIC_URL"] ?? "https://wa.alazab.com/webhooks/meta/whatsapp";
+      process.env["META_WEBHOOK_PUBLIC_URL"] ?? META_WEBHOOK_CALLBACK_URL;
     if (existingEndpoint) {
       const { error } = await supabaseAdmin
         .from("webhook_endpoints")
