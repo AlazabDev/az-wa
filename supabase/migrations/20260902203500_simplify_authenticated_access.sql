@@ -92,7 +92,7 @@ create or replace function public.authenticated_tenant_scopes()
 returns table (id uuid)
 language sql
 stable
-security definer
+security invoker
 set search_path = public, auth
 as $$
   select organization.id
