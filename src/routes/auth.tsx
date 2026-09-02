@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Sign in — AzWA WhatsApp Operations OS" },
@@ -43,18 +42,31 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const fn =
-      mode === "signin"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: window.location.origin },
-          });
-    const { error: err } = await fn;
-    setBusy(false);
-    if (err) setError(err.message);
-    else navigate({ to: "/dashboard" });
+    try {
+      const credentials = { email: email.trim(), password };
+      const result =
+        mode === "signin"
+          ? await supabase.auth.signInWithPassword(credentials)
+          : await supabase.auth.signUp({
+              ...credentials,
+              options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+            });
+
+      if (result.error) {
+        setError(
+          result.error.message === "Invalid login credentials"
+            ? "البريد الإلكتروني أو كلمة المرور غير صحيحة."
+            : result.error.message,
+        );
+        return;
+      }
+
+      await navigate({ to: "/dashboard", replace: true });
+    } catch {
+      setError("تعذّر الاتصال بخدمة تسجيل الدخول. حاول مرة أخرى.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function google() {
@@ -103,9 +115,13 @@ function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={busy}>
-            {mode === "signin" ? "Sign in" : "Create account"}
+            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
           </Button>
         </form>
 
