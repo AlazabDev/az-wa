@@ -84,6 +84,11 @@ begin
         protected_table
       );
     end loop;
+
+    execute format(
+      'create policy azwa_backend_only on public.%I for all to authenticated using (false) with check (false)',
+      protected_table
+    );
   end loop;
 end
 $$;
