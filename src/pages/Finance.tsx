@@ -336,19 +336,16 @@ export default function Finance() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                value={bucket}
-                onChange={(e) => setBucket(e.target.value)}
-                placeholder="اسم الـ bucket"
-                disabled={!canOperate || busy}
-              />
+            <div className="space-y-2">
               <Input
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value)}
-                placeholder="مسار المجلد مثل arabesque_img"
+                placeholder="مسار المجلد داخل مساحة المستأجر مثل arabesque_img"
                 disabled={!canOperate || busy}
               />
+              <p className="text-[11px] text-muted-foreground">
+                الاستيراد مقصور دائماً على مجلد المستأجر الحالي داخل مخزن media.
+              </p>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-muted-foreground">
