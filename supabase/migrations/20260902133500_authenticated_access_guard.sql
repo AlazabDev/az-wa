@@ -1,8 +1,6 @@
--- Replace the temporary always-true authenticated policies with an explicit
--- authenticated-session guard. This preserves the intended AzWA access model
--- (any signed-in user may operate the UI) without USING (true)/WITH CHECK (true).
---
--- Sensitive credential tables are intentionally not opened here.
+-- Replace temporary always-true authenticated policies with an explicit
+-- authenticated-session guard. Any signed-in AzWA user may operate the UI,
+-- while secret-bearing backend tables remain protected separately.
 
 begin;
 
@@ -25,18 +23,18 @@ begin
 end
 $$;
 
--- Legacy pages still need a tenant id as a data scope. Do not restore
--- tenant_members as an authorization gate; expose only tenant ids through a
--- SECURITY DEFINER function and require a real authenticated JWT.
+-- Compatibility scope for legacy UI code. Production uses organizations,
+-- not a public.tenants table. This function is a scope selector only and is
+-- not an authorization gate.
 create or replace function public.authenticated_tenant_scopes()
 returns table (id uuid)
 language sql
 stable
-security definer
+security invoker
 set search_path = public, auth
 as $$
-  select tenant.id
-  from public.tenants as tenant
+  select organization.id
+  from public.organizations as organization
   where (select auth.uid()) is not null;
 $$;
 
@@ -45,16 +43,3 @@ revoke all on function public.authenticated_tenant_scopes() from anon;
 grant execute on function public.authenticated_tenant_scopes() to authenticated;
 
 commit;
-
--- Verification queries (read-only when run after the migration):
--- select tablename, policyname, qual, with_check
--- from pg_policies
--- where schemaname = 'public'
---   and policyname = 'azwa_authenticated_full_access'
--- order by tablename;
---
--- select count(*) as remaining_always_true_policies
--- from pg_policies
--- where schemaname = 'public'
---   and policyname = 'azwa_authenticated_full_access'
---   and (coalesce(qual, '') = 'true' or coalesce(with_check, '') = 'true');
