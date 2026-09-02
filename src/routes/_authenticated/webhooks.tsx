@@ -41,8 +41,10 @@ function WebhooksPage() {
               Callback URL
             </dt>
             <dd className="mt-1 font-mono text-xs break-all">
-              {typeof window !== "undefined" ? window.location.origin : ""}
-              {WEBHOOK_URL}
+              {META_WEBHOOK_CALLBACK_URL}
+              <span className="mt-1 block font-sans text-[11px] text-muted-foreground">
+                Proxied internally to {META_WEBHOOK_INTERNAL_PATH}
+              </span>
             </dd>
           </div>
           <div>
