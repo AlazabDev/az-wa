@@ -19,7 +19,7 @@ type AuthContextValue = {
   loading: boolean;
   memberships: TenantMembership[];
   currentTenantId: string | null;
-  currentRole: "admin" | null;
+  currentRole: string | null;
   setCurrentTenantId: (tenantId: string) => void;
   refreshMemberships: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -111,7 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loadOrganizationScopes, session?.user.id],
   );
 
-  const currentRole: "admin" | null = currentTenantId ? "admin" : null;
+  // Legacy pages still read currentRole, but it is no longer an authorization
+  // source. Every authenticated user is presented as admin for compatibility.
+  const currentRole: string | null = currentTenantId ? "admin" : null;
 
   const value = useMemo<AuthContextValue>(
     () => ({
