@@ -7,6 +7,10 @@ export type TenantMembership = {
   role: string;
 };
 
+type TenantScopeRow = {
+  id: string;
+};
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
@@ -38,17 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("tenant_members")
-      .select("tenant_id, role")
-      .eq("user_id", userId);
-
+    const { data, error } = await supabase.rpc("authenticated_tenant_scopes");
     if (error) throw error;
-    const rows = (data ?? []) as TenantMembership[];
+
+    const tenantScopes = (data ?? []) as TenantScopeRow[];
+    const rows: TenantMembership[] = tenantScopes.map((tenant) => ({
+      tenant_id: tenant.id,
+      role: "admin",
+    }));
     setMemberships(rows);
 
     const stored = localStorage.getItem(TENANT_KEY);
-    const validStored = stored && rows.some((m) => m.tenant_id === stored);
+    const validStored = stored && rows.some((membership) => membership.tenant_id === stored);
     const next = validStored ? stored : (rows[0]?.tenant_id ?? null);
     setTenantId(next);
     if (next) localStorage.setItem(TENANT_KEY, next);
@@ -87,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrentTenantId = useCallback(
     (tenantId: string) => {
-      if (!memberships.some((m) => m.tenant_id === tenantId)) return;
+      if (!memberships.some((membership) => membership.tenant_id === tenantId)) return;
       setTenantId(tenantId);
       localStorage.setItem(TENANT_KEY, tenantId);
     },
@@ -99,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loadMemberships, session?.user.id],
   );
 
-  const currentRole = memberships.find((m) => m.tenant_id === currentTenantId)?.role ?? null;
+  const currentRole = currentTenantId ? "admin" : null;
 
   const value = useMemo<AuthContextValue>(
     () => ({

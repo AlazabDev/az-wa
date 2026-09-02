@@ -181,11 +181,12 @@ Deno.serve(async (req) => {
     const requested = String(src.prefix ?? "")
       .replace(/\\/g, "/")
       .replace(/^\/+|\/+$/g, "");
-    const relative = requested === tenantRoot
-      ? ""
-      : requested.startsWith(`${tenantRoot}/`)
-        ? requested.slice(tenantRoot.length + 1)
-        : requested;
+    const relative =
+      requested === tenantRoot
+        ? ""
+        : requested.startsWith(`${tenantRoot}/`)
+          ? requested.slice(tenantRoot.length + 1)
+          : requested;
     if (relative.split("/").some((segment) => segment === "..")) {
       return json({ error: "Invalid import path" }, 400);
     }
