@@ -173,8 +173,23 @@ Deno.serve(async (req) => {
   let nextOffset: number | null = null;
   const src = body.storage_import;
   if (src && typeof src === "object") {
-    const bucket = String(src.bucket ?? "media");
-    const folder = String(src.prefix ?? "").replace(/^\/+|\/+$/g, "");
+    // SECURITY: the bucket is never client-controlled, and every import is
+    // confined to the caller's own tenant folder inside the tenant-scoped
+    // `media` bucket. Anything resolving outside `<tenant_id>/` is rejected.
+    const bucket = "media";
+    const tenantRoot = String(tenantId);
+    const requested = String(src.prefix ?? "")
+      .replace(/\\/g, "/")
+      .replace(/^\/+|\/+$/g, "");
+    const relative = requested === tenantRoot
+      ? ""
+      : requested.startsWith(`${tenantRoot}/`)
+        ? requested.slice(tenantRoot.length + 1)
+        : requested;
+    if (relative.split("/").some((segment) => segment === "..")) {
+      return json({ error: "Invalid import path" }, 400);
+    }
+    const folder = relative ? `${tenantRoot}/${relative}` : tenantRoot;
     const offset = Math.max(Number(src.offset ?? 0), 0);
     const pageSize = Math.min(Math.max(Number(src.limit ?? 20), 1), 30);
 

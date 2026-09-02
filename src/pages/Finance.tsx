@@ -89,7 +89,6 @@ export default function Finance() {
   const canOperate = currentRole === "operator" || currentRole === "admin";
   const [batchName, setBatchName] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [bucket, setBucket] = useState("media");
   const [prefix, setPrefix] = useState("arabesque_img");
   const [importProgress, setImportProgress] = useState<{ done: number; created: number } | null>(
     null,
@@ -193,7 +192,7 @@ export default function Finance() {
             tenant_id: currentTenantId,
             batch_id: batchId,
             batch_name: batchName.trim() || `استيراد ${prefix}`,
-            storage_import: { bucket, prefix, offset, limit: STORAGE_PAGE },
+            storage_import: { prefix, offset, limit: STORAGE_PAGE },
           },
         });
         if (error) throw error;
@@ -336,19 +335,16 @@ export default function Finance() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                value={bucket}
-                onChange={(e) => setBucket(e.target.value)}
-                placeholder="اسم الـ bucket"
-                disabled={!canOperate || busy}
-              />
+            <div className="space-y-2">
               <Input
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value)}
-                placeholder="مسار المجلد مثل arabesque_img"
+                placeholder="مسار المجلد داخل مساحة المستأجر مثل arabesque_img"
                 disabled={!canOperate || busy}
               />
+              <p className="text-[11px] text-muted-foreground">
+                الاستيراد مقصور دائماً على مجلد المستأجر الحالي داخل مخزن media.
+              </p>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-muted-foreground">
@@ -369,7 +365,7 @@ export default function Finance() {
                 )}
                 <Button
                   onClick={() => importMutation.mutate()}
-                  disabled={!canOperate || busy || !bucket || !prefix}
+                  disabled={!canOperate || busy || !prefix}
                 >
                   {importMutation.isPending ? (
                     <Loader2 className="h-4 w-4 ml-2 animate-spin" />
