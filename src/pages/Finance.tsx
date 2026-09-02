@@ -89,7 +89,6 @@ export default function Finance() {
   const canOperate = currentRole === "operator" || currentRole === "admin";
   const [batchName, setBatchName] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [bucket, setBucket] = useState("media");
   const [prefix, setPrefix] = useState("arabesque_img");
   const [importProgress, setImportProgress] = useState<{ done: number; created: number } | null>(
     null,
@@ -193,7 +192,7 @@ export default function Finance() {
             tenant_id: currentTenantId,
             batch_id: batchId,
             batch_name: batchName.trim() || `استيراد ${prefix}`,
-            storage_import: { bucket, prefix, offset, limit: STORAGE_PAGE },
+            storage_import: { prefix, offset, limit: STORAGE_PAGE },
           },
         });
         if (error) throw error;
@@ -366,7 +365,7 @@ export default function Finance() {
                 )}
                 <Button
                   onClick={() => importMutation.mutate()}
-                  disabled={!canOperate || busy || !bucket || !prefix}
+                  disabled={!canOperate || busy || !prefix}
                 >
                   {importMutation.isPending ? (
                     <Loader2 className="h-4 w-4 ml-2 animate-spin" />
