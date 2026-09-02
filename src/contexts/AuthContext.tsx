@@ -38,11 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase.from("tenants").select("id");
+    const { data, error } = await supabase.rpc("authenticated_tenant_scopes");
     if (error) throw error;
 
     const rows: TenantMembership[] = (data ?? []).map((tenant) => ({
-      tenant_id: tenant.id,
+      tenant_id: String(tenant.id),
       role: "admin",
     }));
     setMemberships(rows);
