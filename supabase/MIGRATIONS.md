@@ -24,9 +24,16 @@ Until migration history is baselined, production schema changes remain manual an
 ```text
 1. supabase/migrations/20260831130000_meta_inventory_completion.sql
 2. supabase/migrations/20260901070000_waba_sender_safety.sql
+3. supabase/migrations/20260902133500_authenticated_access_guard.sql
 ```
 
-Apply them in that order only after reviewing `supabase/sql/production_preflight.sql`. The second migration makes parent-WABA state part of dispatch authorization and disables child senders whenever a WABA becomes non-active; it never re-enables numbers automatically.
+Apply them in that order only after reviewing `supabase/sql/production_preflight.sql`.
+
+- `20260831130000_meta_inventory_completion.sql` completes the reviewed Meta inventory schema.
+- `20260901070000_waba_sender_safety.sql` makes parent-WABA state part of dispatch authorization and disables child senders whenever a WABA becomes non-active; it never re-enables numbers automatically.
+- `20260902133500_authenticated_access_guard.sql` replaces the temporary `azwa_authenticated_full_access` policies that used always-true expressions with an explicit authenticated-session guard, while preserving the product rule that every signed-in AzWA user has the same application access. It also exposes `authenticated_tenant_scopes()` as a compatibility scope selector over `public.organizations`; this function is not a per-user authorization gate.
+
+After applying the ordered migrations, run `supabase/sql/production_preflight.sql` again and do not continue deployment if it returns any issue rows.
 
 ## Before enabling automated migrations
 
