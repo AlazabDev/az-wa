@@ -3,7 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
 
-const WEBHOOK_URL = "/api/public/webhooks/meta/whatsapp";
+import {
+  META_WEBHOOK_CALLBACK_URL,
+  META_WEBHOOK_INTERNAL_PATH,
+} from "@/lib/meta/public-config";
 
 export const Route = createFileRoute("/_authenticated/webhooks")({
   head: () => ({
