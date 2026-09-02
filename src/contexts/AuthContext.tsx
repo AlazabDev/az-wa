@@ -7,6 +7,10 @@ export type TenantMembership = {
   role: string;
 };
 
+type TenantScopeRow = {
+  id: string;
+};
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
@@ -41,8 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.rpc("authenticated_tenant_scopes");
     if (error) throw error;
 
-    const rows: TenantMembership[] = (data ?? []).map((tenant) => ({
-      tenant_id: String(tenant.id),
+    const tenantScopes = (data ?? []) as TenantScopeRow[];
+    const rows: TenantMembership[] = tenantScopes.map((tenant) => ({
+      tenant_id: tenant.id,
       role: "admin",
     }));
     setMemberships(rows);
