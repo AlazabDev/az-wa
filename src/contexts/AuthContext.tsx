@@ -2,12 +2,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Session, User } from "@supabase/supabase-js";
 import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
 
+// Compatibility shape for legacy UI components. Membership is no longer an
+// authorization concept: every authenticated AzWA user has the same access.
 export type TenantMembership = {
   tenant_id: string;
-  role: string;
+  role: "admin";
 };
 
-type TenantScopeRow = {
+type OrganizationScopeRow = {
   id: string;
 };
 
@@ -17,7 +19,7 @@ type AuthContextValue = {
   loading: boolean;
   memberships: TenantMembership[];
   currentTenantId: string | null;
-  currentRole: string | null;
+  currentRole: "admin" | null;
   setCurrentTenantId: (tenantId: string) => void;
   refreshMemberships: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.getItem(TENANT_KEY),
   );
 
-  const loadMemberships = useCallback(async (userId?: string) => {
+  const loadOrganizationScopes = useCallback(async (userId?: string) => {
     if (!userId) {
       setMemberships([]);
       setTenantId(null);
@@ -42,19 +44,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase.rpc("authenticated_tenant_scopes");
+    // Scope selection only. Authorization is intentionally simple: any
+    // authenticated AzWA user may work with every organization.
+    const { data, error } = await supabase.from("organizations").select("id");
     if (error) throw error;
 
-    const tenantScopes = (data ?? []) as TenantScopeRow[];
-    const rows: TenantMembership[] = tenantScopes.map((tenant) => ({
-      tenant_id: tenant.id,
-      role: "admin",
-    }));
+    const rows: TenantMembership[] = ((data ?? []) as OrganizationScopeRow[]).map(
+      (organization) => ({
+        tenant_id: organization.id,
+        role: "admin",
+      }),
+    );
+
     setMemberships(rows);
 
     const stored = localStorage.getItem(TENANT_KEY);
-    const validStored = stored && rows.some((membership) => membership.tenant_id === stored);
+    const validStored = stored && rows.some((scope) => scope.tenant_id === stored);
     const next = validStored ? stored : (rows[0]?.tenant_id ?? null);
+
     setTenantId(next);
     if (next) localStorage.setItem(TENANT_KEY, next);
     else localStorage.removeItem(TENANT_KEY);
@@ -63,11 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    void supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       setSession(data.session);
       try {
-        await loadMemberships(data.session?.user.id);
+        await loadOrganizationScopes(data.session?.user.id);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
       queueMicrotask(async () => {
         try {
-          await loadMemberships(nextSession?.user.id);
+          await loadOrganizationScopes(nextSession?.user.id);
         } finally {
           if (mounted) setLoading(false);
         }
@@ -88,11 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [loadMemberships]);
+  }, [loadOrganizationScopes]);
 
   const setCurrentTenantId = useCallback(
     (tenantId: string) => {
-      if (!memberships.some((membership) => membership.tenant_id === tenantId)) return;
+      if (!memberships.some((scope) => scope.tenant_id === tenantId)) return;
       setTenantId(tenantId);
       localStorage.setItem(TENANT_KEY, tenantId);
     },
@@ -100,11 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const refreshMemberships = useCallback(
-    () => loadMemberships(session?.user.id),
-    [loadMemberships, session?.user.id],
+    () => loadOrganizationScopes(session?.user.id),
+    [loadOrganizationScopes, session?.user.id],
   );
 
-  const currentRole = currentTenantId ? "admin" : null;
+  const currentRole: "admin" | null = currentTenantId ? "admin" : null;
 
   const value = useMemo<AuthContextValue>(
     () => ({
