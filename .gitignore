@@ -8,8 +8,8 @@ dist-ssr/
 .nitro/
 
 # Environment / secrets
-.env
 .env.*
+!.env
 !.env.example
 *.local
 .dev.vars
