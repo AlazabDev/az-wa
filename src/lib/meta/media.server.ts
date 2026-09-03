@@ -150,7 +150,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
       error: "media row not found",
     };
   }
-  if (media.download_status === "downloaded" && media.storage_path) {
+  if (media.download_status === "stored" && media.storage_path) {
     await enqueueCpsMediaJob({ organizationId: media.organization_id, mediaId: media.id });
     return {
       mediaId: media.id,
@@ -247,7 +247,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
   await supabaseAdmin
     .from("media")
     .update({
-      download_status: "downloaded",
+      download_status: "stored",
       storage_provider: "minio",
       storage_bucket: uploaded.bucket,
       storage_path: uploaded.key,
