@@ -2,8 +2,8 @@
  * WhatsApp media handler — server only.
  *
  * Every inbound media item from every connected WhatsApp number is pulled from
- * Meta immediately, archived in the private MinIO bucket, and tracked in the
- * media/media_download_attempts tables.
+ * Meta immediately, archived in the private MinIO bucket, tracked in the
+ * media/media_download_attempts tables, then queued for CPS processing.
  *
  * Object layout:
  *   <year>/<month>/<folder>/<media-id>.<extension>
@@ -15,6 +15,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
+import { enqueueCpsMediaJob } from "@/lib/cps/media-processing.server";
 import { putMinioObject } from "@/lib/storage/minio.server";
 
 import { GRAPH_BASE, resolveCredential } from "./graph.server";
@@ -150,6 +151,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     };
   }
   if (media.download_status === "downloaded" && media.storage_path) {
+    await enqueueCpsMediaJob({ organizationId: media.organization_id, mediaId: media.id });
     return {
       mediaId: media.id,
       status: "skipped",
@@ -272,6 +274,10 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     null,
     startedAt,
   );
+
+  // Decouple archival from processing. A second durable queue forwards the
+  // stored object to CPS, so CPS downtime never causes loss of WhatsApp media.
+  await enqueueCpsMediaJob({ organizationId: media.organization_id, mediaId: media.id });
 
   return {
     mediaId: media.id,
