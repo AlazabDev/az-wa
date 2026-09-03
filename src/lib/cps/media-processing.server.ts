@@ -44,6 +44,15 @@ function cpsEndpoint(): string | undefined {
   return base ? `${base.replace(/\/+$/, "")}/contentprocessor/submit` : undefined;
 }
 
+function cpsConfigured(): boolean {
+  const hasEndpoint = Boolean(cpsEndpoint());
+  const hasDefaultSchema = Boolean(optionalEnv("CPS_DEFAULT_SCHEMA_ID"));
+  const hasPerTypeSchemas = Boolean(
+    optionalEnv("CPS_SCHEMA_IMAGE_ID") && optionalEnv("CPS_SCHEMA_PDF_ID"),
+  );
+  return hasEndpoint && (hasDefaultSchema || hasPerTypeSchemas);
+}
+
 async function updateCpsMetadata(
   mediaId: string,
   metadata: Json | null,
@@ -65,6 +74,10 @@ export async function enqueueCpsMediaJob(input: {
   organizationId: string;
   mediaId: string;
 }): Promise<void> {
+  // Archival must never depend on CPS configuration. Until CPS is connected,
+  // WhatsApp media remains safely stored without generating dead-letter jobs.
+  if (!cpsConfigured()) return;
+
   const { error } = await supabaseAdmin.from("jobs").insert({
     organization_id: input.organizationId,
     queue_name: CPS_MEDIA_QUEUE,
@@ -235,6 +248,10 @@ async function submitMediaToCps(mediaId: string): Promise<CpsMediaResult> {
 }
 
 export async function drainCpsMediaQueue(limit = 20): Promise<CpsMediaResult[]> {
+  // Do not claim jobs until the CPS connection is complete. This keeps queued
+  // work intact during deployment/configuration changes.
+  if (!cpsConfigured()) return [];
+
   const { data: jobs, error } = await supabaseAdmin.rpc("backend_claim_jobs", {
     p_worker_id: `cps-media-worker-${crypto.randomUUID().slice(0, 8)}`,
     p_queue_names: [CPS_MEDIA_QUEUE],
