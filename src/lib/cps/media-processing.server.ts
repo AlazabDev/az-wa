@@ -131,7 +131,7 @@ async function submitMediaToCps(mediaId: string): Promise<CpsMediaResult> {
     }
   }
 
-  if (media.download_status !== "downloaded" || !media.storage_path) {
+  if (media.download_status !== "stored" || !media.storage_path) {
     return { mediaId: media.id, status: "failed", error: "media is not stored yet" };
   }
 
