@@ -7,6 +7,15 @@ export type MinioUploadResult = {
   status: number;
 };
 
+export type MinioDownloadResult = {
+  bucket: string;
+  key: string;
+  bytes: Uint8Array;
+  contentType: string | null;
+  etag: string | null;
+  status: number;
+};
+
 type MinioConfig = {
   endpoint: URL;
   accessKey: string;
@@ -71,6 +80,53 @@ function signingKey(secretKey: string, dateStamp: string, region: string): Buffe
   return hmac(kService, "aws4_request");
 }
 
+function signedObjectRequest(input: {
+  config: MinioConfig;
+  method: "GET" | "PUT";
+  key: string;
+  payloadHash: string;
+}) {
+  const { config } = input;
+  const { amzDate, dateStamp } = timestampParts();
+  const bucketPath = encodePathPart(config.bucket);
+  const objectPath = encodeObjectKey(input.key);
+  const basePath = config.endpoint.pathname.replace(/\/$/, "");
+  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(/\/+/g, "/");
+  const host = config.endpoint.host;
+  const canonicalHeaders =
+    `host:${host}\n` + `x-amz-content-sha256:${input.payloadHash}\n` + `x-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonicalRequest = [
+    input.method,
+    canonicalUri,
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    input.payloadHash,
+  ].join("\n");
+  const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hashHex(canonicalRequest)].join("\n");
+  const signature = createHmac("sha256", signingKey(config.secretKey, dateStamp, config.region))
+    .update(stringToSign, "utf8")
+    .digest("hex");
+  const authorization =
+    `AWS4-HMAC-SHA256 Credential=${config.accessKey}/${scope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const target = new URL(config.endpoint.toString());
+  target.pathname = canonicalUri;
+  target.search = "";
+
+  return {
+    target,
+    headers: {
+      Authorization: authorization,
+      "x-amz-content-sha256": input.payloadHash,
+      "x-amz-date": amzDate,
+    },
+  };
+}
+
 /**
  * Uploads one private object to the configured MinIO bucket using AWS SigV4.
  * This intentionally uses Node's native fetch/crypto so AzWA does not need a
@@ -82,51 +138,20 @@ export async function putMinioObject(input: {
   contentType: string;
 }): Promise<MinioUploadResult> {
   const config = readConfig();
-  const { amzDate, dateStamp } = timestampParts();
   const requestBody = Uint8Array.from(input.body);
   const payloadHash = hashHex(requestBody);
-
-  const bucketPath = encodePathPart(config.bucket);
-  const objectPath = encodeObjectKey(input.key);
-  const basePath = config.endpoint.pathname.replace(/\/$/, "");
-  const canonicalUri = `${basePath}/${bucketPath}/${objectPath}`.replace(/\/+/g, "/");
-
-  const host = config.endpoint.host;
-  const canonicalHeaders =
-    `host:${host}\n` + `x-amz-content-sha256:${payloadHash}\n` + `x-amz-date:${amzDate}\n`;
-  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
-
-  const canonicalRequest = [
-    "PUT",
-    canonicalUri,
-    "",
-    canonicalHeaders,
-    signedHeaders,
+  const signed = signedObjectRequest({
+    config,
+    method: "PUT",
+    key: input.key,
     payloadHash,
-  ].join("\n");
+  });
 
-  const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
-  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hashHex(canonicalRequest)].join("\n");
-
-  const signature = createHmac("sha256", signingKey(config.secretKey, dateStamp, config.region))
-    .update(stringToSign, "utf8")
-    .digest("hex");
-
-  const authorization =
-    `AWS4-HMAC-SHA256 Credential=${config.accessKey}/${scope}, ` +
-    `SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  const target = new URL(config.endpoint.toString());
-  target.pathname = canonicalUri;
-  target.search = "";
-
-  const response = await fetch(target, {
+  const response = await fetch(signed.target, {
     method: "PUT",
     headers: {
-      Authorization: authorization,
+      ...signed.headers,
       "Content-Type": input.contentType,
-      "x-amz-content-sha256": payloadHash,
-      "x-amz-date": amzDate,
     },
     body: requestBody.buffer,
   });
@@ -139,6 +164,37 @@ export async function putMinioObject(input: {
   return {
     bucket: config.bucket,
     key: input.key,
+    etag: response.headers.get("etag")?.replaceAll('"', "") ?? null,
+    status: response.status,
+  };
+}
+
+/** Reads one private object from MinIO using AWS SigV4. */
+export async function getMinioObject(key: string): Promise<MinioDownloadResult> {
+  const config = readConfig();
+  const payloadHash = hashHex("");
+  const signed = signedObjectRequest({
+    config,
+    method: "GET",
+    key,
+    payloadHash,
+  });
+
+  const response = await fetch(signed.target, {
+    method: "GET",
+    headers: signed.headers,
+  });
+
+  if (!response.ok) {
+    const detail = (await response.text().catch(() => "")).slice(0, 1000);
+    throw new Error(`MinIO download failed (HTTP ${response.status})${detail ? `: ${detail}` : ""}`);
+  }
+
+  return {
+    bucket: config.bucket,
+    key,
+    bytes: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type"),
     etag: response.headers.get("etag")?.replaceAll('"', "") ?? null,
     status: response.status,
   };
