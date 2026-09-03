@@ -78,6 +78,12 @@ export async function enqueueCpsMediaJob(input: {
 
   // Existing queued/running/completed CPS work for the same media is idempotent.
   if (error && error.code !== "23505") throw new Error(error.message);
+
+  // Start immediately after archival. The authenticated cron endpoint remains
+  // the durable retry path if the CPS API is unavailable at receive time.
+  void drainCpsMediaQueue(1).catch((workerError) =>
+    console.error("[AzWA CPS] immediate media processing failed", workerError),
+  );
 }
 
 export type CpsMediaResult = {
@@ -194,12 +200,18 @@ async function submitMediaToCps(mediaId: string): Promise<CpsMediaResult> {
     };
   }
 
-  const body = (await response.json().catch(() => null)) as
-    | { process_id?: string; message?: string }
-    | null;
+  const rawBody = await response.text().catch(() => "");
+  let body: { process_id?: string; message?: string } | null = null;
+  if (rawBody) {
+    try {
+      body = JSON.parse(rawBody) as { process_id?: string; message?: string };
+    } catch {
+      body = null;
+    }
+  }
 
   if (response.status !== 202 || !body?.process_id) {
-    const detail = body?.message ?? (await response.text().catch(() => ""));
+    const detail = body?.message ?? rawBody;
     return {
       mediaId: media.id,
       status: "failed",
