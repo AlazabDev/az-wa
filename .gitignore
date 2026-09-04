@@ -11,6 +11,8 @@ dist-ssr/
 .env.*
 !.env
 !.env.example
+meta-complete.env
+*.env
 *.local
 .dev.vars
 
@@ -44,3 +46,8 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+
+# AzWA environment policy
+!.env
+!.env.example
+.env.local

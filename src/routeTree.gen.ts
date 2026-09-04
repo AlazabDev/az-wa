@@ -56,6 +56,7 @@ import { Route as LegacyTemplatesRouteImport } from './routes/legacy.templates'
 import { Route as LegacyWebhooksRouteImport } from './routes/legacy.webhooks'
 import { Route as LegacyFlowsIndexRouteImport } from './routes/legacy.flows.index'
 import { Route as LegacyFlowsNewRouteImport } from './routes/legacy.flows.new'
+import { Route as ApiPublicJobsAutomationRouteImport } from './routes/api/public/jobs/automation'
 import { Route as ApiPublicJobsMediaRouteImport } from './routes/api/public/jobs/media'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
@@ -295,6 +296,11 @@ const LegacyFlowsNewRoute = LegacyFlowsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => LegacyFlowsRoute,
 } as any)
+const ApiPublicJobsAutomationRoute = ApiPublicJobsAutomationRouteImport.update({
+  id: '/api/public/jobs/automation',
+  path: '/api/public/jobs/automation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicJobsMediaRoute = ApiPublicJobsMediaRouteImport.update({
   id: '/api/public/jobs/media',
   path: '/api/public/jobs/media',
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/legacy/': typeof LegacyIndexRoute
   '/legacy/flows/new': typeof LegacyFlowsNewRoute
   '/legacy/flows/': typeof LegacyFlowsIndexRoute
+  '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/legacy': typeof LegacyIndexRoute
   '/legacy/flows/new': typeof LegacyFlowsNewRoute
   '/legacy/flows': typeof LegacyFlowsIndexRoute
+  '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/legacy/': typeof LegacyIndexRoute
   '/legacy/flows/new': typeof LegacyFlowsNewRoute
   '/legacy/flows/': typeof LegacyFlowsIndexRoute
+  '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -506,6 +515,7 @@ export interface FileRouteTypes {
     | '/legacy/'
     | '/legacy/flows/new'
     | '/legacy/flows/'
+    | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
@@ -554,6 +564,7 @@ export interface FileRouteTypes {
     | '/legacy'
     | '/legacy/flows/new'
     | '/legacy/flows'
+    | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   id:
@@ -605,6 +616,7 @@ export interface FileRouteTypes {
     | '/legacy/'
     | '/legacy/flows/new'
     | '/legacy/flows/'
+    | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
@@ -616,6 +628,7 @@ export interface RootRouteChildren {
   HealthzRoute: typeof HealthzRoute
   LegacyRoute: typeof LegacyRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
+  ApiPublicJobsAutomationRoute: typeof ApiPublicJobsAutomationRoute
   ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
   ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
@@ -951,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegacyFlowsNewRouteImport
       parentRoute: typeof LegacyFlowsRoute
     }
+    '/api/public/jobs/automation': {
+      id: '/api/public/jobs/automation'
+      path: '/api/public/jobs/automation'
+      fullPath: '/api/public/jobs/automation'
+      preLoaderRoute: typeof ApiPublicJobsAutomationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/media': {
       id: '/api/public/jobs/media'
       path: '/api/public/jobs/media'
@@ -1085,6 +1105,7 @@ const rootRouteChildren: RootRouteChildren = {
   HealthzRoute: HealthzRoute,
   LegacyRoute: LegacyRouteWithChildren,
   ReadyzRoute: ReadyzRoute,
+  ApiPublicJobsAutomationRoute: ApiPublicJobsAutomationRoute,
   ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
   ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }

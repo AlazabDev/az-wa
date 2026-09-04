@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { AutomationRuleFormDialog } from "@/components/azwa/automation-rule-form";
 import { PageHeader } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
 
@@ -14,6 +15,7 @@ function AutomationPage() {
       <PageHeader
         title="Automation"
         description="Automation rules, scope, triggers and execution history."
+        actions={<AutomationRuleFormDialog />}
       />
       <div className="grid gap-6">
         <RecordTable

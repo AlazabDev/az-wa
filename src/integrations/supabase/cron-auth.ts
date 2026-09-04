@@ -17,7 +17,8 @@ export async function authenticateCronRequest(request: Request): Promise<Respons
   const digest = (value: string) => createHash("sha256").update(value, "utf8").digest();
   const providedDigest = digest(token);
   const currentMatches = timingSafeEqual(providedDigest, digest(currentSecret));
-  const previousMatches = timingSafeEqual(providedDigest, digest(previousSecret ?? currentSecret));
+  const previousMatches =
+    Boolean(previousSecret) && timingSafeEqual(providedDigest, digest(previousSecret as string));
 
   if (!currentMatches && !previousMatches) {
     return new Response("Unauthorized", { status: 401 });
