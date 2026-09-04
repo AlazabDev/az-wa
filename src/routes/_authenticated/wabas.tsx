@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
@@ -10,7 +11,7 @@ import {
   useWabaSubscribedApps,
   useWhatsappFlows,
 } from "@/lib/meta/inventory-data";
-import { supabase } from "@/integrations/supabase/client";
+import { getWabaStats } from "@/lib/meta/waba-stats.functions";
 import { useScope } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/wabas")({
@@ -36,25 +37,20 @@ function WabasPage() {
   const { data: subscribedApps = [] } = useWabaSubscribedApps();
   const { data: assignedUsers = [] } = useWabaAssignedUsers();
   const { data: wabaExtras = {} } = useWabaInventoryExtras();
-
-  const { data: perWaba } = useQuery({
+  const loadWabaStats = useServerFn(getWabaStats);
+  const { data: perWaba = {} } = useQuery({
     queryKey: ["waba-stats"],
-    queryFn: async () => {
-      const [{ data: templates }, { data: messages }, { data: errors }] = await Promise.all([
-        supabase.from("templates").select("waba_id, status"),
-        supabase.from("messages").select("whatsapp_number_id"),
-        supabase.from("api_errors").select("waba_id").eq("status", "open"),
-      ]);
-      return { templates: templates ?? [], messages: messages ?? [], errors: errors ?? [] };
-    },
+    queryFn: () => loadWabaStats({ data: {} }),
+    refetchInterval: 30_000,
   });
 
-  const visible = wabas.filter((w) => {
+  const visible = wabas.filter((waba) => {
     if (scope.kind === "all") return true;
-    if (scope.kind === "business") return w.business_portfolio_id === scope.id;
-    if (scope.kind === "waba") return w.id === scope.id;
-    return numbers.some((n) => n.id === scope.id && n.waba_id === w.id);
+    if (scope.kind === "business") return waba.business_portfolio_id === scope.id;
+    if (scope.kind === "waba") return waba.id === scope.id;
+    return numbers.some((number) => number.id === scope.id && number.waba_id === waba.id);
   });
+
   const visibleWabaIds = new Set(visible.map((waba) => waba.id));
   const visibleApps = subscribedApps.filter((app) => visibleWabaIds.has(app.waba_id));
   const visibleUsers = assignedUsers.filter((user) => visibleWabaIds.has(user.waba_id));
@@ -63,8 +59,9 @@ function WabasPage() {
     <>
       <PageHeader
         title="WhatsApp Business Accounts"
-        description="Live WABA inventory from Meta Graph API v26. Missing assets are retained and marked instead of deleted."
+        description="Live WABA inventory from the clean AzWA backend. Missing assets remain visible instead of being fabricated or silently removed."
       />
+
       <Panel title="WABA inventory">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -82,31 +79,32 @@ function WabasPage() {
                 <th className="py-2 pr-4 font-medium">AzWA</th>
                 <th className="py-2 pr-4 font-medium">Users</th>
                 <th className="py-2 pr-4 font-medium">Messages</th>
-                <th className="py-2 pr-4 font-medium">Errors</th>
+                <th className="py-2 pr-4 font-medium">Open Errors</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 pr-4 font-medium">Health</th>
                 <th className="py-2 pr-4 font-medium">Last Sync</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((w) => {
-                const portfolio = portfolios.find((p) => p.id === w.business_portfolio_id);
-                const extra = wabaExtras[w.id];
-                const wabaNumberIds = new Set(
-                  numbers.filter((n) => n.waba_id === w.id).map((n) => n.id),
+              {visible.map((waba) => {
+                const portfolio = portfolios.find(
+                  (item) => item.id === waba.business_portfolio_id,
                 );
+                const extra = wabaExtras[waba.id];
+                const wabaNumbers = numbers.filter((number) => number.waba_id === waba.id);
                 const wabaApps = subscribedApps.filter(
-                  (app) => app.waba_id === w.id && app.status === "active",
+                  (app) => app.waba_id === waba.id && app.status === "active",
                 );
-                const messageCount = (perWaba?.messages ?? []).filter(
-                  (message) =>
-                    message.whatsapp_number_id !== null &&
-                    wabaNumberIds.has(message.whatsapp_number_id),
-                ).length;
+                const stats = perWaba[waba.id] ?? {
+                  templates: 0,
+                  messages: 0,
+                  openErrors: 0,
+                };
+
                 return (
-                  <tr key={w.id} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 pr-4 font-mono text-xs">{w.meta_waba_id}</td>
-                    <td className="py-2 pr-4">{w.name ?? "—"}</td>
+                  <tr key={waba.id} className="border-b border-border/60 last:border-0">
+                    <td className="py-2 pr-4 font-mono text-xs">{waba.meta_waba_id}</td>
+                    <td className="py-2 pr-4">{waba.name ?? "—"}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
                       {portfolio?.meta_business_id ?? "—"}
                     </td>
@@ -116,16 +114,12 @@ function WabasPage() {
                     <td className="py-2 pr-4 text-xs">
                       {[extra?.currency, extra?.timezone].filter(Boolean).join(" / ") || "—"}
                     </td>
-                    <td className="py-2 pr-4 tabular-nums">{wabaNumberIds.size}</td>
+                    <td className="py-2 pr-4 tabular-nums">{wabaNumbers.length}</td>
+                    <td className="py-2 pr-4 tabular-nums">{stats.templates}</td>
                     <td className="py-2 pr-4 tabular-nums">
-                      {(perWaba?.templates ?? []).filter((t) => t.waba_id === w.id).length}
-                    </td>
-                    <td className="py-2 pr-4 tabular-nums">
-                      {
-                        flows.filter(
-                          (flow) => flow.waba_id === w.id && flow.status !== "MISSING_FROM_META",
-                        ).length
-                      }
+                      {flows.filter(
+                        (flow) => flow.waba_id === waba.id && flow.status !== "MISSING_FROM_META",
+                      ).length}
                     </td>
                     <td className="py-2 pr-4 tabular-nums">{wabaApps.length}</td>
                     <td className="py-2 pr-4">
@@ -136,22 +130,20 @@ function WabasPage() {
                     <td className="py-2 pr-4 tabular-nums">
                       {
                         assignedUsers.filter(
-                          (user) => user.waba_id === w.id && user.status === "active",
+                          (user) => user.waba_id === waba.id && user.status === "active",
                         ).length
                       }
                     </td>
-                    <td className="py-2 pr-4 tabular-nums">{messageCount}</td>
-                    <td className="py-2 pr-4 tabular-nums">
-                      {(perWaba?.errors ?? []).filter((e) => e.waba_id === w.id).length}
+                    <td className="py-2 pr-4 tabular-nums">{stats.messages}</td>
+                    <td className="py-2 pr-4 tabular-nums">{stats.openErrors}</td>
+                    <td className="py-2 pr-4">
+                      <StatusBadge value={waba.status} />
                     </td>
                     <td className="py-2 pr-4">
-                      <StatusBadge value={w.status} />
-                    </td>
-                    <td className="py-2 pr-4">
-                      <StatusBadge value={w.health} />
+                      <StatusBadge value={waba.health} />
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {w.last_synced_at ? new Date(w.last_synced_at).toLocaleString() : "Never"}
+                      {waba.last_synced_at ? new Date(waba.last_synced_at).toLocaleString() : "Never"}
                     </td>
                   </tr>
                 );
@@ -211,12 +203,11 @@ function WabasPage() {
               })}
             </tbody>
           </table>
-          {visibleApps.length === 0 && (
+          {visibleApps.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No subscribed-app inventory is available in this scope yet. Run Business Portfolio
-              Sync before release.
+              No subscribed-app inventory is available in this scope yet.
             </p>
-          )}
+          ) : null}
         </div>
       </Panel>
 
@@ -258,13 +249,12 @@ function WabasPage() {
               })}
             </tbody>
           </table>
-          {visibleUsers.length === 0 && (
+          {visibleUsers.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No assigned-user rows are available. The audited Meta inventory returned permission
-              errors for this edge; check Health after Portfolio Sync instead of assuming zero
-              users.
+              Assigned-user state is not authoritative yet; the audited Meta edge returned
+              permission errors and is intentionally not treated as zero.
             </p>
-          )}
+          ) : null}
         </div>
       </Panel>
     </>
