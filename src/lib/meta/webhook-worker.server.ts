@@ -1,4 +1,5 @@
 import { supabaseAdmin, supabaseRuntimeAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 import { syncWabaFlows } from "./flows.server";
 import {
   applyTemplateWebhookChange,
@@ -59,12 +60,25 @@ function stringField(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function asJson(value: unknown) {
-  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+function asJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value)) as Json;
 }
 
 function nullableDbString(value: string | null | undefined): string {
   return value ?? (null as unknown as string);
+}
+
+async function finalizeWebhookEvent(eventId: string, success: boolean, errorMessage: string | null) {
+  // The live clean database contains this 002 RPC; the checked-in generated
+  // Supabase type can lag behind the runtime schema between type regenerations.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const runtime = supabaseRuntimeAdmin as any;
+  const { error } = await runtime.rpc("backend_finalize_webhook_event", {
+    p_event_id: eventId,
+    p_success: success,
+    p_error: errorMessage,
+  });
+  if (error) throw new Error(`Unable to finalize webhook event: ${error.message}`);
 }
 
 async function ensureOperationalAlert(
@@ -206,13 +220,7 @@ async function processPersistedEvent(eventId: string) {
     }
   }
 
-  const { error: finalizeError } = await supabaseAdmin.rpc("backend_finalize_webhook_event", {
-    p_event_id: event.id,
-    p_success: true,
-    p_error: nullableDbString(null),
-  });
-  if (finalizeError) throw new Error(`Unable to finalize webhook event: ${finalizeError.message}`);
-
+  await finalizeWebhookEvent(event.id, true, null);
   return { status: "processed" as const };
 }
 
@@ -277,11 +285,11 @@ export async function drainWebhookQueue(limit = 50, workerId = `webhook-worker-$
 
       const state = await failJob(job, message);
       if (state === "dead") {
-        await supabaseAdmin.rpc("backend_finalize_webhook_event", {
-          p_event_id: eventId,
-          p_success: false,
-          p_error: message,
-        });
+        try {
+          await finalizeWebhookEvent(eventId, false, message);
+        } catch (finalizeError) {
+          console.error("[AzWA webhook worker] unable to mark dead event failed", finalizeError);
+        }
       } else {
         await supabaseRuntimeAdmin
           .from("webhook_events")
