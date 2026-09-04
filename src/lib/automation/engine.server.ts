@@ -67,11 +67,13 @@ async function matchingRules(ctx: AutomationTriggerContext): Promise<RuleRow[]> 
     .select("id, scope_waba_id, scope_business_portfolio_id")
     .in(
       "id",
-      (data ?? []).map((r) => r.id),
+      (data ?? []).map((r: { id: string }) => r.id),
     );
-  const scopeById = new Map((numberRows ?? []).map((r) => [r.id, r]));
+  const scopeById = new Map<string, { scope_waba_id: string | null; scope_business_portfolio_id: string | null }>(
+    (numberRows ?? []).map((r: { id: string; scope_waba_id: string | null; scope_business_portfolio_id: string | null }) => [r.id, r]),
+  );
 
-  return (data ?? []).filter((rule) => {
+  return (data ?? []).filter((rule: { id: string }) => {
     const scope = scopeById.get(rule.id);
     if (!scope) return true;
     if (scope.scope_waba_id && scope.scope_waba_id !== ctx.wabaId) return false;
