@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+
+import { readRecordTable } from "@/lib/record-table.functions";
 
 import { Panel } from "./page-header";
 import { StatusBadge } from "./status-badge";
@@ -53,18 +55,16 @@ export function RecordTable({
   title?: string;
   emptyLabel?: string;
 }) {
-  const { data = [], isLoading } = useQuery({
+  const readRecords = useServerFn(readRecordTable);
+  const {
+    data = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["record-table", table, orderBy, limit],
-    queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .from(table as any)
-        .select("*")
-        .order(orderBy, { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      return (data ?? []) as unknown as Row[];
-    },
+    queryFn: async (): Promise<Row[]> =>
+      (await readRecords({ data: { table, orderBy, limit } })) as Row[],
     refetchInterval: 30_000,
   });
 
@@ -93,10 +93,20 @@ export function RecordTable({
             ))}
           </tbody>
         </table>
-        {!isLoading && data.length === 0 && (
+
+        {isError ? (
+          <p className="py-8 text-center text-sm text-destructive">
+            {error instanceof Error ? error.message : "Unable to load records"}
+          </p>
+        ) : null}
+
+        {!isLoading && !isError && data.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>
-        )}
-        {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>}
+        ) : null}
+
+        {isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
+        ) : null}
       </div>
     </Panel>
   );
