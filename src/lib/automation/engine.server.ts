@@ -16,7 +16,11 @@
  *                           webhook (same pattern as drainMediaQueue) with a
  *                           cron worker as the retry safety net.
  */
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin as typedSupabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Runtime client intentionally follows the live clean schema.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabaseAdmin = typedSupabaseAdmin as any;
 
 import { evaluateConditions } from "./evaluate.server";
 import { executeAction } from "./actions.server";

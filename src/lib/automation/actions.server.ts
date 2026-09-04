@@ -6,7 +6,11 @@
  * whatsapp_numbers.is_enabled is only ever true when the number AND its
  * parent WABA are both active, so that single check is sufficient here.
  */
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin as typedSupabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Runtime client intentionally follows the live clean schema.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabaseAdmin = typedSupabaseAdmin as any;
 
 import { clientForNumber } from "../meta/graph.server";
 import type { ActionDef, AutomationTriggerContext } from "./types";
