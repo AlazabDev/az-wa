@@ -26,6 +26,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Video,
   Webhook,
 } from "lucide-react";
 
@@ -87,6 +88,7 @@ const NAV: NavGroup[] = [
   {
     section: "Administration",
     items: [
+      { label: "Meta App Review Studio", to: "/app-review", icon: Video },
       { label: "Users & Roles", to: "/users", icon: ShieldCheck },
       { label: "Audit Logs", to: "/audit", icon: ScrollText },
       { label: "Settings", to: "/settings", icon: Settings },
