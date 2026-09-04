@@ -1,0 +1,9 @@
+[Unit]
+Description=AzWA Runtime Queue Drain
+After=az-wa.service network-online.target
+Requires=az-wa.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=__APP_DIR__/.env
+ExecStart=/usr/bin/curl --fail --silent --show-error --max-time 55 --request POST --header "Authorization: Bearer ${AZWA_CRON_SECRET}" --header "X-AzWA-Worker-Id: systemd-runtime" "http://127.0.0.1:8085/api/public/jobs/runtime?webhooks=50&messages=20&media=20"
