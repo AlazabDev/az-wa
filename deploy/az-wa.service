@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=__APP_DIR__
 EnvironmentFile=__APP_DIR__/.env
+EnvironmentFile=-__APP_DIR__/.env.local
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=8085
