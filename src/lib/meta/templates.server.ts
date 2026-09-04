@@ -298,20 +298,26 @@ export async function createWabaTemplate(input: {
     };
   }
 
-  const { error: versionError } = await (supabaseAdmin as unknown as { from: (t: string) => { insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } })
+  const { error: versionError } = await (
+    supabaseAdmin as unknown as {
+      from: (t: string) => {
+        insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      };
+    }
+  )
     .from("template_versions")
     .insert({
-    organization_id: waba.organization_id,
-    template_id: row.id,
-    version_no: 1,
-    // Runtime schema is ahead of the generated client types.
-    snapshot: {
-      components,
-      category: (response.data.category ?? input.category).toUpperCase(),
-      language: input.language,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
-  });
+      organization_id: waba.organization_id,
+      template_id: row.id,
+      version_no: 1,
+      // Runtime schema is ahead of the generated client types.
+      snapshot: {
+        components,
+        category: (response.data.category ?? input.category).toUpperCase(),
+        language: input.language,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+    });
 
   if (versionError) {
     return { ok: false as const, error: versionError.message };
