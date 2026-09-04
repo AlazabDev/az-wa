@@ -39,15 +39,15 @@ for var_name in "${required_vars[@]}"; do
 done
 
 NODE_BIN="$(command -v node || true)"
-BUN_BIN="$(command -v bun || true)"
+NPM_BIN="$(command -v npm || true)"
 CURL_BIN="$(command -v curl || true)"
 
 if [ -z "$NODE_BIN" ]; then
   echo "ERROR: Node.js is not installed or not in PATH" >&2
   exit 1
 fi
-if [ -z "$BUN_BIN" ]; then
-  echo "ERROR: Bun is not installed or not in PATH" >&2
+if [ -z "$NPM_BIN" ]; then
+  echo "ERROR: npm is not installed or not in PATH" >&2
   exit 1
 fi
 if [ -z "$CURL_BIN" ]; then
@@ -78,16 +78,16 @@ else
 fi
 
 echo "==> Installing locked dependencies"
-"$BUN_BIN" install --frozen-lockfile
+"$NPM_BIN" ci
 
 echo "==> Building TanStack/Nitro production output"
-"$BUN_BIN" run build
+"$NPM_BIN" run build
 
 echo "==> TypeScript validation"
-"$BUN_BIN" run typecheck
+"$NPM_BIN" run typecheck
 
 echo "==> Lint validation"
-"$BUN_BIN" run lint
+"$NPM_BIN" run lint
 
 echo "==> Installing systemd application service"
 sed \
