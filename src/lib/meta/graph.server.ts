@@ -4,7 +4,6 @@
  * call graph.facebook.com directly.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { META_INVENTORY_BASELINE } from "./inventory-baseline";
 
 const configuredGraphVersion = (process.env["META_GRAPH_VERSION"] ?? "v26.0").trim();
 export const GRAPH_VERSION = /^v\d+\.\d+$/.test(configuredGraphVersion)
@@ -42,7 +41,8 @@ export async function defaultOrganizationId(): Promise<string | null> {
 /**
  * Resolves the most specific credential for a scope through the database
  * (`backend_resolve_meta_token`), which decrypts the secret from Vault.
- * Precedence: phone -> waba -> business. Falls back to a server env token.
+ * Precedence: phone -> waba -> business. Falls back to a server env token only
+ * when the database has no active scoped credential.
  */
 export async function resolveCredential(scope: {
   whatsappNumberId?: string | null;
@@ -216,51 +216,34 @@ export type NumberScope = {
   business_portfolio_id: string | null;
 };
 
+/**
+ * Loads sender scope strictly from the live database.
+ *
+ * Never fabricate local UUIDs from the audited inventory snapshot. If the DB
+ * mapping is missing, sending must stop and surface an operational mapping error.
+ */
 export async function loadNumberScope(numberId: string): Promise<NumberScope | null> {
   const cleanId = numberId.replace(/^num-/, "");
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("whatsapp_numbers")
     .select("id, organization_id, waba_id, meta_phone_number_id, wabas(business_portfolio_id)")
     .or(`id.eq.${numberId},meta_phone_number_id.eq.${cleanId}`)
     .maybeSingle();
 
-  if (data) {
-    return {
-      id: data.id,
-      organization_id: data.organization_id,
-      waba_id: data.waba_id,
-      meta_phone_number_id: data.meta_phone_number_id,
-      business_portfolio_id: data.wabas?.business_portfolio_id ?? null,
-    };
+  if (error) {
+    console.error("[AzWA Meta] unable to resolve WhatsApp number scope", error.message);
+    return null;
   }
 
-  // Baseline fallback lookup for the 9 audited numbers
-  const baselinePhone = META_INVENTORY_BASELINE.phones.find(
-    (p) => p.metaPhoneId === cleanId || `num-${p.metaPhoneId}` === numberId,
-  );
-  if (baselinePhone) {
-    const WABA_MAP: Record<string, string> = {
-      "1328521857002632": "922964860845619",
-      "1011864912017679": "2154838801923462",
-      "1197837903405393": "1527103499063250",
-      "1061490140383829": "1303965001665007",
-      "1020054711186921": "2144651456337012",
-      "1032441389943808": "1458856398934130",
-      "952530191273396": "1458856398934130",
-      "644995285354639": "459851797218855",
-      "527697617099639": "459851797218855",
-    };
-    const metaWabaId = WABA_MAP[baselinePhone.metaPhoneId] ?? "459851797218855";
-    return {
-      id: numberId,
-      organization_id: "org-alazab-group",
-      waba_id: `waba-${metaWabaId}`,
-      meta_phone_number_id: baselinePhone.metaPhoneId,
-      business_portfolio_id: "bp-31443701205",
-    };
-  }
+  if (!data) return null;
 
-  return null;
+  return {
+    id: data.id,
+    organization_id: data.organization_id,
+    waba_id: data.waba_id,
+    meta_phone_number_id: data.meta_phone_number_id,
+    business_portfolio_id: data.wabas?.business_portfolio_id ?? null,
+  };
 }
 
 export async function clientForNumber(numberId: string) {
