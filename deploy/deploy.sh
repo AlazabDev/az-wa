@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # Production deploy for AzWA using native Node.js + systemd.
-# Usage on the server from the repository root: ./deploy/deploy.sh
+# Usage on the server from the repository root: bash deploy/deploy.sh
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$APP_DIR"
 
 if [ ! -f ".env" ]; then
-  echo "ERROR: .env is missing. Copy .env.example to .env and fill production values." >&2
+  echo "ERROR: .env is missing." >&2
   exit 1
 fi
 
 set -a
 # shellcheck disable=SC1091
 source .env
+if [ -f ".env.local" ]; then
+  # shellcheck disable=SC1091
+  source .env.local
+fi
 set +a
 
 required_vars=(
@@ -36,14 +40,18 @@ done
 
 NODE_BIN="$(command -v node || true)"
 BUN_BIN="$(command -v bun || true)"
+CURL_BIN="$(command -v curl || true)"
 
 if [ -z "$NODE_BIN" ]; then
   echo "ERROR: Node.js is not installed or not in PATH" >&2
   exit 1
 fi
-
 if [ -z "$BUN_BIN" ]; then
   echo "ERROR: Bun is not installed or not in PATH" >&2
+  exit 1
+fi
+if [ -z "$CURL_BIN" ]; then
+  echo "ERROR: curl is not installed or not in PATH" >&2
   exit 1
 fi
 
@@ -60,6 +68,7 @@ else
 fi
 
 chmod 600 .env
+[ ! -f .env.local ] || chmod 600 .env.local
 
 if [ -z "$(git status --porcelain)" ]; then
   echo "==> Pulling latest code"
@@ -80,20 +89,30 @@ echo "==> TypeScript validation"
 echo "==> Lint validation"
 "$BUN_BIN" run lint
 
-echo "==> Installing systemd service"
+echo "==> Installing systemd application service"
 sed \
   -e "s|__APP_DIR__|$APP_DIR|g" \
   -e "s|__NODE_BIN__|$NODE_BIN|g" \
   deploy/az-wa.service \
   | "${SUDO[@]}" tee /etc/systemd/system/az-wa.service >/dev/null
 
+echo "==> Installing systemd runtime worker"
+sed \
+  -e "s|__APP_DIR__|$APP_DIR|g" \
+  deploy/az-wa-runtime.service \
+  | "${SUDO[@]}" tee /etc/systemd/system/az-wa-runtime.service >/dev/null
+
+"${SUDO[@]}" cp deploy/az-wa-runtime.timer /etc/systemd/system/az-wa-runtime.timer
+
 "${SUDO[@]}" systemctl daemon-reload
 "${SUDO[@]}" systemctl enable az-wa.service >/dev/null
+"${SUDO[@]}" systemctl enable az-wa-runtime.timer >/dev/null
 "${SUDO[@]}" systemctl restart az-wa.service
+"${SUDO[@]}" systemctl restart az-wa-runtime.timer
 
 echo "==> Waiting for liveness"
 for i in $(seq 1 45); do
-  if curl -fsS http://127.0.0.1:8085/healthz >/dev/null; then
+  if "$CURL_BIN" -fsS http://127.0.0.1:8085/healthz >/dev/null; then
     break
   fi
   if [ "$i" -eq 45 ]; then
@@ -107,10 +126,9 @@ done
 
 echo "==> Waiting for readiness"
 for i in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:8085/readyz >/dev/null; then
+  if "$CURL_BIN" -fsS http://127.0.0.1:8085/readyz >/dev/null; then
     echo "AzWA is ready after ${i}s"
-    "${SUDO[@]}" systemctl --no-pager --full status az-wa.service
-    exit 0
+    break
   fi
   if [ "$i" -eq 30 ]; then
     echo "ERROR: application is live but not ready" >&2
@@ -120,3 +138,12 @@ for i in $(seq 1 30); do
   fi
   sleep 1
 done
+
+echo "==> Verifying runtime worker"
+"${SUDO[@]}" systemctl start az-wa-runtime.service
+"${SUDO[@]}" systemctl is-enabled az-wa-runtime.timer >/dev/null
+"${SUDO[@]}" systemctl is-active az-wa-runtime.timer >/dev/null
+
+echo "==> AzWA production runtime is active"
+"${SUDO[@]}" systemctl --no-pager --full status az-wa.service
+"${SUDO[@]}" systemctl --no-pager --full status az-wa-runtime.timer
