@@ -1,47 +1,69 @@
-# AzWA database migration policy
+# AzWA clean database migration policy
 
-The repository currently contains two historical database lineages after the `az-wa` / `azwa-os` merge:
+## Current database generation
 
-1. tenant-era migrations (`tenant_id`, `tenant_members`, `wa_numbers`, legacy Finance), and
-2. the unified AzWA schema (`organizations`, `organization_members`, `business_portfolios`, `wabas`, `whatsapp_numbers`).
+The previous AzWA Supabase backend was intentionally deleted on 2026-09-04.
+The current backend was rebuilt from a clean database and validated in ordered stages:
 
-The production project configured at the repository root is:
+1. `001` — identity / RBAC / Meta control plane.
+2. `001A` — explicit server-only RLS policies + covering FK indexes.
+3. `001B` — audited Meta inventory seed.
+4. `002` — messaging runtime / webhook persistence / outbox / jobs / campaigns / automation / audit.
+5. `002A` — Vault credential import. **Secret-bearing and never committed to Git.**
 
-```text
-pmhuylckjwrongxlrgrx
-```
-
-## Production rule
-
-**Do not run `supabase db push` from this repository until the live migration history has been baselined and the tenant-era migrations have been archived outside `supabase/migrations/`.**
-
-A normal application deployment does not require `db push`. The running TanStack application must target the already-provisioned production schema and must pass `supabase/sql/production_preflight.sql` before traffic is switched.
-
-## Reviewed forward migrations after preflight
-
-Until migration history is baselined, production schema changes remain manual and ordered. The currently required reviewed forward migrations are:
+Validated current inventory:
 
 ```text
-1. supabase/migrations/20260831130000_meta_inventory_completion.sql
-2. supabase/migrations/20260901070000_waba_sender_safety.sql
-3. supabase/migrations/20260902133500_authenticated_access_guard.sql
+Business Portfolio: 1
+Meta Apps: 9
+WABAs: 7
+WhatsApp Numbers: 9
+Templates: 94
+Flows: 21
+Observed WABA/App subscriptions: 17
 ```
 
-Apply them in that order only after reviewing `supabase/sql/production_preflight.sql`.
+Current Business Portfolio Meta ID:
 
-- `20260831130000_meta_inventory_completion.sql` completes the reviewed Meta inventory schema.
-- `20260901070000_waba_sender_safety.sql` makes parent-WABA state part of dispatch authorization and disables child senders whenever a WABA becomes non-active; it never re-enables numbers automatically.
-- `20260902133500_authenticated_access_guard.sql` replaces the temporary `azwa_authenticated_full_access` policies that used always-true expressions with an explicit authenticated-session guard, while preserving the product rule that every signed-in AzWA user has the same application access. It also exposes `authenticated_tenant_scopes()` as a compatibility scope selector over `public.organizations`; this function is not a per-user authorization gate.
+```text
+314437023701205
+```
 
-After applying the ordered migrations, run `supabase/sql/production_preflight.sql` again and do not continue deployment if it returns any issue rows.
+## Critical rule
 
-## Before enabling automated migrations
+**Do not run `supabase db push` from the historical files currently under `supabase/migrations/`.**
 
-1. Export the live schema and migration history from `pmhuylckjwrongxlrgrx`.
-2. Compare it against the required tables/RPCs in `production_preflight.sql`.
-3. Create one reviewed baseline representing the live Organization/WABA schema.
-4. Move old tenant-era SQL to an archival directory that Supabase CLI does not execute.
-5. Add all future schema changes as timestamped, forward-only migrations from that baseline.
-6. Validate the baseline on a disposable database before production use.
+Those files belong to the deleted backend lineage and are not the source of truth for the clean database.
+They contain tenant-era and intermediate schemas that conflict with the current Organization/WABA runtime.
 
-Until those steps are complete, the database migration gate remains intentionally manual.
+Application deployment (`deploy/deploy.sh`) must never execute those historical migrations.
+
+## Production source of truth
+
+The live clean database plus the reviewed clean-backend SQL set are authoritative.
+Before live traffic is enabled, run:
+
+```text
+supabase/sql/production_preflight.sql
+```
+
+Every BLOCKER query must return zero rows.
+
+## Rules for all future schema work
+
+1. Never restore a historical tenant-era table or RPC merely because an old migration contains it.
+2. Never edit the live database with an unreviewed `db push`.
+3. Create forward-only migrations from the clean 2026-09-04 baseline.
+4. Never commit Vault secrets, Meta tokens, App Secrets, Verify Tokens or service-role keys.
+5. `meta_credentials.secret_reference` stores only Vault references; browser clients never receive decrypted values.
+6. Browser table access remains denied. Authenticated UI reads/writes go through reviewed server contracts/RPCs.
+7. Every new foreign key requires a covering index unless there is a documented reason not to create one.
+8. Every new public data table must enable RLS before deployment.
+9. Every `SECURITY DEFINER` function must use an empty/fixed `search_path` and explicit EXECUTE grants.
+10. Webhook processing follows: verify → persist → deduplicate → queue → HTTP 200 → async worker.
+
+## Historical migration directory
+
+The current `supabase/migrations/` directory is retained only as historical repository evidence until it is archived in a dedicated cleanup commit. It must not be executed against the clean AzWA project.
+
+Any automation that attempts to apply it to production is a deployment blocker.
