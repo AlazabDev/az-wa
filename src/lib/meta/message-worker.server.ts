@@ -51,8 +51,6 @@ async function completeJob(jobId: string) {
 }
 
 async function deadLetterJob(job: JobRow, errorMessage: string) {
-  // backend_fail_job dead-letters once attempt >= max_attempts. For a permanent
-  // failure we deliberately collapse max_attempts to the already claimed attempt.
   const { error: capError } = await supabaseRuntimeAdmin
     .from("jobs")
     .update({ max_attempts: Math.max(1, job.attempt) })
@@ -160,12 +158,9 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
 
   if (["submitted", "sent", "delivered", "read"].includes(outbox.status)) {
     await completeJob(job.id);
-    return {
-      jobId: job.id,
-      outboxId,
-      status: "skipped",
-      metaMessageId: outbox.meta_message_id ?? undefined,
-    };
+    return outbox.meta_message_id
+      ? { jobId: job.id, outboxId, status: "skipped", metaMessageId: outbox.meta_message_id }
+      : { jobId: job.id, outboxId, status: "skipped" };
   }
 
   if (["failed", "cancelled"].includes(outbox.status)) {
@@ -173,9 +168,6 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
     return { jobId: job.id, outboxId, status: "skipped" };
   }
 
-  // A stale `sending` row is intentionally NOT resent. Meta has no general
-  // idempotency key for message sends, so retrying after an ambiguous crash can
-  // duplicate a customer message. Send it to DLQ for operator review instead.
   if (outbox.status === "sending") {
     await deadLetterJob(job, `Outbox ${outboxId} is already sending; delivery state is ambiguous`);
     return { jobId: job.id, outboxId, status: "dead", error: "ambiguous_previous_send" };
@@ -217,8 +209,6 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
       null,
     );
 
-    // status=0 is network ambiguity: never auto-resend because Meta may have
-    // accepted the message before the connection failed locally.
     const canRetry = result.status > 0 && retryableHttpStatus(result.status);
     await supabaseAdmin.rpc("backend_finalize_outbox_failure", {
       p_outbox_id: outbox.id,
@@ -257,8 +247,6 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
   });
 
   if (finalizeError) {
-    // Meta accepted the message. Persist the Meta ID defensively and never
-    // retry the external send, even if local finalization failed.
     await supabaseRuntimeAdmin
       .from("message_outbox")
       .update({
