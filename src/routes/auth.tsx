@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type AuthMode = "password" | "magic" | "otp";
-
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
@@ -27,7 +25,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -35,24 +32,13 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [altBusy, setAltBusy] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("azwa_preview_session")) {
-      void navigate({ to: "/dashboard", replace: true });
-      return;
-    }
     void supabase.auth.getSession().then(({ data }) => {
       if (data?.session) void navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
-
-  function switchMode(nextMode: AuthMode) {
-    setMode(nextMode);
-    setError(null);
-    setNotice(null);
-    setOtp("");
-    setOtpSent(false);
-  }
 
   async function signInWithPassword(event: React.FormEvent) {
     event.preventDefault();
@@ -84,7 +70,7 @@ function AuthPage() {
   }
 
   async function sendMagicLink() {
-    setBusy(true);
+    setAltBusy(true);
     setError(null);
     setNotice(null);
 
@@ -106,21 +92,19 @@ function AuthPage() {
     } catch {
       setError("تعذّر إرسال رابط تسجيل الدخول.");
     } finally {
-      setBusy(false);
+      setAltBusy(false);
     }
   }
 
   async function sendOtp() {
-    setBusy(true);
+    setAltBusy(true);
     setError(null);
     setNotice(null);
 
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          shouldCreateUser: false,
-        },
+        options: { shouldCreateUser: false },
       });
 
       if (otpError) {
@@ -133,13 +117,13 @@ function AuthPage() {
     } catch {
       setError("تعذّر إرسال رمز الدخول.");
     } finally {
-      setBusy(false);
+      setAltBusy(false);
     }
   }
 
   async function verifyOtp(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true);
+    setAltBusy(true);
     setError(null);
     setNotice(null);
 
@@ -159,180 +143,127 @@ function AuthPage() {
     } catch {
       setError("تعذّر التحقق من رمز الدخول.");
     } finally {
-      setBusy(false);
+      setAltBusy(false);
     }
   }
 
   const emailReady = email.trim().length > 3;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-primary px-4" dir="rtl">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 shadow-xl">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
-            A
-          </div>
-          <div>
-            <div className="text-lg font-semibold tracking-tight">AzWA</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              WhatsApp Business Operations OS
+    <div
+      className="flex min-h-screen items-center justify-center bg-primary px-4 py-10"
+      dir="rtl"
+    >
+      <div className="w-full max-w-sm space-y-4">
+        <div className="rounded-xl border border-border bg-card p-8 shadow-xl">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
+              A
+            </div>
+            <div>
+              <div className="text-lg font-semibold tracking-tight">AzWA</div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                WhatsApp Business Operations OS
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mb-5 grid grid-cols-3 gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "password" ? "default" : "outline"}
-            onClick={() => switchMode("password")}
-          >
-            كلمة المرور
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "magic" ? "default" : "outline"}
-            onClick={() => switchMode("magic")}
-          >
-            Magic Link
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "otp" ? "default" : "outline"}
-            onClick={() => switchMode("otp")}
-          >
-            OTP
-          </Button>
-        </div>
+          <form onSubmit={signInWithPassword} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                dir="ltr"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              dir="ltr"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">كلمة المرور</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                minLength={8}
+                dir="ltr"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
 
-          {mode === "password" && (
-            <form onSubmit={signInWithPassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="password">كلمة المرور</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  minLength={8}
-                  dir="ltr"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={busy || !emailReady}>
-                {busy ? "جارٍ تسجيل الدخول…" : "تسجيل الدخول"}
-              </Button>
-            </form>
-          )}
-
-          {mode === "magic" && (
-            <Button
-              type="button"
-              className="w-full"
-              disabled={busy || !emailReady}
-              onClick={() => void sendMagicLink()}
-            >
-              {busy ? "جارٍ الإرسال…" : "إرسال رابط تسجيل الدخول"}
+            <Button type="submit" className="w-full" disabled={busy || !emailReady}>
+              {busy ? "جارٍ تسجيل الدخول…" : "تسجيل الدخول"}
             </Button>
-          )}
-
-          {mode === "otp" && (
-            <form onSubmit={verifyOtp} className="space-y-4">
-              {!otpSent ? (
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={busy || !emailReady}
-                  onClick={() => void sendOtp()}
-                >
-                  {busy ? "جارٍ الإرسال…" : "إرسال رمز OTP"}
-                </Button>
-              ) : (
-                <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="otp">رمز الدخول</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      required
-                      dir="ltr"
-                      value={otp}
-                      onChange={(event) => setOtp(event.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={busy || otp.trim().length < 6}>
-                    {busy ? "جارٍ التحقق…" : "تأكيد الرمز"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={busy}
-                    onClick={() => void sendOtp()}
-                  >
-                    إعادة إرسال الرمز
-                  </Button>
-                </>
-              )}
-            </form>
-          )}
+          </form>
 
           {notice && (
-            <p className="text-xs text-muted-foreground" role="status">
+            <p className="mt-4 text-xs text-muted-foreground" role="status">
               {notice}
             </p>
           )}
           {error && (
-            <p className="text-xs text-destructive" role="alert">
+            <p className="mt-4 text-xs text-destructive" role="alert">
               {error}
             </p>
           )}
+        </div>
 
-          <div className="relative my-4 pt-2">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">أو الدخول المباشر</span>
-            </div>
+        <div className="rounded-xl border border-border bg-card p-6 shadow-lg">
+          <div className="mb-1 text-sm font-semibold">طرق دخول بديلة</div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            استخدم نفس البريد الإلكتروني أعلاه لاستلام رابط تسجيل دخول أو رمز OTP.
+          </p>
+
+          <div className="grid gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={altBusy || !emailReady}
+              onClick={() => void sendMagicLink()}
+            >
+              إرسال رابط تسجيل الدخول (Magic Link)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={altBusy || !emailReady}
+              onClick={() => void sendOtp()}
+            >
+              إرسال رمز OTP
+            </Button>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
-            onClick={async () => {
-              const operator = {
-                id: "00000000-0000-0000-0000-000000000001",
-                email: "admin@alazab.com",
-                app_metadata: { role: "super_admin" },
-                user_metadata: { name: "AzWA Master Operator" },
-              };
-              localStorage.setItem("azwa_preview_session", JSON.stringify(operator));
-              await navigate({ to: "/dashboard", replace: true });
-            }}
-          >
-            دخول مباشر لمشرف العمليات (Master Operator)
-          </Button>
+          {otpSent && (
+            <form onSubmit={verifyOtp} className="mt-4 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="otp">رمز الدخول</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  dir="ltr"
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value)}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={altBusy || otp.trim().length < 6}
+              >
+                {altBusy ? "جارٍ التحقق…" : "تأكيد الرمز"}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>
