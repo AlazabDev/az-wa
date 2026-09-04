@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+
+import { readRecordTable } from "@/lib/record-table.functions";
 
 export type WhatsappFlowRow = {
   id: string;
@@ -58,80 +59,100 @@ export type NumberInventoryExtra = {
   code_verification_status: string | null;
 };
 
+function useInventoryReader() {
+  return useServerFn(readRecordTable);
+}
+
 export function useWhatsappFlows() {
+  const readRecords = useInventoryReader();
   return useQuery({
     queryKey: ["whatsapp_flows"],
     queryFn: async (): Promise<WhatsappFlowRow[]> => {
-      const db = supabase as any;
-      const { data, error } = await db
-        .from("whatsapp_flows")
-        .select(
-          "id,organization_id,waba_id,meta_flow_id,name,status,categories,validation_errors,json_version,data_api_version,endpoint_uri,preview_url,metadata,last_synced_at",
-        )
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await readRecords({
+        data: { table: "whatsapp_flows", orderBy: "name", limit: 500 },
+      });
+      return rows as unknown as WhatsappFlowRow[];
     },
+    refetchInterval: 30_000,
   });
 }
 
 export function useWabaSubscribedApps() {
+  const readRecords = useInventoryReader();
   return useQuery({
     queryKey: ["waba_subscribed_apps"],
     queryFn: async (): Promise<WabaSubscribedAppRow[]> => {
-      const db = supabase as any;
-      const { data, error } = await db
-        .from("waba_subscribed_apps")
-        .select(
-          "id,waba_id,meta_app_id,app_name,app_link,app_namespace,app_category,override_callback_uri,is_azwa,status,last_synced_at",
-        )
-        .order("app_name");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await readRecords({
+        data: { table: "waba_subscribed_apps", orderBy: "app_name", limit: 500 },
+      });
+      return rows as unknown as WabaSubscribedAppRow[];
     },
+    refetchInterval: 30_000,
   });
 }
 
 export function useWabaAssignedUsers() {
+  const readRecords = useInventoryReader();
   return useQuery({
     queryKey: ["waba_assigned_users"],
     queryFn: async (): Promise<WabaAssignedUserRow[]> => {
-      const db = supabase as any;
-      const { data, error } = await db
-        .from("waba_assigned_users")
-        .select("id,waba_id,meta_user_id,name,tasks,status,last_synced_at")
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await readRecords({
+        data: { table: "waba_assigned_users", orderBy: "name", limit: 500 },
+      });
+      return rows as unknown as WabaAssignedUserRow[];
     },
+    refetchInterval: 30_000,
   });
 }
 
 export function useWabaInventoryExtras() {
+  const readRecords = useInventoryReader();
   return useQuery({
     queryKey: ["waba_inventory_extras"],
     queryFn: async (): Promise<Record<string, WabaInventoryExtra>> => {
-      const db = supabase as any;
-      const { data, error } = await db
-        .from("wabas")
-        .select("id,message_template_namespace,currency,timezone");
-      if (error) throw error;
-      return Object.fromEntries((data ?? []).map((row: WabaInventoryExtra) => [row.id, row]));
+      const rows = (await readRecords({
+        data: { table: "wabas", orderBy: "created_at", limit: 500 },
+      })) as unknown as Array<WabaInventoryExtra & Record<string, unknown>>;
+
+      return Object.fromEntries(
+        rows.map((row) => [
+          row.id,
+          {
+            id: row.id,
+            message_template_namespace: row.message_template_namespace ?? null,
+            currency: row.currency ?? null,
+            timezone: row.timezone ?? null,
+          },
+        ]),
+      );
     },
+    refetchInterval: 30_000,
   });
 }
 
 export function useNumberInventoryExtras() {
+  const readRecords = useInventoryReader();
   return useQuery({
     queryKey: ["whatsapp_number_inventory_extras"],
     queryFn: async (): Promise<Record<string, NumberInventoryExtra>> => {
-      const db = supabase as any;
-      const { data, error } = await db
-        .from("whatsapp_numbers")
-        .select("id,account_mode,platform_type,throughput_level,code_verification_status");
-      if (error) throw error;
-      return Object.fromEntries((data ?? []).map((row: NumberInventoryExtra) => [row.id, row]));
+      const rows = (await readRecords({
+        data: { table: "whatsapp_numbers", orderBy: "created_at", limit: 500 },
+      })) as unknown as Array<NumberInventoryExtra & Record<string, unknown>>;
+
+      return Object.fromEntries(
+        rows.map((row) => [
+          row.id,
+          {
+            id: row.id,
+            account_mode: row.account_mode ?? null,
+            platform_type: row.platform_type ?? null,
+            throughput_level: row.throughput_level ?? null,
+            code_verification_status: row.code_verification_status ?? null,
+          },
+        ]),
+      );
     },
+    refetchInterval: 30_000,
   });
 }
 
