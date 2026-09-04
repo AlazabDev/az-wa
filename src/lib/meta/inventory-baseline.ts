@@ -1,7 +1,7 @@
 export const META_INVENTORY_BASELINE = {
-  generatedAt: "2026-08-31T09:31:34Z",
+  generatedAt: "2026-09-03T00:00:00Z",
   graphVersion: "v26.0",
-  businessMetaId: "31443701205",
+  businessMetaId: "314437023701205",
   azwaAppId: "1061494059972503",
   counts: {
     wabas: 7,
@@ -14,18 +14,28 @@ export const META_INVENTORY_BASELINE = {
     flows: 21,
     publishedFlows: 15,
     draftFlows: 6,
-    subscribedApps: 18,
+    subscribedApps: 17,
   },
   wabas: [
     {
-      metaWabaId: "922964860845619",
-      name: "Alazab Primary",
+      metaWabaId: "459851797218855",
+      name: "UberFix",
+      phones: 2,
+      templates: 41,
+      flows: 7,
+      publishedFlows: 6,
+      draftFlows: 1,
+      subscribedApps: 5,
+    },
+    {
+      metaWabaId: "988016530965587",
+      name: "Alazab Construction",
       phones: 1,
       templates: 0,
       flows: 0,
       publishedFlows: 0,
       draftFlows: 0,
-      subscribedApps: 1,
+      subscribedApps: 0,
     },
     {
       metaWabaId: "1303965001665007",
@@ -77,33 +87,56 @@ export const META_INVENTORY_BASELINE = {
       draftFlows: 0,
       subscribedApps: 0,
     },
-    {
-      metaWabaId: "459851797218855",
-      name: "UberFix",
-      phones: 2,
-      templates: 41,
-      flows: 7,
-      publishedFlows: 6,
-      draftFlows: 1,
-      subscribedApps: 5,
-    },
   ],
   phones: [
-    { metaPhoneId: "1328521857002632", number: "+20 11 15723930", expectedStatus: "active" },
-    { metaPhoneId: "1061490140383829", number: "+20 11 46397010", expectedStatus: "active" },
-    { metaPhoneId: "1032441389943808", number: "+1 206-479-5608", expectedStatus: "active" },
-    { metaPhoneId: "952530191273396", number: "+1 208-379-9564", expectedStatus: "active" },
-    { metaPhoneId: "1197837903405393", number: "+20 11 46395966", expectedStatus: "active" },
-    { metaPhoneId: "1020054711186921", number: "+1 205-460-5650", expectedStatus: "active" },
+    {
+      metaPhoneId: "1020054711186921",
+      number: "+1 205-460-5650",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "1032441389943808",
+      number: "+1 206-479-5608",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "952530191273396",
+      number: "+1 208-379-9564",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "527697617099639",
+      number: "+1 555-724-5001",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "644995285354639",
+      number: "+1 555-728-5727",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "1251829341344414",
+      number: "+20 10 04006620",
+      expectedStatus: "disconnected",
+    },
     {
       metaPhoneId: "1011864912017679",
       number: "+20 10 92750351",
       expectedStatus: "disconnected",
     },
-    { metaPhoneId: "644995285354639", number: "+1 555-728-5727", expectedStatus: "active" },
-    { metaPhoneId: "527697617099639", number: "+1 555-724-5001", expectedStatus: "active" },
+    {
+      metaPhoneId: "1197837903405393",
+      number: "+20 11 46395966",
+      expectedStatus: "active",
+    },
+    {
+      metaPhoneId: "1061490140383829",
+      number: "+20 11 46397010",
+      expectedStatus: "active",
+    },
   ],
 } as const;
 
-// Audited comparison snapshot only. Runtime discovery is the source of truth;
-// no send, webhook, sync or credential-resolution operation may depend on these IDs.
+// Audited comparison snapshot only. Runtime discovery and the database are the
+// source of truth. No send, webhook, sync or credential-resolution operation
+// may fabricate local UUIDs or depend on this snapshot when DB resolution fails.
