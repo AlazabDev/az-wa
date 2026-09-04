@@ -1,8 +1,12 @@
 import * as facebookSdk from "facebook-nodejs-business-sdk";
 import config from "./config";
 
-const FacebookAdsApi =
-  (facebookSdk as any).FacebookAdsApi || (facebookSdk as any).default?.FacebookAdsApi;
+type SdkModule = {
+  FacebookAdsApi?: new (token: string) => unknown;
+  default?: { FacebookAdsApi?: new (token: string) => unknown };
+};
+const sdk = facebookSdk as unknown as SdkModule;
+const FacebookAdsApi = sdk.FacebookAdsApi || sdk.default?.FacebookAdsApi;
 const api = FacebookAdsApi ? new FacebookAdsApi(config.accessToken || "") : null;
 
 export interface ReplyCTA {
@@ -34,7 +38,7 @@ export class GraphApi {
     messageId: string | undefined,
     senderPhoneNumberId: string,
     requestBody: Record<string, unknown>,
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
       if (messageId) {
         const typingBody = {
@@ -64,7 +68,7 @@ export class GraphApi {
     recipientPhoneNumber: string | undefined,
     messageText: string,
     replyCTAs: ReplyCTA[],
-  ): Promise<any> {
+  ): Promise<unknown> {
     const requestBody = {
       messaging_product: "whatsapp",
       to: recipientPhoneNumber,
@@ -94,7 +98,7 @@ export class GraphApi {
     senderPhoneNumberId: string,
     recipientPhoneNumber: string | undefined,
     options: UtilityTemplateOptions,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { templateName, locale, imageLink } = options;
     const requestBody = {
       messaging_product: "whatsapp",
@@ -130,7 +134,7 @@ export class GraphApi {
     senderPhoneNumberId: string,
     recipientPhoneNumber: string | undefined,
     options: LimitedTimeOfferOptions,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { templateName, locale, imageLink, offerCode } = options;
 
     const currentTime = new Date();
@@ -192,7 +196,7 @@ export class GraphApi {
     senderPhoneNumberId: string,
     recipientPhoneNumber: string | undefined,
     options: MediaCarouselOptions,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { templateName, locale, imageLinks } = options;
     const requestBody = {
       messaging_product: "whatsapp",
