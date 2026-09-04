@@ -1,0 +1,28 @@
+name: Meta inventory guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate audited inventory baseline
+        run: |
+          test "$(grep -c 'businessMetaId: \"314437023701205\"' src/lib/meta/inventory-baseline.ts)" -eq 1
+          test "$(grep -c 'wabas: 7' src/lib/meta/inventory-baseline.ts)" -ge 1
+          test "$(grep -c 'phoneNumbers: 9' src/lib/meta/inventory-baseline.ts)" -eq 1
+          test "$(grep -c 'templates: 94' src/lib/meta/inventory-baseline.ts)" -ge 1
+          test "$(grep -c 'flows: 21' src/lib/meta/inventory-baseline.ts)" -ge 1
+          test "$(grep -c 'subscribedApps: 17' src/lib/meta/inventory-baseline.ts)" -eq 1
+          ! grep -R -n -E '31443701205|922964860845619|1328521857002632' \
+            src/lib/meta src/lib/azwa-data.ts supabase/sql/production_preflight.sql
