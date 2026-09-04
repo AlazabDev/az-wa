@@ -1,16 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
+import { useServerFn } from "@tanstack/react-start";
 
-// Compatibility shape for legacy UI components. Membership is no longer an
-// authorization concept: every authenticated AzWA user has the same access.
+import { legacySupabase as supabase } from "@/integrations/supabase/legacy-client";
+import { getAuthenticatedOrganizationScopes } from "@/lib/auth-scopes.functions";
+
 export type TenantMembership = {
   tenant_id: string;
-  role: "admin";
-};
-
-type OrganizationScopeRow = {
-  id: string;
+  role: string;
 };
 
 type AuthContextValue = {
@@ -35,37 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentTenantId, setTenantId] = useState<string | null>(() =>
     localStorage.getItem(TENANT_KEY),
   );
+  const loadScopes = useServerFn(getAuthenticatedOrganizationScopes);
 
-  const loadOrganizationScopes = useCallback(async (userId?: string) => {
-    if (!userId) {
-      setMemberships([]);
-      setTenantId(null);
-      localStorage.removeItem(TENANT_KEY);
-      return;
-    }
+  const loadOrganizationScopes = useCallback(
+    async (userId?: string) => {
+      if (!userId) {
+        setMemberships([]);
+        setTenantId(null);
+        localStorage.removeItem(TENANT_KEY);
+        return;
+      }
 
-    // Scope selection only. Authorization is intentionally simple: any
-    // authenticated AzWA user may work with every organization.
-    const { data, error } = await supabase.from("organizations").select("id");
-    if (error) throw error;
+      const rows = await loadScopes({ data: {} });
+      setMemberships(rows);
 
-    const rows: TenantMembership[] = ((data ?? []) as OrganizationScopeRow[]).map(
-      (organization) => ({
-        tenant_id: organization.id,
-        role: "admin",
-      }),
-    );
+      const stored = localStorage.getItem(TENANT_KEY);
+      const validStored = stored && rows.some((scope) => scope.tenant_id === stored);
+      const next = validStored ? stored : (rows[0]?.tenant_id ?? null);
 
-    setMemberships(rows);
-
-    const stored = localStorage.getItem(TENANT_KEY);
-    const validStored = stored && rows.some((scope) => scope.tenant_id === stored);
-    const next = validStored ? stored : (rows[0]?.tenant_id ?? null);
-
-    setTenantId(next);
-    if (next) localStorage.setItem(TENANT_KEY, next);
-    else localStorage.removeItem(TENANT_KEY);
-  }, []);
+      setTenantId(next);
+      if (next) localStorage.setItem(TENANT_KEY, next);
+      else localStorage.removeItem(TENANT_KEY);
+    },
+    [loadScopes],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -75,6 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       try {
         await loadOrganizationScopes(data.session?.user.id);
+      } catch (error) {
+        console.error("[AzWA auth] unable to load organization scopes", error);
+        if (mounted) {
+          setMemberships([]);
+          setTenantId(null);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -85,6 +81,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queueMicrotask(async () => {
         try {
           await loadOrganizationScopes(nextSession?.user.id);
+        } catch (error) {
+          console.error("[AzWA auth] unable to refresh organization scopes", error);
+          if (mounted) {
+            setMemberships([]);
+            setTenantId(null);
+          }
         } finally {
           if (mounted) setLoading(false);
         }
@@ -111,9 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loadOrganizationScopes, session?.user.id],
   );
 
-  // Legacy pages still read currentRole, but it is no longer an authorization
-  // source. Every authenticated user is presented as admin for compatibility.
-  const currentRole: string | null = currentTenantId ? "admin" : null;
+  const currentRole = useMemo(
+    () => memberships.find((scope) => scope.tenant_id === currentTenantId)?.role ?? null,
+    [memberships, currentTenantId],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
