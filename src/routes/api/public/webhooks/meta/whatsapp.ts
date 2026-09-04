@@ -12,40 +12,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { supabaseAdmin, supabaseRuntimeAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
-import { syncWabaFlows } from "@/lib/meta/flows.server";
-import { drainMediaQueue } from "@/lib/meta/media.server";
-import {
-  applyTemplateWebhookChange,
-  isTemplateWebhookField,
-} from "@/lib/meta/template-webhook.server";
 import { listWebhookSecrets, matchSignature, matchVerifyToken } from "@/lib/meta/webhook.server";
-
-/** Looks up the internal number/WABA/business-portfolio scope for a Meta phone_number_id. */
-async function resolveNumberScope(organizationId: string, metaPhoneNumberId: string) {
-  const { data } = await supabaseAdmin
-    .from("whatsapp_numbers")
-    .select("id, waba_id, wabas(business_portfolio_id)")
-    .eq("organization_id", organizationId)
-    .eq("meta_phone_number_id", metaPhoneNumberId)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    whatsappNumberId: data.id as string,
-    wabaId: data.waba_id as string,
-    businessPortfolioId: (data.wabas?.business_portfolio_id as string | null) ?? null,
-  };
-}
-
-async function fireAutomation(
-  triggerType: TriggerType,
-  base: Omit<AutomationTriggerContext, "triggerType">,
-) {
-  try {
-    await triggerAutomations({ ...base, triggerType });
-  } catch (error) {
-    console.error(`[AzWA webhook] automation trigger '${triggerType}' failed`, error);
-  }
-}
 
 type MetaMessage = Record<string, unknown> & { id?: string };
 type MetaStatus = Record<string, unknown> & { id?: string };
@@ -103,8 +70,6 @@ async function enqueueWebhookProcessing(input: {
     max_attempts: 8,
   });
 
-  // A Meta redelivery can race an already queued copy of the same event. The
-  // partial unique queue index rejects the duplicate; that is success here.
   if (error && error.code !== "23505") {
     throw new Error(`Unable to enqueue webhook event ${input.eventId}: ${error.message}`);
   }
@@ -143,150 +108,56 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           return new Response("Bad Request", { status: 400 });
         }
 
-        let inboundMediaSeen = false;
+        try {
+          for (const [entryIndex, entry] of (payload.entry ?? []).entries()) {
+            for (const [changeIndex, change] of (entry.changes ?? []).entries()) {
+              const value = change.value ?? {};
+              const metaPhoneId = value.metadata?.phone_number_id ?? null;
+              const metaWabaId = entry.id ?? null;
+              const templateEventId =
+                value.message_template_id != null ? String(value.message_template_id) : null;
+              const firstMessageId =
+                value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
+              const eventType = change.field ?? "unknown";
 
-        for (const [entryIndex, entry] of (payload.entry ?? []).entries()) {
-          for (const [changeIndex, change] of (entry.changes ?? []).entries()) {
-            const value = change.value ?? {};
-            const metaPhoneId = value.metadata?.phone_number_id ?? null;
-            const metaWabaId = entry.id ?? null;
-            const templateEventId =
-              value.message_template_id != null ? String(value.message_template_id) : null;
-            const firstMessageId =
-              value.messages?.[0]?.id ?? value.statuses?.[0]?.id ?? templateEventId ?? null;
-
-            const { data: ingest, error: ingestError } = await supabaseAdmin.rpc(
-              "backend_ingest_webhook_event",
-              {
-                p_organization_id: endpoint.organization_id,
-                p_webhook_endpoint_id: endpoint.webhook_endpoint_id,
-                p_meta_app_id: nullableDbString(endpoint.meta_app_id),
-                p_meta_waba_id: nullableDbString(metaWabaId),
-                p_meta_phone_number_id: nullableDbString(metaPhoneId),
-                p_event_type: change.field ?? "unknown",
-                p_meta_message_id: nullableDbString(firstMessageId),
-                p_deduplication_key: deduplicationKey(raw, entryIndex, changeIndex),
-                p_signature_valid: true,
-                p_payload: asJson({ entry_id: metaWabaId, change }),
-              },
-            );
-            if (ingestError) {
-              console.error("[AzWA webhook] event persistence failed", ingestError.message);
-              return new Response("Service Unavailable", { status: 503 });
-            }
-
-            if (isTemplateWebhookField(change.field)) {
-              const applied = await applyTemplateWebhookChange({
-                organizationId: endpoint.organization_id,
-                metaWabaId,
-                field: change.field,
-                value,
-              });
-              if (applied.handled && !applied.updated && applied.error) {
-                console.error("[AzWA webhook] template lifecycle update failed", applied.error);
-              }
-            }
-
-            if (change.field === "flows") {
-              await refreshFlowsFromWebhook(endpoint.organization_id, metaWabaId);
-            }
-            if (change.field && OPERATIONAL_ALERT_FIELDS.has(change.field)) {
-              await ensureOperationalAlert(
-                endpoint.organization_id,
-                metaWabaId,
-                change.field,
-                value,
-              );
-            }
-
-            const ingestStatus =
-              ingest && typeof ingest === "object" && "status" in ingest
-                ? String((ingest as Record<string, unknown>)["status"])
-                : null;
-
-            if (ingestStatus === "unmapped_number_event" && metaPhoneId) {
-              await ensureUnknownNumberAlert(
-                endpoint.organization_id,
-                metaPhoneId,
-                metaWabaId,
-                value.metadata?.display_phone_number ?? null,
-              );
-              continue;
-            }
-
-            if (!metaPhoneId) continue;
-
-            for (const message of value.messages ?? []) {
-              const sender = typeof message.from === "string" ? message.from : null;
-              const contact = (value.contacts ?? []).find(
-                (candidate) => candidate.wa_id && candidate.wa_id === sender,
-              );
-              const { data: inbound, error: inboundError } = await supabaseAdmin.rpc(
-                "backend_ingest_inbound_message",
+              const { data: ingestData, error: ingestError } = await supabaseAdmin.rpc(
+                "backend_ingest_webhook_event",
                 {
                   p_organization_id: endpoint.organization_id,
-                  p_meta_phone_number_id: metaPhoneId,
-                  p_contact_wa_id: nullableDbString(sender),
-                  p_contact_profile_name: nullableDbString(contact?.profile?.name),
-                  p_message: asJson(message),
+                  p_webhook_endpoint_id: endpoint.webhook_endpoint_id,
+                  p_meta_app_id: nullableDbString(endpoint.meta_app_id),
+                  p_meta_waba_id: nullableDbString(metaWabaId),
+                  p_meta_phone_number_id: nullableDbString(metaPhoneId),
+                  p_event_type: eventType,
+                  p_meta_message_id: nullableDbString(firstMessageId),
+                  p_deduplication_key: deduplicationKey(raw, entryIndex, changeIndex),
+                  p_signature_valid: true,
+                  p_payload: asJson({ entry_id: metaWabaId, change }),
                 },
               );
-              if (inboundError) {
-                console.error("[AzWA webhook] inbound message ingest failed", inboundError.message);
-                continue;
+              if (ingestError) {
+                throw new Error(`Webhook persistence failed: ${ingestError.message}`);
               }
-              if (typeof message.type === "string" && MEDIA_MESSAGE_TYPES.has(message.type))
-                inboundMediaSeen = true;
-              if (
-                inbound &&
-                typeof inbound === "object" &&
-                "status" in inbound &&
-                String((inbound as Record<string, unknown>)["status"]) === "unmapped_number"
-              ) {
-                await ensureUnknownNumberAlert(
-                  endpoint.organization_id,
-                  metaPhoneId,
-                  metaWabaId,
-                  value.metadata?.display_phone_number ?? null,
-                );
-              }
-            }
 
-            for (const status of value.statuses ?? []) {
-              const { data: applied, error: statusError } = await supabaseAdmin.rpc(
-                "backend_apply_message_status",
-                {
-                  p_organization_id: endpoint.organization_id,
-                  p_meta_phone_number_id: metaPhoneId,
-                  p_status: asJson(status),
-                },
-              );
-              if (statusError) {
-                console.error("[AzWA webhook] message status ingest failed", statusError.message);
-                continue;
+              const ingest = asIngestResult(ingestData);
+              if (!ingest.event_id) {
+                throw new Error("Webhook persistence returned no event_id");
               }
-              if (
-                applied &&
-                typeof applied === "object" &&
-                "status" in applied &&
-                String((applied as Record<string, unknown>)["status"]) === "unmapped_number"
-              ) {
-                await ensureUnknownNumberAlert(
-                  endpoint.organization_id,
-                  metaPhoneId,
-                  metaWabaId,
-                  value.metadata?.display_phone_number ?? null,
-                );
+
+              if (ingest.status === "processing") {
+                await enqueueWebhookProcessing({
+                  organizationId: endpoint.organization_id,
+                  eventId: ingest.event_id,
+                  eventType,
+                });
               }
             }
           }
+        } catch (error) {
+          console.error("[AzWA webhook] persistence/queue failure", error);
+          return new Response("Service Unavailable", { status: 503 });
         }
 
-        if (inboundMediaSeen) {
-          void drainMediaQueue(50).catch((error) =>
-            console.error("[AzWA webhook] immediate media archive failed", error),
-          );
-        }
         return new Response("EVENT_RECEIVED", { status: 200 });
       },
     },
