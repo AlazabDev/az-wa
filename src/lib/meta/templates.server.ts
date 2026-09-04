@@ -298,7 +298,9 @@ export async function createWabaTemplate(input: {
     };
   }
 
-  const { error: versionError } = await supabaseAdmin.from("template_versions").insert({
+  const { error: versionError } = await (supabaseAdmin as unknown as { from: (t: string) => { insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } })
+    .from("template_versions")
+    .insert({
     organization_id: waba.organization_id,
     template_id: row.id,
     version_no: 1,

@@ -16,7 +16,11 @@
  *                           webhook (same pattern as drainMediaQueue) with a
  *                           cron worker as the retry safety net.
  */
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin as typedSupabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Runtime client intentionally follows the live clean schema.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabaseAdmin = typedSupabaseAdmin as any;
 
 import { evaluateConditions } from "./evaluate.server";
 import { executeAction } from "./actions.server";
@@ -63,11 +67,13 @@ async function matchingRules(ctx: AutomationTriggerContext): Promise<RuleRow[]> 
     .select("id, scope_waba_id, scope_business_portfolio_id")
     .in(
       "id",
-      (data ?? []).map((r) => r.id),
+      (data ?? []).map((r: { id: string }) => r.id),
     );
-  const scopeById = new Map((numberRows ?? []).map((r) => [r.id, r]));
+  const scopeById = new Map<string, { scope_waba_id: string | null; scope_business_portfolio_id: string | null }>(
+    (numberRows ?? []).map((r: { id: string; scope_waba_id: string | null; scope_business_portfolio_id: string | null }) => [r.id, r]),
+  );
 
-  return (data ?? []).filter((rule) => {
+  return (data ?? []).filter((rule: { id: string }) => {
     const scope = scopeById.get(rule.id);
     if (!scope) return true;
     if (scope.scope_waba_id && scope.scope_waba_id !== ctx.wabaId) return false;
