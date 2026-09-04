@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CheckCircle2, ExternalLink, ShieldCheck, Video } from "lucide-react";
 
@@ -316,9 +316,9 @@ function AppReviewPage() {
             actions={
               selected.demoPath ? (
                 <Button asChild size="sm" variant="outline">
-                  <Link to={selected.demoPath}>
+                  <a href={selected.demoPath}>
                     Open live demo <ExternalLink className="ml-2 size-3.5" />
-                  </Link>
+                  </a>
                 </Button>
               ) : undefined
             }
