@@ -9,7 +9,7 @@ function sendTryOutDemoMessage(
   senderPhoneNumberId: string,
   recipientPhoneNumber: string | undefined,
   messageBody: string,
-): Promise<any> {
+): Promise<unknown> {
   return GraphApi.messageWithInteractiveReply(
     messageId,
     senderPhoneNumberId,
@@ -36,7 +36,7 @@ function sendInteractiveMediaMessage(
   messageId: string | undefined,
   senderPhoneNumberId: string,
   recipientPhoneNumber: string | undefined,
-): Promise<any> {
+): Promise<unknown> {
   return GraphApi.messageWithUtilityTemplate(messageId, senderPhoneNumberId, recipientPhoneNumber, {
     templateName: "grocery_delivery_utility",
     locale: "en_US",
@@ -49,7 +49,7 @@ function sendLimitedTimeOfferMessage(
   messageId: string | undefined,
   senderPhoneNumberId: string,
   recipientPhoneNumber: string | undefined,
-): Promise<any> {
+): Promise<unknown> {
   return GraphApi.messageWithLimitedTimeOfferTemplate(
     messageId,
     senderPhoneNumberId,
@@ -68,7 +68,7 @@ function sendMediaCarouselMessage(
   messageId: string | undefined,
   senderPhoneNumberId: string,
   recipientPhoneNumber: string | undefined,
-): Promise<any> {
+): Promise<unknown> {
   return GraphApi.messageWithMediaCardCarousel(
     messageId,
     senderPhoneNumberId,
