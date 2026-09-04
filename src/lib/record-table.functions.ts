@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
-type RecordRow = Record<string, unknown>;
+type RecordRow = Record<string, Json>;
 
 type ReadInput = {
   table: string;
@@ -65,8 +66,6 @@ const TABLE_RULES: Record<string, TableRule> = {
   team_number_access: { permission: "users.manage" },
   organization_members: { permission: "users.manage" },
   profiles: { permission: "users.manage" },
-
-  // Never expose secret_reference or decrypted Vault values to the browser.
   meta_credentials: {
     permission: "credentials.manage",
     safeColumns:
@@ -91,10 +90,10 @@ function normalizeCredentialRows(rows: RecordRow[]): RecordRow[] {
           : "global";
     return {
       ...row,
-      label: row["name"],
+      label: row["name"] ?? null,
       scope,
-      token_type: row["credential_type"],
-      last_validated_at: row["last_verified_at"],
+      token_type: row["credential_type"] ?? null,
+      last_validated_at: row["last_verified_at"] ?? null,
     };
   });
 }
@@ -127,27 +126,19 @@ export const readRecordTable = createServerFn({ method: "POST" })
 
     const limit = Math.min(500, Math.max(1, Math.trunc(data.limit ?? 100)));
     const orderBy = safeIdentifier(data.orderBy, "created_at");
-    const client = supabaseRuntimeAdmin;
 
-    let query = client
-      .from(data.table)
-      .select(rule.safeColumns ?? "*")
-      .eq("organization_id", organization.id)
-      .order(orderBy, { ascending: false })
-      .limit(limit);
+    // Runtime client intentionally accepts the allowlisted table names above.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const runtime = supabaseRuntimeAdmin as any;
+    const globalCatalog = ["roles", "permissions", "role_permissions"].includes(data.table);
 
-    // Global RBAC catalog tables do not contain organization_id.
-    if (["roles", "permissions", "role_permissions"].includes(data.table)) {
-      query = client
-        .from(data.table)
-        .select(rule.safeColumns ?? "*")
-        .order(orderBy, { ascending: false })
-        .limit(limit);
-    }
+    let query = runtime.from(data.table).select(rule.safeColumns ?? "*");
+    if (!globalCatalog) query = query.eq("organization_id", organization.id);
+    query = query.order(orderBy, { ascending: false }).limit(limit);
 
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
 
-    const normalized = (rows ?? []) as RecordRow[];
+    const normalized = (rows ?? []) as unknown as RecordRow[];
     return data.table === "meta_credentials" ? normalizeCredentialRows(normalized) : normalized;
   });
