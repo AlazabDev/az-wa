@@ -28,7 +28,8 @@
     "node": ">=24"
   },
   "overrides": {
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.1",
+    "qs": "6.16.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

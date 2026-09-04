@@ -16,6 +16,9 @@ meta-complete.env
 *.local
 .dev.vars
 
+/meta/
+meta/
+
 # Supabase local artifacts
 supabase/.temp/
 
