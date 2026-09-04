@@ -1,15 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useNumbers, type WhatsappNumber } from "@/lib/azwa-data";
 import { syncMetaLiveStatus } from "@/lib/meta/live-status.functions";
+import { getPerNumberMessages24h } from "@/lib/monitor.functions";
 
 export const Route = createFileRoute("/_authenticated/monitor")({
   head: () => ({
@@ -20,13 +20,6 @@ export const Route = createFileRoute("/_authenticated/monitor")({
         content:
           "Real-time operations monitor: Meta token, app webhook and WABA subscription status alongside per-number webhook, API health and message volume.",
       },
-      { property: "og:title", content: "Live Monitor — AzWA" },
-      {
-        property: "og:description",
-        content: "Real-time WhatsApp infrastructure monitoring.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MonitorPage,
@@ -52,45 +45,18 @@ type LiveReport = {
 };
 
 function usePerNumberMessagesToday(numbers: WhatsappNumber[]) {
-  const ids = numbers.map((n) => n.id).sort();
+  const loadStats = useServerFn(getPerNumberMessages24h);
+  const ids = numbers.map((number) => number.id).sort();
   return useQuery({
     queryKey: ["monitor-messages-today", ids.join(",")],
     enabled: ids.length > 0,
-    queryFn: async () => {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("messages")
-        .select("whatsapp_number_id, direction, status")
-        .in("whatsapp_number_id", ids)
-        .gte("created_at", since)
-        .limit(10000);
-      if (error) throw error;
-      const counts = new Map<
-        string,
-        { total: number; incoming: number; outgoing: number; failed: number }
-      >();
-      for (const row of data ?? []) {
-        const id = row.whatsapp_number_id as string;
-        const entry = counts.get(id) ?? {
-          total: 0,
-          incoming: 0,
-          outgoing: 0,
-          failed: 0,
-        };
-        entry.total += 1;
-        if (row.direction === "incoming") entry.incoming += 1;
-        if (row.direction === "outgoing") entry.outgoing += 1;
-        if (row.status === "failed") entry.failed += 1;
-        counts.set(id, entry);
-      }
-      return counts;
-    },
+    queryFn: () => loadStats({ data: { numberIds: ids } }),
     refetchInterval: 30_000,
   });
 }
 
 function MetaStatusSummary({ report }: { report: LiveReport }) {
-  const subscribed = report.wabas.filter((w) => w.subscribed).length;
+  const subscribed = report.wabas.filter((waba) => waba.subscribed).length;
   const items: { label: string; value: string; badge: string }[] = [
     {
       label: "System user token",
@@ -117,6 +83,7 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
       badge: report.ok ? "healthy" : "critical",
     },
   ];
+
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
@@ -135,7 +102,7 @@ function MetaStatusSummary({ report }: { report: LiveReport }) {
 function MonitorPage() {
   const runSync = useServerFn(syncMetaLiveStatus);
   const { data: numbers = [], isLoading } = useNumbers();
-  const { data: messageCounts } = usePerNumberMessagesToday(numbers);
+  const { data: messageCounts = {} } = usePerNumberMessagesToday(numbers);
 
   const [report, setReport] = useState<LiveReport | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -157,7 +124,7 @@ function MonitorPage() {
     <>
       <PageHeader
         title="Live Monitor"
-        description="One view of production Meta status and per-number health: webhook delivery, API reachability and today's message volume."
+        description="Production Meta status and per-number health from authenticated server contracts."
         actions={
           <Button type="button" variant="outline" onClick={() => void refresh()} disabled={syncing}>
             <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
@@ -198,6 +165,7 @@ function MonitorPage() {
                   <th className="py-2 pr-4 font-medium">Number</th>
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">Enabled</th>
                   <th className="py-2 pr-4 font-medium">Health</th>
                   <th className="py-2 pr-4 font-medium">Webhook</th>
                   <th className="py-2 pr-4 font-medium">API Health</th>
@@ -208,34 +176,39 @@ function MonitorPage() {
                 </tr>
               </thead>
               <tbody>
-                {numbers.map((n) => {
-                  const counts = messageCounts?.get(n.id);
+                {numbers.map((number) => {
+                  const counts = messageCounts[number.id];
                   return (
-                    <tr key={n.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 pr-4 font-mono text-xs">{n.display_phone_number}</td>
-                      <td className="py-2 pr-4">{n.verified_name ?? n.internal_name ?? "—"}</td>
-                      <td className="py-2 pr-4">
-                        <StatusBadge value={n.status} />
+                    <tr key={number.id} className="border-b border-border/60 last:border-0">
+                      <td className="py-2 pr-4 font-mono text-xs">
+                        {number.display_phone_number}
                       </td>
                       <td className="py-2 pr-4">
-                        <StatusBadge value={n.health} />
+                        {number.verified_name ?? number.internal_name ?? "—"}
                       </td>
                       <td className="py-2 pr-4">
-                        <StatusBadge value={n.webhook_status} />
+                        <StatusBadge value={number.status} />
                       </td>
                       <td className="py-2 pr-4">
-                        <StatusBadge value={n.api_health} />
+                        <StatusBadge value={number.enabled ? "enabled" : "disabled"} />
                       </td>
-                      <td className="py-2 pr-4 text-xs">{n.quality_rating ?? "—"}</td>
+                      <td className="py-2 pr-4">
+                        <StatusBadge value={number.health} />
+                      </td>
+                      <td className="py-2 pr-4">
+                        <StatusBadge value={number.webhook_status} />
+                      </td>
+                      <td className="py-2 pr-4">
+                        <StatusBadge value={number.api_health} />
+                      </td>
+                      <td className="py-2 pr-4 text-xs">{number.quality_rating ?? "—"}</td>
                       <td className="py-2 pr-4 font-semibold">{counts?.total ?? 0}</td>
                       <td className="py-2 pr-4 text-xs text-muted-foreground">
                         {counts ? `${counts.incoming} / ${counts.outgoing}` : "—"}
                       </td>
                       <td className="py-2 pr-4">
                         {counts?.failed ? (
-                          <span className="text-xs font-medium text-destructive">
-                            {counts.failed}
-                          </span>
+                          <span className="text-xs font-medium text-destructive">{counts.failed}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">0</span>
                         )}
@@ -245,14 +218,14 @@ function MonitorPage() {
                 })}
               </tbody>
             </table>
-            {!isLoading && numbers.length === 0 && (
+            {!isLoading && numbers.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 No WhatsApp numbers connected yet.
               </p>
-            )}
-            {isLoading && (
+            ) : null}
+            {isLoading ? (
               <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
-            )}
+            ) : null}
           </div>
         </Panel>
       </div>
