@@ -35,35 +35,40 @@ const SCENARIOS: ReviewScenario[] = [
       "Open the customer conversation in AzWA.",
       "Show the customer's Meta user identity, name and profile picture beside the conversation.",
     ],
-    apiProof: "Read the interacting user's allowed business-asset profile fields and show them in the AzWA customer record.",
+    apiProof:
+      "Read the interacting user's allowed business-asset profile fields and show them in the AzWA customer record.",
   },
   {
     id: "email",
     label: "email",
     family: "Facebook Login",
     status: "backend-required",
-    purpose: "Use the signed-in person's email to identify the authorized AzWA administrator and bind the Meta connection to the correct account.",
+    purpose:
+      "Use the signed-in person's email to identify the authorized AzWA administrator and bind the Meta connection to the correct account.",
     recordingSteps: [
       "Start Facebook Login from AzWA.",
       "Approve the requested login permissions.",
       "Return to AzWA and open the connected-user profile.",
       "Show the returned email associated with the signed-in administrator.",
     ],
-    apiProof: "Read the authenticated user's email after Facebook Login and display it in the connected-user profile.",
+    apiProof:
+      "Read the authenticated user's email after Facebook Login and display it in the connected-user profile.",
   },
   {
     id: "instagram-business-basic",
     label: "instagram_business_basic",
     family: "Instagram",
     status: "backend-required",
-    purpose: "Connect an Instagram professional account and display its identity and account information inside AzWA.",
+    purpose:
+      "Connect an Instagram professional account and display its identity and account information inside AzWA.",
     recordingSteps: [
       "Start Business Login for Instagram.",
       "Authorize the Instagram professional account.",
       "Return to AzWA and select the connected Instagram account.",
       "Show the account identity and basic profile information returned by Instagram.",
     ],
-    apiProof: "Fetch and display the connected Instagram professional account identity using the Instagram API.",
+    apiProof:
+      "Fetch and display the connected Instagram professional account identity using the Instagram API.",
   },
   {
     id: "instagram-business-manage-messages",
@@ -71,14 +76,16 @@ const SCENARIOS: ReviewScenario[] = [
     family: "Instagram",
     status: "backend-required",
     dependency: "instagram_business_basic",
-    purpose: "Receive Instagram Direct conversations in the unified inbox and let an operator reply to a customer who initiated the conversation.",
+    purpose:
+      "Receive Instagram Direct conversations in the unified inbox and let an operator reply to a customer who initiated the conversation.",
     recordingSteps: [
       "Send a DM from a test Instagram user to the connected professional account.",
       "Open Instagram Inbox in AzWA and show the incoming conversation.",
       "Open the conversation and type a reply.",
       "Send the reply and show the resulting message status / Meta message identifier.",
     ],
-    apiProof: "List an Instagram conversation and send a reply through the Instagram messaging API.",
+    apiProof:
+      "List an Instagram conversation and send a reply through the Instagram messaging API.",
     testCallRequired: true,
   },
   {
@@ -87,14 +94,16 @@ const SCENARIOS: ReviewScenario[] = [
     family: "Instagram",
     status: "backend-required",
     dependency: "instagram_basic",
-    purpose: "Load comments from media owned by the connected Instagram professional account and let an authorized operator manage the conversation around those comments.",
+    purpose:
+      "Load comments from media owned by the connected Instagram professional account and let an authorized operator manage the conversation around those comments.",
     recordingSteps: [
       "Connect the Instagram professional account through the Facebook-login based flow used by this permission.",
       "Open an owned Instagram post in AzWA.",
       "Load its comments from Meta.",
       "Show a test comment and perform the supported comment-management action from AzWA.",
     ],
-    apiProof: "Fetch comments for an owned Instagram media object and perform the review-approved management action.",
+    apiProof:
+      "Fetch comments for an owned Instagram media object and perform the review-approved management action.",
     testCallRequired: true,
   },
   {
@@ -103,21 +112,24 @@ const SCENARIOS: ReviewScenario[] = [
     family: "Messenger",
     status: "backend-required",
     dependency: "ads_management",
-    purpose: "Create and manage paid Messenger marketing messages for people who have opted in to receive promotional announcements from the business.",
+    purpose:
+      "Create and manage paid Messenger marketing messages for people who have opted in to receive promotional announcements from the business.",
     recordingSteps: [
       "Select an authorized ad account and Facebook Page.",
       "Open the paid Messenger marketing-message composer.",
       "Select an eligible opted-in audience and create the message/campaign.",
       "Show the submitted campaign and its delivery/performance state returned by Meta.",
     ],
-    apiProof: "Create/manage a paid Messenger marketing message with an authorized ad account and display its Meta status/performance.",
+    apiProof:
+      "Create/manage a paid Messenger marketing message with an authorized ad account and display its Meta status/performance.",
   },
   {
     id: "pages-show-list",
     label: "pages_show_list",
     family: "Facebook Pages",
     status: "backend-required",
-    purpose: "Show the signed-in administrator the Facebook Pages they manage so they can select the Page to connect to AzWA.",
+    purpose:
+      "Show the signed-in administrator the Facebook Pages they manage so they can select the Page to connect to AzWA.",
     recordingSteps: [
       "Start Facebook Login from the Add Facebook Page screen.",
       "Complete the authorization flow.",
@@ -132,14 +144,16 @@ const SCENARIOS: ReviewScenario[] = [
     family: "Facebook Pages",
     status: "backend-required",
     dependency: "pages_show_list",
-    purpose: "Subscribe the selected Facebook Page to AzWA webhooks and show that Page events are received by the application.",
+    purpose:
+      "Subscribe the selected Facebook Page to AzWA webhooks and show that Page events are received by the application.",
     recordingSteps: [
       "Select a Page already returned by the Page selector.",
       "Open Webhook Setup for that Page.",
       "Subscribe the AzWA Meta app to the Page.",
       "Generate a test Page/Messenger event and show the received webhook event in AzWA.",
     ],
-    apiProof: "Subscribe the selected Page to the app and show the resulting subscription plus a received webhook event.",
+    apiProof:
+      "Subscribe the selected Page to the app and show the resulting subscription plus a received webhook event.",
     testCallRequired: true,
   },
   {
@@ -148,14 +162,16 @@ const SCENARIOS: ReviewScenario[] = [
     family: "Messenger",
     status: "backend-required",
     dependency: "pages_manage_metadata + pages_show_list",
-    purpose: "Receive and manage user-initiated Facebook Page Messenger conversations and send customer-support replies from AzWA.",
+    purpose:
+      "Receive and manage user-initiated Facebook Page Messenger conversations and send customer-support replies from AzWA.",
     recordingSteps: [
       "Send a Messenger message from a test user to the connected Facebook Page.",
       "Open Messenger Inbox in AzWA and show the incoming conversation.",
       "Open the conversation and reply from AzWA.",
       "Show that the reply appears in Messenger and that AzWA records the delivery state.",
     ],
-    apiProof: "Read a Page conversation and send a Page Messenger reply using the connected Page access token.",
+    apiProof:
+      "Read a Page conversation and send a Page Messenger reply using the connected Page access token.",
     testCallRequired: true,
   },
   {
@@ -163,14 +179,16 @@ const SCENARIOS: ReviewScenario[] = [
     label: "business_management",
     family: "Business",
     status: "backend-required",
-    purpose: "Read the Alazab business portfolio and authorized assets required to connect the correct Pages, ad accounts and messaging assets to AzWA.",
+    purpose:
+      "Read the Alazab business portfolio and authorized assets required to connect the correct Pages, ad accounts and messaging assets to AzWA.",
     recordingSteps: [
       "Open Business Assets in AzWA.",
       "Authenticate the authorized business administrator.",
       "Load the business portfolio and its supported assets from Meta.",
       "Select an asset and show how it becomes available to the related AzWA integration.",
     ],
-    apiProof: "Read the authorized Meta business portfolio/assets and bind the chosen asset to the AzWA organization.",
+    apiProof:
+      "Read the authorized Meta business portfolio/assets and bind the chosen asset to the AzWA organization.",
     testCallRequired: true,
   },
   {
@@ -178,14 +196,16 @@ const SCENARIOS: ReviewScenario[] = [
     label: "whatsapp_business_messaging",
     family: "WhatsApp",
     status: "ready",
-    purpose: "Send and receive WhatsApp Business messages through the authorized Alazab phone numbers managed by AzWA.",
+    purpose:
+      "Send and receive WhatsApp Business messages through the authorized Alazab phone numbers managed by AzWA.",
     recordingSteps: [
       "Open Inbox and choose an enabled WhatsApp sender.",
       "Send an approved test message to a test recipient.",
       "Show the Meta message identifier and outbound state in Message Outbox.",
       "Reply from the test WhatsApp account and show the inbound message arriving through the webhook.",
     ],
-    apiProof: "Send a Cloud API message and receive the corresponding message/webhook state in AzWA.",
+    apiProof:
+      "Send a Cloud API message and receive the corresponding message/webhook state in AzWA.",
     demoPath: "/inbox",
     testCallRequired: true,
   },
@@ -194,28 +214,32 @@ const SCENARIOS: ReviewScenario[] = [
     label: "public_profile",
     family: "Facebook Login",
     status: "backend-required",
-    purpose: "Authenticate the Meta administrator and display the default public profile identity used by AzWA for the connected Meta session.",
+    purpose:
+      "Authenticate the Meta administrator and display the default public profile identity used by AzWA for the connected Meta session.",
     recordingSteps: [
       "Start Facebook Login from AzWA.",
       "Complete authentication.",
       "Return to the connected-user profile.",
       "Show the returned app-scoped user ID, name and profile picture.",
     ],
-    apiProof: "Read the authenticated user's default public profile fields and display them in AzWA.",
+    apiProof:
+      "Read the authenticated user's default public profile fields and display them in AzWA.",
   },
   {
     id: "whatsapp-business-management",
     label: "whatsapp_business_management",
     family: "WhatsApp",
     status: "ready",
-    purpose: "Manage the authorized WhatsApp Business Accounts, phone numbers, templates, flows and operational metadata used by AzWA.",
+    purpose:
+      "Manage the authorized WhatsApp Business Accounts, phone numbers, templates, flows and operational metadata used by AzWA.",
     recordingSteps: [
       "Open WhatsApp Infrastructure and show the connected WABAs.",
       "Open Phone Numbers and show the Meta phone-number IDs and current API status.",
       "Run Test API for a review/test number.",
       "Open Templates and sync the selected WABA from Meta to prove management access.",
     ],
-    apiProof: "Read WABA/phone-number assets and execute a management operation such as template synchronization.",
+    apiProof:
+      "Read WABA/phone-number assets and execute a management operation such as template synchronization.",
     demoPath: "/numbers",
     testCallRequired: true,
   },
@@ -232,7 +256,8 @@ const SCENARIOS: ReviewScenario[] = [
       "Explain that each channel is connected only after an authorized business administrator grants access.",
       "Show that credentials are resolved server-side and are not exposed in the browser.",
     ],
-    apiProof: "No separate permission API call; this scenario documents the business use case and navigation used throughout App Review.",
+    apiProof:
+      "No separate permission API call; this scenario documents the business use case and navigation used throughout App Review.",
     demoPath: "/dashboard",
   },
 ];
@@ -263,15 +288,21 @@ function AppReviewPage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Review scenarios</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Review scenarios
+          </p>
           <p className="mt-1 text-2xl font-semibold">{SCENARIOS.length}</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">UI/API ready now</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            UI/API ready now
+          </p>
           <p className="mt-1 text-2xl font-semibold">{readyCount}</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Backend still required</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Backend still required
+          </p>
           <p className="mt-1 text-2xl font-semibold">{SCENARIOS.length - readyCount}</p>
         </div>
       </div>
@@ -372,12 +403,16 @@ function AppReviewPage() {
                 <div className="flex items-start gap-2 rounded-md border border-success/30 bg-success/5 p-3 text-sm">
                   <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
                   <p>
-                    The existing AzWA UI has a usable demonstration path for this item. Final recording still requires valid live/test Meta credentials and review-safe test assets.
+                    The existing AzWA UI has a usable demonstration path for this item. Final
+                    recording still requires valid live/test Meta credentials and review-safe test
+                    assets.
                   </p>
                 </div>
               ) : (
                 <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-sm">
-                  <strong>Not ready for submission yet.</strong> The reviewer-facing screen is defined, but the corresponding Facebook/Instagram/Messenger backend adapter and real API proof still have to be connected before recording.
+                  <strong>Not ready for submission yet.</strong> The reviewer-facing screen is
+                  defined, but the corresponding Facebook/Instagram/Messenger backend adapter and
+                  real API proof still have to be connected before recording.
                 </div>
               )}
             </div>

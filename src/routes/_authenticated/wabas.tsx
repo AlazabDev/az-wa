@@ -87,9 +87,7 @@ function WabasPage() {
             </thead>
             <tbody>
               {visible.map((waba) => {
-                const portfolio = portfolios.find(
-                  (item) => item.id === waba.business_portfolio_id,
-                );
+                const portfolio = portfolios.find((item) => item.id === waba.business_portfolio_id);
                 const extra = wabaExtras[waba.id];
                 const wabaNumbers = numbers.filter((number) => number.waba_id === waba.id);
                 const wabaApps = subscribedApps.filter(
@@ -117,9 +115,11 @@ function WabasPage() {
                     <td className="py-2 pr-4 tabular-nums">{wabaNumbers.length}</td>
                     <td className="py-2 pr-4 tabular-nums">{stats.templates}</td>
                     <td className="py-2 pr-4 tabular-nums">
-                      {flows.filter(
-                        (flow) => flow.waba_id === waba.id && flow.status !== "MISSING_FROM_META",
-                      ).length}
+                      {
+                        flows.filter(
+                          (flow) => flow.waba_id === waba.id && flow.status !== "MISSING_FROM_META",
+                        ).length
+                      }
                     </td>
                     <td className="py-2 pr-4 tabular-nums">{wabaApps.length}</td>
                     <td className="py-2 pr-4">
@@ -143,7 +143,9 @@ function WabasPage() {
                       <StatusBadge value={waba.health} />
                     </td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {waba.last_synced_at ? new Date(waba.last_synced_at).toLocaleString() : "Never"}
+                      {waba.last_synced_at
+                        ? new Date(waba.last_synced_at).toLocaleString()
+                        : "Never"}
                     </td>
                   </tr>
                 );

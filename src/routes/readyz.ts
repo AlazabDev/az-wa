@@ -7,9 +7,8 @@ export const Route = createFileRoute("/readyz")({
         const headers = { "cache-control": "no-store" };
 
         try {
-          const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-            "@/integrations/supabase/client.server"
-          );
+          const { supabaseAdmin, supabaseRuntimeAdmin } =
+            await import("@/integrations/supabase/client.server");
 
           const [
             organizationCheck,
@@ -40,10 +39,7 @@ export const Route = createFileRoute("/readyz")({
               .from("message_outbox")
               .select("id", { head: true, count: "exact" })
               .limit(1),
-            supabaseRuntimeAdmin
-              .from("jobs")
-              .select("id", { head: true, count: "exact" })
-              .limit(1),
+            supabaseRuntimeAdmin.from("jobs").select("id", { head: true, count: "exact" }).limit(1),
             supabaseRuntimeAdmin
               .from("webhook_events")
               .select("id", { head: true, count: "exact" })
@@ -64,16 +60,13 @@ export const Route = createFileRoute("/readyz")({
 
           const checks = {
             database: !organizationCheck.error,
-            runtimeTables:
-              !outboxCheck.error && !jobsCheck.error && !eventsCheck.error,
-            activeNumbers:
-              !numbersCheck.error && (numbersCheck.count ?? 0) > 0,
+            runtimeTables: !outboxCheck.error && !jobsCheck.error && !eventsCheck.error,
+            activeNumbers: !numbersCheck.error && (numbersCheck.count ?? 0) > 0,
             centralWebhook:
               !webhookCheck.error &&
               Boolean(webhookCheck.data?.id) &&
               webhookCheck.data?.url === "https://wa.alazab.com/webhooks/meta/whatsapp",
-            webhookCredentials:
-              !webhookSecretsCheck.error && configuredWebhookSecret,
+            webhookCredentials: !webhookSecretsCheck.error && configuredWebhookSecret,
           };
 
           const ok = Object.values(checks).every(Boolean);

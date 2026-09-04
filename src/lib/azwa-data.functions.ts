@@ -145,7 +145,9 @@ export const getAzwaInventory = createServerFn({ method: "POST" })
         .order("created_at"),
       supabaseRuntimeAdmin
         .from("wabas")
-        .select("id, organization_id, business_portfolio_id, meta_waba_id, name, status, last_synced_at")
+        .select(
+          "id, organization_id, business_portfolio_id, meta_waba_id, name, status, last_synced_at",
+        )
         .eq("organization_id", organizationId)
         .order("meta_waba_id"),
       supabaseRuntimeAdmin
@@ -225,7 +227,9 @@ export const getAzwaOpsCounters = createServerFn({ method: "POST" })
     const organizationId = await organizationAndPermission(context, "messages.read");
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
 
-    const requestedIds = [...new Set((data.numberIds ?? []).filter((value) => /^[0-9a-f-]{36}$/i.test(value)))];
+    const requestedIds = [
+      ...new Set((data.numberIds ?? []).filter((value) => /^[0-9a-f-]{36}$/i.test(value))),
+    ];
     let allowedNumberIds: string[] = [];
     if (requestedIds.length > 0) {
       const { data: rows, error } = await supabaseRuntimeAdmin
@@ -238,7 +242,8 @@ export const getAzwaOpsCounters = createServerFn({ method: "POST" })
     }
 
     const scoped = requestedIds.length > 0;
-    if (scoped && allowedNumberIds.length !== requestedIds.length) throw new Error("Invalid number scope");
+    if (scoped && allowedNumberIds.length !== requestedIds.length)
+      throw new Error("Invalid number scope");
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     async function countMessages(filters?: { direction?: string; status?: string }) {
@@ -366,8 +371,10 @@ export const getAzwaOpsCounters = createServerFn({ method: "POST" })
       contacts,
       mediaReceived: mediaResult.count ?? 0,
       templates: templates.length,
-      approvedTemplates: templates.filter((row) => String(row.status).toLowerCase() === "approved").length,
-      rejectedTemplates: templates.filter((row) => String(row.status).toLowerCase() === "rejected").length,
+      approvedTemplates: templates.filter((row) => String(row.status).toLowerCase() === "approved")
+        .length,
+      rejectedTemplates: templates.filter((row) => String(row.status).toLowerCase() === "rejected")
+        .length,
       runningCampaigns: campaignResult.count ?? 0,
       webhookErrors: webhookErrorResult.count ?? 0,
       apiErrors: apiErrorResult.count ?? 0,

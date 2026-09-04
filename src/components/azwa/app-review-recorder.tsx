@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 type RecorderState = "idle" | "recording" | "stopping";
 
 function safeFilePart(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "meta-review";
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "meta-review"
+  );
 }
 
 export function AppReviewRecorder({ scenario }: { scenario: string }) {
@@ -80,7 +82,9 @@ export function AppReviewRecorder({ scenario }: { scenario: string }) {
       finishStream();
       recorderRef.current = null;
       setState("idle");
-      setError(recordingError instanceof Error ? recordingError.message : "Unable to start recording");
+      setError(
+        recordingError instanceof Error ? recordingError.message : "Unable to start recording",
+      );
     }
   };
 
@@ -98,13 +102,21 @@ export function AppReviewRecorder({ scenario }: { scenario: string }) {
           <Circle className="mr-2 size-3.5 fill-current" /> Record review video
         </Button>
       ) : (
-        <Button type="button" variant="destructive" size="sm" onClick={stop} disabled={state === "stopping"}>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={stop}
+          disabled={state === "stopping"}
+        >
           <Square className="mr-2 size-3.5 fill-current" />
           {state === "stopping" ? "Finishing…" : "Stop & save"}
         </Button>
       )}
       <span className="text-xs text-muted-foreground">
-        {state === "recording" ? "Recording this browser screen…" : "Saved locally as WebM; no video is uploaded by AzWA."}
+        {state === "recording"
+          ? "Recording this browser screen…"
+          : "Saved locally as WebM; no video is uploaded by AzWA."}
       </span>
       {error ? <span className="w-full text-xs text-destructive">{error}</span> : null}
     </div>

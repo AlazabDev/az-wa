@@ -1,10 +1,7 @@
 import { supabaseAdmin, supabaseRuntimeAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { syncWabaFlows } from "./flows.server";
-import {
-  applyTemplateWebhookChange,
-  isTemplateWebhookField,
-} from "./template-webhook.server";
+import { applyTemplateWebhookChange, isTemplateWebhookField } from "./template-webhook.server";
 
 type MetaMessage = Record<string, unknown> & { id?: string; from?: string; type?: string };
 type MetaStatus = Record<string, unknown> & { id?: string; status?: string };
@@ -68,7 +65,11 @@ function nullableDbString(value: string | null | undefined): string {
   return value ?? (null as unknown as string);
 }
 
-async function finalizeWebhookEvent(eventId: string, success: boolean, errorMessage: string | null) {
+async function finalizeWebhookEvent(
+  eventId: string,
+  success: boolean,
+  errorMessage: string | null,
+) {
   // The live clean database contains this 002 RPC; the checked-in generated
   // Supabase type can lag behind the runtime schema between type regenerations.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,9 +128,7 @@ async function refreshFlows(organizationId: string, metaWabaId: string | null) {
 async function processPersistedEvent(eventId: string) {
   const { data, error } = await supabaseRuntimeAdmin
     .from("webhook_events")
-    .select(
-      "id, organization_id, meta_waba_id, meta_phone_number_id, event_type, payload, status",
-    )
+    .select("id, organization_id, meta_waba_id, meta_phone_number_id, event_type, payload, status")
     .eq("id", eventId)
     .maybeSingle();
   if (error) throw new Error(`Unable to load webhook event ${eventId}: ${error.message}`);
@@ -239,7 +238,10 @@ async function completeJob(jobId: string) {
   if (error) throw new Error(`Unable to complete webhook job: ${error.message}`);
 }
 
-export async function drainWebhookQueue(limit = 50, workerId = `webhook-worker-${crypto.randomUUID()}`) {
+export async function drainWebhookQueue(
+  limit = 50,
+  workerId = `webhook-worker-${crypto.randomUUID()}`,
+) {
   const safeLimit = Math.min(100, Math.max(1, Math.trunc(limit)));
   const { data, error } = await supabaseAdmin.rpc("backend_claim_jobs", {
     p_worker_id: workerId,
@@ -256,7 +258,12 @@ export async function drainWebhookQueue(limit = 50, workerId = `webhook-worker-$
     if (!eventId) {
       const message = "webhook-process job is missing payload.event_id";
       const state = await failJob(job, message);
-      results.push({ jobId: job.id, eventId: null, status: state === "dead" ? "dead" : "retry", error: message });
+      results.push({
+        jobId: job.id,
+        eventId: null,
+        status: state === "dead" ? "dead" : "retry",
+        error: message,
+      });
       continue;
     }
 
@@ -280,7 +287,8 @@ export async function drainWebhookQueue(limit = 50, workerId = `webhook-worker-$
         status: processed.status === "processed" ? "processed" : "skipped",
       });
     } catch (workerError) {
-      const message = workerError instanceof Error ? workerError.message : "unknown webhook worker error";
+      const message =
+        workerError instanceof Error ? workerError.message : "unknown webhook worker error";
       console.error("[AzWA webhook worker] processing failed", eventId, workerError);
 
       const state = await failJob(job, message);

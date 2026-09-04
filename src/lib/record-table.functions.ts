@@ -105,9 +105,8 @@ export const readRecordTable = createServerFn({ method: "POST" })
     const rule = TABLE_RULES[data.table];
     if (!rule) throw new Error("Table is not exposed through the AzWA read contract");
 
-    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
 
     const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")

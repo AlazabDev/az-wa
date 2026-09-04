@@ -18,6 +18,7 @@ import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedApiLogsRouteImport } from './routes/_authenticated/api-logs'
+import { Route as AuthenticatedAppReviewRouteImport } from './routes/_authenticated/app-review'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAutomationRouteImport } from './routes/_authenticated/automation'
 import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
@@ -58,6 +59,10 @@ import { Route as LegacyFlowsIndexRouteImport } from './routes/legacy.flows.inde
 import { Route as LegacyFlowsNewRouteImport } from './routes/legacy.flows.new'
 import { Route as ApiPublicJobsAutomationRouteImport } from './routes/api/public/jobs/automation'
 import { Route as ApiPublicJobsMediaRouteImport } from './routes/api/public/jobs/media'
+import { Route as ApiPublicJobsMessagesRouteImport } from './routes/api/public/jobs/messages'
+import { Route as ApiPublicJobsRecoverRouteImport } from './routes/api/public/jobs/recover'
+import { Route as ApiPublicJobsRuntimeRouteImport } from './routes/api/public/jobs/runtime'
+import { Route as ApiPublicJobsWebhooksRouteImport } from './routes/api/public/jobs/webhooks'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -102,6 +107,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
 const AuthenticatedApiLogsRoute = AuthenticatedApiLogsRouteImport.update({
   id: '/api-logs',
   path: '/api-logs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppReviewRoute = AuthenticatedAppReviewRouteImport.update({
+  id: '/app-review',
+  path: '/app-review',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
@@ -306,6 +316,26 @@ const ApiPublicJobsMediaRoute = ApiPublicJobsMediaRouteImport.update({
   path: '/api/public/jobs/media',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJobsMessagesRoute = ApiPublicJobsMessagesRouteImport.update({
+  id: '/api/public/jobs/messages',
+  path: '/api/public/jobs/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsRecoverRoute = ApiPublicJobsRecoverRouteImport.update({
+  id: '/api/public/jobs/recover',
+  path: '/api/public/jobs/recover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsRuntimeRoute = ApiPublicJobsRuntimeRouteImport.update({
+  id: '/api/public/jobs/runtime',
+  path: '/api/public/jobs/runtime',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsWebhooksRoute = ApiPublicJobsWebhooksRouteImport.update({
+  id: '/api/public/jobs/webhooks',
+  path: '/api/public/jobs/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMetaWhatsappRoute =
   ApiPublicWebhooksMetaWhatsappRouteImport.update({
     id: '/api/public/webhooks/meta/whatsapp',
@@ -322,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/alerts': typeof AuthenticatedAlertsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/app-review': typeof AuthenticatedAppReviewRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/automation': typeof AuthenticatedAutomationRoute
   '/campaigns': typeof AuthenticatedCampaignsRoute
@@ -362,6 +393,10 @@ export interface FileRoutesByFullPath {
   '/legacy/flows/': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
+  '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
+  '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
+  '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
+  '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -372,6 +407,7 @@ export interface FileRoutesByTo {
   '/alerts': typeof AuthenticatedAlertsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-logs': typeof AuthenticatedApiLogsRoute
+  '/app-review': typeof AuthenticatedAppReviewRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/automation': typeof AuthenticatedAutomationRoute
   '/campaigns': typeof AuthenticatedCampaignsRoute
@@ -411,6 +447,10 @@ export interface FileRoutesByTo {
   '/legacy/flows': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
+  '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
+  '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
+  '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
+  '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesById {
@@ -424,6 +464,7 @@ export interface FileRoutesById {
   '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/api-logs': typeof AuthenticatedApiLogsRoute
+  '/_authenticated/app-review': typeof AuthenticatedAppReviewRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/automation': typeof AuthenticatedAutomationRoute
   '/_authenticated/campaigns': typeof AuthenticatedCampaignsRoute
@@ -464,6 +505,10 @@ export interface FileRoutesById {
   '/legacy/flows/': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
+  '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
+  '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
+  '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
+  '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -477,6 +522,7 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/analytics'
     | '/api-logs'
+    | '/app-review'
     | '/audit'
     | '/automation'
     | '/campaigns'
@@ -517,6 +563,10 @@ export interface FileRouteTypes {
     | '/legacy/flows/'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
+    | '/api/public/jobs/messages'
+    | '/api/public/jobs/recover'
+    | '/api/public/jobs/runtime'
+    | '/api/public/jobs/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -527,6 +577,7 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/analytics'
     | '/api-logs'
+    | '/app-review'
     | '/audit'
     | '/automation'
     | '/campaigns'
@@ -566,6 +617,10 @@ export interface FileRouteTypes {
     | '/legacy/flows'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
+    | '/api/public/jobs/messages'
+    | '/api/public/jobs/recover'
+    | '/api/public/jobs/runtime'
+    | '/api/public/jobs/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   id:
     | '__root__'
@@ -578,6 +633,7 @@ export interface FileRouteTypes {
     | '/_authenticated/alerts'
     | '/_authenticated/analytics'
     | '/_authenticated/api-logs'
+    | '/_authenticated/app-review'
     | '/_authenticated/audit'
     | '/_authenticated/automation'
     | '/_authenticated/campaigns'
@@ -618,6 +674,10 @@ export interface FileRouteTypes {
     | '/legacy/flows/'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
+    | '/api/public/jobs/messages'
+    | '/api/public/jobs/recover'
+    | '/api/public/jobs/runtime'
+    | '/api/public/jobs/webhooks'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -630,6 +690,10 @@ export interface RootRouteChildren {
   ReadyzRoute: typeof ReadyzRoute
   ApiPublicJobsAutomationRoute: typeof ApiPublicJobsAutomationRoute
   ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
+  ApiPublicJobsMessagesRoute: typeof ApiPublicJobsMessagesRoute
+  ApiPublicJobsRecoverRoute: typeof ApiPublicJobsRecoverRoute
+  ApiPublicJobsRuntimeRoute: typeof ApiPublicJobsRuntimeRoute
+  ApiPublicJobsWebhooksRoute: typeof ApiPublicJobsWebhooksRoute
   ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 
@@ -696,6 +760,13 @@ declare module '@tanstack/react-router' {
       path: '/api-logs'
       fullPath: '/api-logs'
       preLoaderRoute: typeof AuthenticatedApiLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app-review': {
+      id: '/_authenticated/app-review'
+      path: '/app-review'
+      fullPath: '/app-review'
+      preLoaderRoute: typeof AuthenticatedAppReviewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/audit': {
@@ -978,6 +1049,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsMediaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/messages': {
+      id: '/api/public/jobs/messages'
+      path: '/api/public/jobs/messages'
+      fullPath: '/api/public/jobs/messages'
+      preLoaderRoute: typeof ApiPublicJobsMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/recover': {
+      id: '/api/public/jobs/recover'
+      path: '/api/public/jobs/recover'
+      fullPath: '/api/public/jobs/recover'
+      preLoaderRoute: typeof ApiPublicJobsRecoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/runtime': {
+      id: '/api/public/jobs/runtime'
+      path: '/api/public/jobs/runtime'
+      fullPath: '/api/public/jobs/runtime'
+      preLoaderRoute: typeof ApiPublicJobsRuntimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/webhooks': {
+      id: '/api/public/jobs/webhooks'
+      path: '/api/public/jobs/webhooks'
+      fullPath: '/api/public/jobs/webhooks'
+      preLoaderRoute: typeof ApiPublicJobsWebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/meta/whatsapp': {
       id: '/api/public/webhooks/meta/whatsapp'
       path: '/api/public/webhooks/meta/whatsapp'
@@ -992,6 +1091,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedApiLogsRoute: typeof AuthenticatedApiLogsRoute
+  AuthenticatedAppReviewRoute: typeof AuthenticatedAppReviewRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedAutomationRoute: typeof AuthenticatedAutomationRoute
   AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRoute
@@ -1021,6 +1121,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedApiLogsRoute: AuthenticatedApiLogsRoute,
+  AuthenticatedAppReviewRoute: AuthenticatedAppReviewRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedAutomationRoute: AuthenticatedAutomationRoute,
   AuthenticatedCampaignsRoute: AuthenticatedCampaignsRoute,
@@ -1107,6 +1208,10 @@ const rootRouteChildren: RootRouteChildren = {
   ReadyzRoute: ReadyzRoute,
   ApiPublicJobsAutomationRoute: ApiPublicJobsAutomationRoute,
   ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
+  ApiPublicJobsMessagesRoute: ApiPublicJobsMessagesRoute,
+  ApiPublicJobsRecoverRoute: ApiPublicJobsRecoverRoute,
+  ApiPublicJobsRuntimeRoute: ApiPublicJobsRuntimeRoute,
+  ApiPublicJobsWebhooksRoute: ApiPublicJobsWebhooksRoute,
   ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }
 export const routeTree = rootRouteImport

@@ -180,9 +180,7 @@ function MonitorPage() {
                   const counts = messageCounts[number.id];
                   return (
                     <tr key={number.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 pr-4 font-mono text-xs">
-                        {number.display_phone_number}
-                      </td>
+                      <td className="py-2 pr-4 font-mono text-xs">{number.display_phone_number}</td>
                       <td className="py-2 pr-4">
                         {number.verified_name ?? number.internal_name ?? "—"}
                       </td>
@@ -208,7 +206,9 @@ function MonitorPage() {
                       </td>
                       <td className="py-2 pr-4">
                         {counts?.failed ? (
-                          <span className="text-xs font-medium text-destructive">{counts.failed}</span>
+                          <span className="text-xs font-medium text-destructive">
+                            {counts.failed}
+                          </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">0</span>
                         )}

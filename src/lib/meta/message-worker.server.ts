@@ -218,7 +218,12 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
 
     if (canRetry) {
       const state = await retryJob(job, message);
-      return { jobId: job.id, outboxId, status: state === "dead" ? "dead" : "retry", error: message };
+      return {
+        jobId: job.id,
+        outboxId,
+        status: state === "dead" ? "dead" : "retry",
+        error: message,
+      };
     }
 
     await deadLetterJob(job, message);
@@ -228,7 +233,14 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
   const metaMessageId = result.data?.messages?.[0]?.id ?? null;
   if (!metaMessageId) {
     const message = "Meta returned success without a message ID; automatic resend blocked";
-    await recordAttemptResult(attemptId, "failed", result.status, "missing_message_id", message, result.data ?? null);
+    await recordAttemptResult(
+      attemptId,
+      "failed",
+      result.status,
+      "missing_message_id",
+      message,
+      result.data ?? null,
+    );
     await supabaseAdmin.rpc("backend_finalize_outbox_failure", {
       p_outbox_id: outbox.id,
       p_error: message,
@@ -259,7 +271,10 @@ async function processMessageJob(job: JobRow): Promise<WorkerResult> {
       .eq("id", outbox.id)
       .eq("organization_id", outbox.organization_id);
 
-    await deadLetterJob(job, `Meta accepted ${metaMessageId}, but local finalize failed: ${finalizeError.message}`);
+    await deadLetterJob(
+      job,
+      `Meta accepted ${metaMessageId}, but local finalize failed: ${finalizeError.message}`,
+    );
     return {
       jobId: job.id,
       outboxId,

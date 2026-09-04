@@ -15,9 +15,8 @@ export const getWabaStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: Record<string, never>) => input)
   .handler(async ({ context }): Promise<WabaStats> => {
-    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
 
     const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")

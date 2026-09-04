@@ -11,9 +11,8 @@ export const getPerNumberMessages24h = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { numberIds: string[] }) => input)
   .handler(async ({ data, context }): Promise<PerNumberMessageStats> => {
-    const { supabaseAdmin, supabaseRuntimeAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
 
     const { data: organization, error: organizationError } = await supabaseAdmin
       .from("organizations")
@@ -30,7 +29,9 @@ export const getPerNumberMessages24h = createServerFn({ method: "POST" })
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
-    const numberIds = [...new Set((data.numberIds ?? []).filter((id) => /^[0-9a-f-]{36}$/i.test(id)))];
+    const numberIds = [
+      ...new Set((data.numberIds ?? []).filter((id) => /^[0-9a-f-]{36}$/i.test(id))),
+    ];
     if (numberIds.length === 0) return {};
 
     // Validate scope before querying messages.
