@@ -12,6 +12,9 @@ export default tseslint.config(
       ".output",
       ".vinxi",
       "supabase/remote-snapshot/**",
+      "src/routeTree.gen.ts",
+      "src/integrations/supabase/types.ts",
+      "src/integrations/supabase/wa-types.ts",
     ],
   },
   {
