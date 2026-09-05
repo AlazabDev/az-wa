@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/azwa/app-shell";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthenticatedOrganizationScopes } from "@/lib/auth-scopes.functions";
 import { ScopeProvider } from "@/lib/scope";
 
 function AuthPending() {
@@ -24,6 +25,20 @@ export const Route = createFileRoute("/_authenticated")({
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
 
     if (!result || result.error || !result.data.user) {
+      throw redirect({ to: "/auth" });
+    }
+
+    // A valid Supabase account alone is not sufficient for AzWA access.
+    // The server function verifies the bearer token again and returns only active
+    // organization memberships from the protected runtime schema.
+    try {
+      const scopes = await getAuthenticatedOrganizationScopes({ data: {} });
+      if (scopes.length === 0) {
+        await supabase.auth.signOut();
+        throw redirect({ to: "/auth" });
+      }
+    } catch (error) {
+      if (error && typeof error === "object" && "redirect" in error) throw error;
       throw redirect({ to: "/auth" });
     }
 
