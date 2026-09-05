@@ -160,10 +160,8 @@ export function presignMinioGetUrl(input: {
   const { amzDate, dateStamp } = timestampParts();
 
   const basePath = config.endpoint.pathname.replace(/\/$/, "");
-  const canonicalUri = `${basePath}/${encodePathPart(bucket)}/${encodeObjectKey(input.key)}`.replace(
-    /\/+/g,
-    "/",
-  );
+  const canonicalUri =
+    `${basePath}/${encodePathPart(bucket)}/${encodeObjectKey(input.key)}`.replace(/\/+/g, "/");
 
   const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
   const query: Record<string, string> = {

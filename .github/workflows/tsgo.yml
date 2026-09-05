@@ -34,6 +34,7 @@ jobs:
 
       - name: Production build and route generation
         env:
+          NITRO_PRESET: node-server
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
           VITE_SUPABASE_PROJECT_ID: ci-placeholder
@@ -44,7 +45,9 @@ jobs:
           META_GRAPH_VERSION: v26.0
           META_WEBHOOK_PUBLIC_URL: https://wa.alazab.com/webhooks/meta/whatsapp
           AZWA_CRON_SECRET: ci-cron-placeholder
-        run: npm run build
+        run: |
+          npm run build
+          test -f .output/server/index.mjs
 
       - name: TypeScript
         run: npm run typecheck

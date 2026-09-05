@@ -81,8 +81,8 @@ if [[ "${VITE_SUPABASE_PROJECT_ID}" != "huohlaqhqsiamzcsglrg" ]]; then
   fail "Supabase project mismatch: expected huohlaqhqsiamzcsglrg, got ${VITE_SUPABASE_PROJECT_ID}"
 fi
 
-# Legacy routes are retained only as source-reference material. They must never
-# be exposed by a production build, even if an old environment file enables them.
+# Legacy routes may remain in source for recovery/reference, but the production
+# environment must never intentionally enable the legacy application switch.
 if [[ "${VITE_ENABLE_LEGACY_UI:-false}" == "true" ]]; then
   fail "VITE_ENABLE_LEGACY_UI=true is forbidden in production"
 fi
@@ -124,7 +124,9 @@ log "Installing locked dependencies"
 bun install --frozen-lockfile
 
 log "Building and validating application"
+export NITRO_PRESET="node-server"
 bun run build
+[[ -f "${APP_DIR}/.output/server/index.mjs" ]] || fail "Node server build artifact is missing: .output/server/index.mjs"
 bun run typecheck
 bun run lint
 

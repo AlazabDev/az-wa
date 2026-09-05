@@ -115,7 +115,8 @@ export const listStoredFiles = createServerFn({ method: "POST" })
         if (data.numberId) totalsQuery = totalsQuery.eq("whatsapp_number_id", data.numberId);
         if (data.status) totalsQuery = totalsQuery.eq("download_status", data.status);
         if (data.mediaType) totalsQuery = totalsQuery.eq("media_type", data.mediaType);
-        if (search) totalsQuery = totalsQuery.or(`filename.ilike.${search},storage_path.ilike.${search}`);
+        if (search)
+          totalsQuery = totalsQuery.or(`filename.ilike.${search},storage_path.ilike.${search}`);
 
         const batch = await totalsQuery.range(offset, offset + TOTALS_BATCH_SIZE - 1);
         if (batch.error) throw new Error(batch.error.message);

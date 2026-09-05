@@ -206,7 +206,11 @@ function FilesPage() {
         title="إدارة الملفات"
         description="أرشيف مركزي لجميع ملفات WhatsApp الواردة من كل الأرقام، محفوظ بشكل خاص على Milano MinIO."
         actions={
-          <Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
+          <Button
+            variant="outline"
+            onClick={() => void query.refetch()}
+            disabled={query.isFetching}
+          >
             <RefreshCw className={cn("ml-2 size-4", query.isFetching && "animate-spin")} />
             تحديث
           </Button>
@@ -215,9 +219,21 @@ function FilesPage() {
 
       <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Metric label="إجمالي الملفات" value={totals.all.toLocaleString("ar-EG")} icon={Files} />
-        <Metric label="المحفوظة على Milano" value={totals.stored.toLocaleString("ar-EG")} icon={CheckCircle2} />
-        <Metric label="قيد المعالجة" value={totals.pending.toLocaleString("ar-EG")} icon={Archive} />
-        <Metric label="فشل الحفظ" value={totals.failed.toLocaleString("ar-EG")} icon={TriangleAlert} />
+        <Metric
+          label="المحفوظة على Milano"
+          value={totals.stored.toLocaleString("ar-EG")}
+          icon={CheckCircle2}
+        />
+        <Metric
+          label="قيد المعالجة"
+          value={totals.pending.toLocaleString("ar-EG")}
+          icon={Archive}
+        />
+        <Metric
+          label="فشل الحفظ"
+          value={totals.failed.toLocaleString("ar-EG")}
+          icon={TriangleAlert}
+        />
         <Metric
           label="إجمالي الحجم"
           value={formatBytes(totals.bytes)}
@@ -333,19 +349,34 @@ function FilesPage() {
                 </thead>
                 <tbody>
                   {files.map((file) => {
-                    const canDownload = file.downloadStatus === "downloaded" && Boolean(file.storagePath);
-                    const canRetry = file.downloadStatus !== "downloaded" && file.downloadStatus !== "downloading";
+                    const canDownload =
+                      file.downloadStatus === "downloaded" && Boolean(file.storagePath);
+                    const canRetry =
+                      file.downloadStatus !== "downloaded" &&
+                      file.downloadStatus !== "downloading";
                     return (
-                      <tr key={file.id} className="border-b border-border/70 align-top last:border-0">
+                      <tr
+                        key={file.id}
+                        className="border-b border-border/70 align-top last:border-0"
+                      >
                         <td className="max-w-[280px] px-3 py-3">
-                          <div className="truncate font-medium text-foreground" title={fileLabel(file)}>
+                          <div
+                            className="truncate font-medium text-foreground"
+                            title={fileLabel(file)}
+                          >
                             {fileLabel(file)}
                           </div>
-                          <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground" title={file.id}>
+                          <div
+                            className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
+                            title={file.id}
+                          >
                             {file.id}
                           </div>
                           {file.lastError ? (
-                            <div className="mt-2 line-clamp-2 text-xs text-red-600" title={file.lastError}>
+                            <div
+                              className="mt-2 line-clamp-2 text-xs text-red-600"
+                              title={file.lastError}
+                            >
                               {file.lastError}
                             </div>
                           ) : null}
@@ -357,16 +388,29 @@ function FilesPage() {
                         </td>
                         <td className="px-3 py-3">
                           <div>{file.mediaType ?? "—"}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">{file.mimeType ?? "—"}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {file.mimeType ?? "—"}
+                          </div>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3">{formatBytes(file.fileSize)}</td>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          {formatBytes(file.fileSize)}
+                        </td>
                         <td className="px-3 py-3">
                           <StatusPill value={file.downloadStatus} />
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-xs">{formatDate(file.receivedAt ?? file.createdAt)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-xs">
+                          {formatDate(file.receivedAt ?? file.createdAt)}
+                        </td>
                         <td className="max-w-[260px] px-3 py-3">
-                          <div className="text-xs font-medium">{file.storageProvider === "minio" ? "Milano" : (file.storageProvider ?? "—")}</div>
-                          <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground" title={file.storagePath ?? ""}>
+                          <div className="text-xs font-medium">
+                            {file.storageProvider === "minio"
+                              ? "Milano"
+                              : (file.storageProvider ?? "—")}
+                          </div>
+                          <div
+                            className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
+                            title={file.storagePath ?? ""}
+                          >
                             {file.storagePath ?? "غير محفوظ بعد"}
                           </div>
                         </td>
@@ -392,7 +436,12 @@ function FilesPage() {
                                 disabled={retryingId === file.id}
                                 onClick={() => void retryArchive(file)}
                               >
-                                <RefreshCw className={cn("ml-1.5 size-3.5", retryingId === file.id && "animate-spin")} />
+                                <RefreshCw
+                                  className={cn(
+                                    "ml-1.5 size-3.5",
+                                    retryingId === file.id && "animate-spin",
+                                  )}
+                                />
                                 إعادة المحاولة
                               </Button>
                             ) : null}
@@ -408,7 +457,8 @@ function FilesPage() {
 
           <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
             <p className="text-xs text-muted-foreground">
-              يتم عرض حتى {PAGE_SIZE.toLocaleString("ar-EG")} ملف في الصفحة، والإجماليات محسوبة على جميع النتائج المفلترة.
+              يتم عرض حتى {PAGE_SIZE.toLocaleString("ar-EG")} ملف في الصفحة، والإجماليات محسوبة على
+              جميع النتائج المفلترة.
             </p>
             <div className="flex gap-2">
               <Button
