@@ -210,7 +210,7 @@ function AuthPage() {
             type="button"
             onClick={() => void signInWithOAuth("google", "Google")}
             disabled={oauthBusy !== null}
-            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:[...]"
           >
             {oauthBusy === "Google" ? <Loader2 className="size-6 animate-spin" /> : <GoogleMark />}
             <span>google</span>
@@ -220,7 +220,7 @@ function AuthPage() {
             type="button"
             onClick={() => void signInWithOAuth("facebook", "Facebook")}
             disabled={oauthBusy !== null}
-            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:[...]"
           >
             {oauthBusy === "Facebook" ? (
               <Loader2 className="size-6 animate-spin" />
@@ -234,7 +234,7 @@ function AuthPage() {
             type="button"
             onClick={() => void signInWithOAuth("azure", "AzabEnter")}
             disabled={oauthBusy !== null}
-            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+            className="flex h-[66px] items-center justify-center gap-2 rounded-[20px] bg-[#f1f1f1] px-3 text-base font-bold text-black transition hover:bg-[#e8e8e8] disabled:cursor-wait disabled:[...]"
           >
             {oauthBusy === "AzabEnter" ? (
               <Loader2 className="size-6 animate-spin" />
@@ -282,7 +282,7 @@ function AuthPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="admin@alazab.com"
-                className="h-[68px] w-full rounded-[16px] border border-[#cbd5e1] bg-[#eaf2ff] px-5 pr-14 text-left text-lg font-medium text-[#101828] outline-none transition placeholder:text-[#344054] focus:border-[#0b1d4d] focus:ring-2 focus:ring-[#0b1d4d]/10 sm:text-xl"
+                className="h-[68px] w-full rounded-[16px] border border-[#cbd5e1] bg-[#eaf2ff] px-5 pr-14 text-left text-lg font-medium text-[#101828] outline-none transition placeholder:text-[#3[...]"
               />
             </div>
           </div>
@@ -309,7 +309,7 @@ function AuthPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••••"
-                className="h-[68px] w-full rounded-[16px] border border-[#cbd5e1] bg-[#eaf2ff] px-5 pr-14 text-left text-xl font-medium tracking-[0.18em] text-[#101828] outline-none transition placeholder:tracking-[0.18em] placeholder:text-[#101828] focus:border-[#0b1d4d] focus:ring-2 focus:ring-[#0b1d4d]/10"
+                className="h-[68px] w-full rounded-[16px] border border-[#cbd5e1] bg-[#eaf2ff] px-5 pr-14 text-left text-xl font-medium tracking-[0.18em] text-[#101828] outline-none transition pl[...]"
               />
             </div>
           </div>
@@ -365,7 +365,7 @@ function AuthPage() {
           <button
             type="submit"
             disabled={disabled}
-            className="flex h-[76px] w-full items-center justify-center rounded-[17px] bg-[#0c1b46] px-6 text-xl font-semibold text-white shadow-sm transition hover:bg-[#071638] disabled:cursor-not-allowed disabled:opacity-60 sm:text-2xl"
+            className="flex h-[76px] w-full items-center justify-center rounded-[17px] bg-[#0c1b46] px-6 text-xl font-semibold text-white shadow-sm transition hover:bg-[#071638] disabled:cursor-n[...]"
           >
             {busy && <Loader2 className="ml-2 size-6 animate-spin" />}
             {busy

@@ -7,11 +7,13 @@
  * Heavy work (messages, statuses, templates, flows, alerts, media discovery)
  * runs in the webhook worker and never blocks Meta's delivery acknowledgement.
  */
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { supabaseAdmin, supabaseRuntimeAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
+import { drainMediaQueue } from "@/lib/meta/media.server";
+import { drainWebhookQueue } from "@/lib/meta/webhook-worker.server";
 import { listWebhookSecrets, matchSignature, matchVerifyToken } from "@/lib/meta/webhook.server";
 
 type MetaMessage = Record<string, unknown> & { id?: string };
@@ -75,6 +77,18 @@ async function enqueueWebhookProcessing(input: {
   }
 }
 
+function kickWebhookWorker() {
+  const workerId = `webhook-live-${randomUUID()}`;
+  setImmediate(() => {
+    void (async () => {
+      await drainWebhookQueue(25, workerId);
+      await drainMediaQueue(25);
+    })().catch((error) => {
+      console.error("[AzWA webhook] immediate webhook/media drain failed", error);
+    });
+  });
+}
+
 export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
   server: {
     handlers: {
@@ -108,6 +122,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           return new Response("Bad Request", { status: 400 });
         }
 
+        let queuedAny = false;
         try {
           for (const [entryIndex, entry] of (payload.entry ?? []).entries()) {
             for (const [changeIndex, change] of (entry.changes ?? []).entries()) {
@@ -150,6 +165,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
                   eventId: ingest.event_id,
                   eventType,
                 });
+                queuedAny = true;
               }
             }
           }
@@ -158,6 +174,7 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           return new Response("Service Unavailable", { status: 503 });
         }
 
+        if (queuedAny) kickWebhookWorker();
         return new Response("EVENT_RECEIVED", { status: 200 });
       },
     },
