@@ -262,7 +262,10 @@ function AuthPage() {
 
         <form onSubmit={submitCredentials} className="space-y-6">
           <div>
-            <label htmlFor="email" className="mb-2.5 block text-right text-lg font-medium sm:text-xl">
+            <label
+              htmlFor="email"
+              className="mb-2.5 block text-right text-lg font-medium sm:text-xl"
+            >
               البريد الإلكتروني
             </label>
             <div className="relative">
