@@ -1,5 +1,5 @@
 // Microsoft Foundry finance extraction.
-// Prefers Entra OAuth2 client credentials. API key is retained only as compatibility fallback.
+// Production policy: financial OCR is processed only by the configured Microsoft Foundry project.
 
 const PROJECT_ENDPOINT = (Deno.env.get("FOUNDRY_PROJECT_ENDPOINT") ?? "").replace(/\/+$/, "");
 const AGENT_ID = Deno.env.get("FOUNDRY_AGENT_ID") ?? "";
@@ -9,8 +9,6 @@ const AZURE_TENANT_ID = Deno.env.get("AZURE_TENANT_ID") ?? "";
 const AZURE_CLIENT_ID = Deno.env.get("FOUNDRY_CLIENT_ID") ?? Deno.env.get("AZURE_CLIENT_ID") ?? "";
 const AZURE_CLIENT_SECRET =
   Deno.env.get("FOUNDRY_CLIENT_SECRET") ?? Deno.env.get("AZURE_CLIENT_SECRET") ?? "";
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
-const ALLOW_FALLBACK = (Deno.env.get("FINANCE_ALLOW_AI_FALLBACK") ?? "false") === "true";
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
@@ -60,16 +58,19 @@ function parseJson(text: string): Partial<FinanceExtraction> {
 }
 
 function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceExtraction {
-  const num = (v: unknown) => {
-    if (v === null || v === undefined || v === "") return null;
-    const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.-]/g, "")) : Number(v);
-    return Number.isFinite(n) ? n : null;
+  const num = (value: unknown) => {
+    if (value === null || value === undefined || value === "") return null;
+    const number =
+      typeof value === "string" ? parseFloat(value.replace(/[^0-9.-]/g, "")) : Number(value);
+    return Number.isFinite(number) ? number : null;
   };
-  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const str = (value: unknown) =>
+    typeof value === "string" && value.trim() ? value.trim() : null;
   const date =
     typeof raw.invoice_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invoice_date)
       ? raw.invoice_date
       : null;
+
   return {
     doc_type: str(raw.doc_type),
     vendor: str(raw.vendor),
@@ -102,7 +103,7 @@ async function getEntraToken() {
     scope: "https://ai.azure.com/.default",
     grant_type: "client_credentials",
   });
-  const res = await fetch(
+  const response = await fetch(
     `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`,
     {
       method: "POST",
@@ -110,9 +111,11 @@ async function getEntraToken() {
       body: form.toString(),
     },
   );
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.access_token)
-    throw new Error(`Entra token ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || !json.access_token) {
+    throw new Error(`Entra token request failed with status ${response.status}`);
+  }
+
   cachedToken = {
     value: json.access_token,
     expiresAt: Date.now() + Number(json.expires_in ?? 3600) * 1000,
@@ -122,7 +125,10 @@ async function getEntraToken() {
 
 async function foundryHeaders(): Promise<Record<string, string>> {
   if (entraConfigured()) {
-    return { Authorization: `Bearer ${await getEntraToken()}`, "Content-Type": "application/json" };
+    return {
+      Authorization: `Bearer ${await getEntraToken()}`,
+      "Content-Type": "application/json",
+    };
   }
   if (API_KEY) return { "api-key": API_KEY, "Content-Type": "application/json" };
   throw new Error("Foundry authentication is not configured");
@@ -130,80 +136,68 @@ async function foundryHeaders(): Promise<Record<string, string>> {
 
 async function runFoundryAgent(prompt: string): Promise<FinanceExtraction> {
   if (!foundryConfigured()) throw new Error("Foundry finance agent is not configured");
+
   const headers = await foundryHeaders();
   const qs = `?api-version=${API_VERSION}`;
-  const threadRes = await fetch(`${PROJECT_ENDPOINT}/threads${qs}`, {
+  const threadResponse = await fetch(`${PROJECT_ENDPOINT}/threads${qs}`, {
     method: "POST",
     headers,
     body: "{}",
   });
-  if (!threadRes.ok)
-    throw new Error(
-      `Foundry thread ${threadRes.status}: ${(await threadRes.text()).slice(0, 300)}`,
-    );
-  const threadId = (await threadRes.json()).id;
-  const msgRes = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}`, {
+  if (!threadResponse.ok) {
+    throw new Error(`Foundry thread request failed with status ${threadResponse.status}`);
+  }
+  const threadId = (await threadResponse.json()).id;
+
+  const messageResponse = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}`, {
     method: "POST",
     headers,
     body: JSON.stringify({ role: "user", content: `${SYSTEM_PROMPT}\n\n---\n${prompt}` }),
   });
-  if (!msgRes.ok)
-    throw new Error(`Foundry message ${msgRes.status}: ${(await msgRes.text()).slice(0, 300)}`);
-  const runRes = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs${qs}`, {
+  if (!messageResponse.ok) {
+    throw new Error(`Foundry message request failed with status ${messageResponse.status}`);
+  }
+
+  const runResponse = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs${qs}`, {
     method: "POST",
     headers,
     body: JSON.stringify({ assistant_id: AGENT_ID }),
   });
-  if (!runRes.ok)
-    throw new Error(`Foundry run ${runRes.status}: ${(await runRes.text()).slice(0, 300)}`);
-  let run = await runRes.json();
+  if (!runResponse.ok) {
+    throw new Error(`Foundry run request failed with status ${runResponse.status}`);
+  }
+
+  let run = await runResponse.json();
   for (
-    let i = 0;
-    i < 40 && ["queued", "in_progress", "requires_action"].includes(run.status);
-    i++
+    let index = 0;
+    index < 40 && ["queued", "in_progress", "requires_action"].includes(run.status);
+    index++
   ) {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     const poll = await fetch(`${PROJECT_ENDPOINT}/threads/${threadId}/runs/${run.id}${qs}`, {
       headers,
     });
-    if (!poll.ok) throw new Error(`Foundry poll ${poll.status}`);
+    if (!poll.ok) throw new Error(`Foundry poll failed with status ${poll.status}`);
     run = await poll.json();
   }
+
   if (run.status !== "completed") throw new Error(`Foundry run status: ${run.status}`);
-  const listRes = await fetch(
+
+  const listResponse = await fetch(
     `${PROJECT_ENDPOINT}/threads/${threadId}/messages${qs}&order=desc&limit=5`,
     { headers },
   );
-  if (!listRes.ok) throw new Error(`Foundry messages ${listRes.status}`);
-  const list = await listRes.json();
-  const assistantMsg = (list.data ?? []).find((m: any) => m.role === "assistant");
-  const text = (assistantMsg?.content ?? [])
-    .map((c: any) => c?.text?.value ?? c?.text ?? "")
-    .join("\n");
-  return normalize(parseJson(text), "foundry");
-}
-
-async function runGatewayFallback(prompt: string): Promise<FinanceExtraction> {
-  if (!ALLOW_FALLBACK) throw new Error("Foundry failed and finance AI fallback is disabled");
-  if (!LOVABLE_API_KEY) throw new Error("Finance fallback enabled but LOVABLE_API_KEY is missing");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const err = new Error(`AI gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    (err as any).status = res.status;
-    throw err;
+  if (!listResponse.ok) {
+    throw new Error(`Foundry messages request failed with status ${listResponse.status}`);
   }
-  const json = await res.json();
-  return normalize(parseJson(json?.choices?.[0]?.message?.content ?? ""), "lovable-gateway");
+
+  const list = await listResponse.json();
+  const assistantMessage = (list.data ?? []).find((message: any) => message.role === "assistant");
+  const text = (assistantMessage?.content ?? [])
+    .map((content: any) => content?.text?.value ?? content?.text ?? "")
+    .join("\n");
+
+  return normalize(parseJson(text), "foundry");
 }
 
 export async function extractFinanceData(
@@ -211,10 +205,5 @@ export async function extractFinanceData(
   hints: string[] = [],
 ): Promise<FinanceExtraction> {
   const prompt = `نص المستند:\n${ocrText.slice(0, 12000)}\n\nوسوم الصورة: ${hints.join(", ") || "-"}`;
-  try {
-    return await runFoundryAgent(prompt);
-  } catch (e) {
-    console.error("Foundry finance extraction failed:", (e as Error).message);
-    return await runGatewayFallback(prompt);
-  }
+  return runFoundryAgent(prompt);
 }
