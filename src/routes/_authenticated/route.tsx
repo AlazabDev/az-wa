@@ -1,7 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+
+import { AppShell } from "@/components/azwa/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { ScopeProvider } from "@/lib/scope";
-import { AppShell } from "@/components/azwa/app-shell";
 
 function AuthPending() {
   return (
@@ -17,22 +18,15 @@ function AuthPending() {
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    // Never let a slow/unreachable auth backend leave the user on a blank page.
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+    // Production access is granted only after Supabase validates the current user.
+    // Never fall back to browser-controlled preview/local storage values.
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
+
     if (!result || result.error || !result.data.user) {
-      if (typeof window !== "undefined") {
-        const localOperator = localStorage.getItem("azwa_preview_session");
-        if (localOperator) {
-          try {
-            return { user: JSON.parse(localOperator) };
-          } catch {
-            // continue to redirect
-          }
-        }
-      }
       throw redirect({ to: "/auth" });
     }
+
     return { user: result.data.user };
   },
   pendingComponent: AuthPending,
