@@ -1,18 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
+  HeadContent,
   Link,
+  Outlet,
+  Scripts,
   createRootRouteWithContext,
   useRouter,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -37,11 +36,10 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  // Keep diagnostic details on the application's own server/browser console.
+  // Production no longer forwards stack traces to preview/editor globals.
+  console.error("[AzWA] Route error", error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -82,17 +80,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "AzWA — WhatsApp Business Operations OS" },
       {
         name: "description",
-        content: "Central control plane for all WhatsApp Business accounts, WABAs and numbers.",
+        content: "Central control plane for Alazab Group WhatsApp Business operations.",
       },
-      { name: "author", content: "Lovable" },
+      { name: "author", content: "Alazab Group" },
       { property: "og:title", content: "AzWA — WhatsApp Business Operations OS" },
       {
         property: "og:description",
-        content: "Central control plane for all WhatsApp Business accounts.",
+        content: "Central control plane for Alazab Group WhatsApp Business operations.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       {
@@ -127,7 +124,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-right" richColors />
     </QueryClientProvider>
