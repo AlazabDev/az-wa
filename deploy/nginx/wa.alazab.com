@@ -1,43 +1,65 @@
 # AzWA — wa.alazab.com Nginx Configuration
-# Note: SSL certificate paths are intentionally omitted here.
-# Certbot automatically injects SSL configuration when running:
-# sudo certbot --nginx -d wa.alazab.com
+# Host reverse proxy for the AzWA TanStack Node server.
+# Install as /etc/nginx/sites-available/wa.alazab.com and enable it.
+# SSL certificate is managed by certbot.
 
-upstream azwa_backend {
-    server 127.0.0.1:8085;
-    keepalive 32;
+server {
+  listen 80;
+  listen [::]:80;
+  server_name wa.alazab.com;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/html;
+  }
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
 }
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name wa.alazab.com;
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name wa.alazab.com;
 
-    client_max_body_size 50M;
+  ssl_certificate     /etc/letsencrypt/live/wa.alazab.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/wa.alazab.com/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Gzip Compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
 
-    # Static file handling & ACME challenge
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+  client_max_body_size 25m;
 
-    # Proxy to PM2 Node.js server
-    location / {
-        proxy_pass http://azwa_backend;
-        proxy_http_version 1.1;
+  # Canonical public Meta callback. The application keeps the implementation
+  # under /api/public while Meta always sees the stable product URL below.
+  location = /webhooks/meta/whatsapp {
+    proxy_pass http://127.0.0.1:8085/api/public/webhooks/meta/whatsapp;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 90s;
+    proxy_read_timeout 90s;
+  }
 
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-    }
+  location / {
+    proxy_pass http://127.0.0.1:8085;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 90s;
+    proxy_read_timeout 90s;
+  }
 }
