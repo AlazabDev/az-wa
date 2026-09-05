@@ -185,10 +185,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <button
               onClick={() => {
-                if (typeof window !== "undefined") {
-                  localStorage.removeItem("azwa_preview_session");
-                }
-                supabase.auth.signOut();
+                void supabase.auth.signOut().finally(() => {
+                  window.location.assign("/auth");
+                });
               }}
               className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-accent"
             >
