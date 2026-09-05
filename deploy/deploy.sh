@@ -40,6 +40,18 @@ set -a
 source "${ENV_FILE}"
 set +a
 
+# The browser Supabase client uses the same public URL/key as the server config.
+# Derive the Vite-facing values when older production env files do not contain them.
+if [[ -z "${VITE_SUPABASE_URL:-}" && -n "${SUPABASE_URL:-}" ]]; then
+  export VITE_SUPABASE_URL="${SUPABASE_URL}"
+fi
+if [[ -z "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" && -n "${SUPABASE_PUBLISHABLE_KEY:-}" ]]; then
+  export VITE_SUPABASE_PUBLISHABLE_KEY="${SUPABASE_PUBLISHABLE_KEY}"
+fi
+if [[ -z "${VITE_SUPABASE_PROJECT_ID:-}" && "${SUPABASE_URL:-}" =~ ^https://([a-z0-9]+)\.supabase\.co/?$ ]]; then
+  export VITE_SUPABASE_PROJECT_ID="${BASH_REMATCH[1]}"
+fi
+
 required_env=(
   SUPABASE_URL
   SUPABASE_PUBLISHABLE_KEY
@@ -63,6 +75,10 @@ if ((${#missing[@]})); then
   printf 'Missing required production variables:\n' >&2
   printf '  - %s\n' "${missing[@]}" >&2
   exit 78
+fi
+
+if [[ "${VITE_SUPABASE_PROJECT_ID}" != "huohlaqhqsiamzcsglrg" ]]; then
+  fail "Supabase project mismatch: expected huohlaqhqsiamzcsglrg, got ${VITE_SUPABASE_PROJECT_ID}"
 fi
 
 if [[ "${CLEAN_DEPLOY}" == "true" ]]; then
