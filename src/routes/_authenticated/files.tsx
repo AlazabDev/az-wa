@@ -352,8 +352,7 @@ function FilesPage() {
                     const canDownload =
                       file.downloadStatus === "downloaded" && Boolean(file.storagePath);
                     const canRetry =
-                      file.downloadStatus !== "downloaded" &&
-                      file.downloadStatus !== "downloading";
+                      file.downloadStatus !== "downloaded" && file.downloadStatus !== "downloading";
                     return (
                       <tr
                         key={file.id}
