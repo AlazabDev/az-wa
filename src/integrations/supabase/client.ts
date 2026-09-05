@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+import { productionAuthStorage } from "./authStorage";
 import type { Database } from "./types";
-import { productionAuthStorage } from "./previewAuthStorage";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
