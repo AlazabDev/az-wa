@@ -28,11 +28,16 @@ command -v nginx >/dev/null 2>&1 || fail "Nginx is required"
 NODE_MAJOR="$(node -p 'Number(process.versions.node.split(".")[0])')"
 [[ "${NODE_MAJOR}" -ge 24 ]] || fail "Node.js 24+ is required; found $(node -v)"
 
-[[ -f "${APP_DIR}/.env" ]] || fail "Missing ${APP_DIR}/.env"
-chmod 600 "${APP_DIR}/.env"
+ENV_FILE="${AZWA_ENV_FILE:-${APP_DIR}/.env}"
+if [[ ! -f "${ENV_FILE}" && "${ENV_FILE}" == "${APP_DIR}/.env" && -f "${APP_DIR}/.env.local" ]]; then
+  ENV_FILE="${APP_DIR}/.env.local"
+fi
+[[ -f "${ENV_FILE}" ]] || fail "Missing production environment file: ${APP_DIR}/.env or ${APP_DIR}/.env.local"
+chmod 600 "${ENV_FILE}"
+log "Loading production environment from ${ENV_FILE}"
 set -a
-# shellcheck disable=SC1091
-source "${APP_DIR}/.env"
+# shellcheck disable=SC1090
+source "${ENV_FILE}"
 set +a
 
 required_env=(
