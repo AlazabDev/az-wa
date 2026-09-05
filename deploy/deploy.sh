@@ -81,6 +81,13 @@ if [[ "${VITE_SUPABASE_PROJECT_ID}" != "huohlaqhqsiamzcsglrg" ]]; then
   fail "Supabase project mismatch: expected huohlaqhqsiamzcsglrg, got ${VITE_SUPABASE_PROJECT_ID}"
 fi
 
+# Legacy routes are retained only as source-reference material. They must never
+# be exposed by a production build, even if an old environment file enables them.
+if [[ "${VITE_ENABLE_LEGACY_UI:-false}" == "true" ]]; then
+  fail "VITE_ENABLE_LEGACY_UI=true is forbidden in production"
+fi
+export VITE_ENABLE_LEGACY_UI="false"
+
 if [[ "${CLEAN_DEPLOY}" == "true" ]]; then
   log "Removing previous AzWA runtime deployment"
 
