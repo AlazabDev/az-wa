@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HealthzRouteImport } from './routes/healthz'
-import { Route as LegacyRouteImport } from './routes/legacy'
 import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -42,21 +41,6 @@ import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
-import { Route as LegacyIndexRouteImport } from './routes/legacy.index'
-import { Route as LegacyAccountsRouteImport } from './routes/legacy.accounts'
-import { Route as LegacyClientsRouteImport } from './routes/legacy.clients'
-import { Route as LegacyFinanceRouteImport } from './routes/legacy.finance'
-import { Route as LegacyFlowsRouteImport } from './routes/legacy.flows'
-import { Route as LegacyInboxRouteImport } from './routes/legacy.inbox'
-import { Route as LegacyLoginRouteImport } from './routes/legacy.login'
-import { Route as LegacyMaintenanceRouteImport } from './routes/legacy.maintenance'
-import { Route as LegacyProjectsRouteImport } from './routes/legacy.projects'
-import { Route as LegacySettingsRouteImport } from './routes/legacy.settings'
-import { Route as LegacyTeamsRouteImport } from './routes/legacy.teams'
-import { Route as LegacyTemplatesRouteImport } from './routes/legacy.templates'
-import { Route as LegacyWebhooksRouteImport } from './routes/legacy.webhooks'
-import { Route as LegacyFlowsIndexRouteImport } from './routes/legacy.flows.index'
-import { Route as LegacyFlowsNewRouteImport } from './routes/legacy.flows.new'
 import { Route as ApiPublicJobsAutomationRouteImport } from './routes/api/public/jobs/automation'
 import { Route as ApiPublicJobsMediaRouteImport } from './routes/api/public/jobs/media'
 import { Route as ApiPublicJobsMessagesRouteImport } from './routes/api/public/jobs/messages'
@@ -82,11 +66,6 @@ const AuthRoute = AuthRouteImport.update({
 const HealthzRoute = HealthzRouteImport.update({
   id: '/healthz',
   path: '/healthz',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegacyRoute = LegacyRouteImport.update({
-  id: '/legacy',
-  path: '/legacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReadyzRoute = ReadyzRouteImport.update({
@@ -231,81 +210,6 @@ const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const LegacyIndexRoute = LegacyIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyAccountsRoute = LegacyAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyClientsRoute = LegacyClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyFinanceRoute = LegacyFinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyFlowsRoute = LegacyFlowsRouteImport.update({
-  id: '/flows',
-  path: '/flows',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyInboxRoute = LegacyInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyLoginRoute = LegacyLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyMaintenanceRoute = LegacyMaintenanceRouteImport.update({
-  id: '/maintenance',
-  path: '/maintenance',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyProjectsRoute = LegacyProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacySettingsRoute = LegacySettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyTeamsRoute = LegacyTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyTemplatesRoute = LegacyTemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyWebhooksRoute = LegacyWebhooksRouteImport.update({
-  id: '/webhooks',
-  path: '/webhooks',
-  getParentRoute: () => LegacyRoute,
-} as any)
-const LegacyFlowsIndexRoute = LegacyFlowsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LegacyFlowsRoute,
-} as any)
-const LegacyFlowsNewRoute = LegacyFlowsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => LegacyFlowsRoute,
-} as any)
 const ApiPublicJobsAutomationRoute = ApiPublicJobsAutomationRouteImport.update({
   id: '/api/public/jobs/automation',
   path: '/api/public/jobs/automation',
@@ -347,7 +251,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/healthz': typeof HealthzRoute
-  '/legacy': typeof LegacyRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/alerts': typeof AuthenticatedAlertsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
@@ -376,21 +279,6 @@ export interface FileRoutesByFullPath {
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
-  '/legacy/accounts': typeof LegacyAccountsRoute
-  '/legacy/clients': typeof LegacyClientsRoute
-  '/legacy/finance': typeof LegacyFinanceRoute
-  '/legacy/flows': typeof LegacyFlowsRouteWithChildren
-  '/legacy/inbox': typeof LegacyInboxRoute
-  '/legacy/login': typeof LegacyLoginRoute
-  '/legacy/maintenance': typeof LegacyMaintenanceRoute
-  '/legacy/projects': typeof LegacyProjectsRoute
-  '/legacy/settings': typeof LegacySettingsRoute
-  '/legacy/teams': typeof LegacyTeamsRoute
-  '/legacy/templates': typeof LegacyTemplatesRoute
-  '/legacy/webhooks': typeof LegacyWebhooksRoute
-  '/legacy/': typeof LegacyIndexRoute
-  '/legacy/flows/new': typeof LegacyFlowsNewRoute
-  '/legacy/flows/': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -431,20 +319,6 @@ export interface FileRoutesByTo {
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
-  '/legacy/accounts': typeof LegacyAccountsRoute
-  '/legacy/clients': typeof LegacyClientsRoute
-  '/legacy/finance': typeof LegacyFinanceRoute
-  '/legacy/inbox': typeof LegacyInboxRoute
-  '/legacy/login': typeof LegacyLoginRoute
-  '/legacy/maintenance': typeof LegacyMaintenanceRoute
-  '/legacy/projects': typeof LegacyProjectsRoute
-  '/legacy/settings': typeof LegacySettingsRoute
-  '/legacy/teams': typeof LegacyTeamsRoute
-  '/legacy/templates': typeof LegacyTemplatesRoute
-  '/legacy/webhooks': typeof LegacyWebhooksRoute
-  '/legacy': typeof LegacyIndexRoute
-  '/legacy/flows/new': typeof LegacyFlowsNewRoute
-  '/legacy/flows': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -459,7 +333,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/healthz': typeof HealthzRoute
-  '/legacy': typeof LegacyRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
@@ -488,21 +361,6 @@ export interface FileRoutesById {
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
-  '/legacy/accounts': typeof LegacyAccountsRoute
-  '/legacy/clients': typeof LegacyClientsRoute
-  '/legacy/finance': typeof LegacyFinanceRoute
-  '/legacy/flows': typeof LegacyFlowsRouteWithChildren
-  '/legacy/inbox': typeof LegacyInboxRoute
-  '/legacy/login': typeof LegacyLoginRoute
-  '/legacy/maintenance': typeof LegacyMaintenanceRoute
-  '/legacy/projects': typeof LegacyProjectsRoute
-  '/legacy/settings': typeof LegacySettingsRoute
-  '/legacy/teams': typeof LegacyTeamsRoute
-  '/legacy/templates': typeof LegacyTemplatesRoute
-  '/legacy/webhooks': typeof LegacyWebhooksRoute
-  '/legacy/': typeof LegacyIndexRoute
-  '/legacy/flows/new': typeof LegacyFlowsNewRoute
-  '/legacy/flows/': typeof LegacyFlowsIndexRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -517,7 +375,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/healthz'
-    | '/legacy'
     | '/readyz'
     | '/alerts'
     | '/analytics'
@@ -546,21 +403,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/wabas'
     | '/webhooks'
-    | '/legacy/accounts'
-    | '/legacy/clients'
-    | '/legacy/finance'
-    | '/legacy/flows'
-    | '/legacy/inbox'
-    | '/legacy/login'
-    | '/legacy/maintenance'
-    | '/legacy/projects'
-    | '/legacy/settings'
-    | '/legacy/teams'
-    | '/legacy/templates'
-    | '/legacy/webhooks'
-    | '/legacy/'
-    | '/legacy/flows/new'
-    | '/legacy/flows/'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -601,20 +443,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/wabas'
     | '/webhooks'
-    | '/legacy/accounts'
-    | '/legacy/clients'
-    | '/legacy/finance'
-    | '/legacy/inbox'
-    | '/legacy/login'
-    | '/legacy/maintenance'
-    | '/legacy/projects'
-    | '/legacy/settings'
-    | '/legacy/teams'
-    | '/legacy/templates'
-    | '/legacy/webhooks'
-    | '/legacy'
-    | '/legacy/flows/new'
-    | '/legacy/flows'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -628,7 +456,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/healthz'
-    | '/legacy'
     | '/readyz'
     | '/_authenticated/alerts'
     | '/_authenticated/analytics'
@@ -657,21 +484,6 @@ export interface FileRouteTypes {
     | '/_authenticated/users'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
-    | '/legacy/accounts'
-    | '/legacy/clients'
-    | '/legacy/finance'
-    | '/legacy/flows'
-    | '/legacy/inbox'
-    | '/legacy/login'
-    | '/legacy/maintenance'
-    | '/legacy/projects'
-    | '/legacy/settings'
-    | '/legacy/teams'
-    | '/legacy/templates'
-    | '/legacy/webhooks'
-    | '/legacy/'
-    | '/legacy/flows/new'
-    | '/legacy/flows/'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -686,7 +498,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   HealthzRoute: typeof HealthzRoute
-  LegacyRoute: typeof LegacyRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
   ApiPublicJobsAutomationRoute: typeof ApiPublicJobsAutomationRoute
   ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
@@ -725,13 +536,6 @@ declare module '@tanstack/react-router' {
       path: '/healthz'
       fullPath: '/healthz'
       preLoaderRoute: typeof HealthzRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legacy': {
-      id: '/legacy'
-      path: '/legacy'
-      fullPath: '/legacy'
-      preLoaderRoute: typeof LegacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/readyz': {
@@ -930,111 +734,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/legacy/': {
-      id: '/legacy/'
-      path: '/'
-      fullPath: '/legacy/'
-      preLoaderRoute: typeof LegacyIndexRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/accounts': {
-      id: '/legacy/accounts'
-      path: '/accounts'
-      fullPath: '/legacy/accounts'
-      preLoaderRoute: typeof LegacyAccountsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/clients': {
-      id: '/legacy/clients'
-      path: '/clients'
-      fullPath: '/legacy/clients'
-      preLoaderRoute: typeof LegacyClientsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/finance': {
-      id: '/legacy/finance'
-      path: '/finance'
-      fullPath: '/legacy/finance'
-      preLoaderRoute: typeof LegacyFinanceRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/flows': {
-      id: '/legacy/flows'
-      path: '/flows'
-      fullPath: '/legacy/flows'
-      preLoaderRoute: typeof LegacyFlowsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/inbox': {
-      id: '/legacy/inbox'
-      path: '/inbox'
-      fullPath: '/legacy/inbox'
-      preLoaderRoute: typeof LegacyInboxRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/login': {
-      id: '/legacy/login'
-      path: '/login'
-      fullPath: '/legacy/login'
-      preLoaderRoute: typeof LegacyLoginRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/maintenance': {
-      id: '/legacy/maintenance'
-      path: '/maintenance'
-      fullPath: '/legacy/maintenance'
-      preLoaderRoute: typeof LegacyMaintenanceRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/projects': {
-      id: '/legacy/projects'
-      path: '/projects'
-      fullPath: '/legacy/projects'
-      preLoaderRoute: typeof LegacyProjectsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/settings': {
-      id: '/legacy/settings'
-      path: '/settings'
-      fullPath: '/legacy/settings'
-      preLoaderRoute: typeof LegacySettingsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/teams': {
-      id: '/legacy/teams'
-      path: '/teams'
-      fullPath: '/legacy/teams'
-      preLoaderRoute: typeof LegacyTeamsRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/templates': {
-      id: '/legacy/templates'
-      path: '/templates'
-      fullPath: '/legacy/templates'
-      preLoaderRoute: typeof LegacyTemplatesRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/webhooks': {
-      id: '/legacy/webhooks'
-      path: '/webhooks'
-      fullPath: '/legacy/webhooks'
-      preLoaderRoute: typeof LegacyWebhooksRouteImport
-      parentRoute: typeof LegacyRoute
-    }
-    '/legacy/flows/': {
-      id: '/legacy/flows/'
-      path: '/'
-      fullPath: '/legacy/flows/'
-      preLoaderRoute: typeof LegacyFlowsIndexRouteImport
-      parentRoute: typeof LegacyFlowsRoute
-    }
-    '/legacy/flows/new': {
-      id: '/legacy/flows/new'
-      path: '/new'
-      fullPath: '/legacy/flows/new'
-      preLoaderRoute: typeof LegacyFlowsNewRouteImport
-      parentRoute: typeof LegacyFlowsRoute
-    }
     '/api/public/jobs/automation': {
       id: '/api/public/jobs/automation'
       path: '/api/public/jobs/automation'
@@ -1150,61 +849,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface LegacyFlowsRouteChildren {
-  LegacyFlowsNewRoute: typeof LegacyFlowsNewRoute
-  LegacyFlowsIndexRoute: typeof LegacyFlowsIndexRoute
-}
-
-const LegacyFlowsRouteChildren: LegacyFlowsRouteChildren = {
-  LegacyFlowsNewRoute: LegacyFlowsNewRoute,
-  LegacyFlowsIndexRoute: LegacyFlowsIndexRoute,
-}
-
-const LegacyFlowsRouteWithChildren = LegacyFlowsRoute._addFileChildren(
-  LegacyFlowsRouteChildren,
-)
-
-interface LegacyRouteChildren {
-  LegacyAccountsRoute: typeof LegacyAccountsRoute
-  LegacyClientsRoute: typeof LegacyClientsRoute
-  LegacyFinanceRoute: typeof LegacyFinanceRoute
-  LegacyFlowsRoute: typeof LegacyFlowsRouteWithChildren
-  LegacyInboxRoute: typeof LegacyInboxRoute
-  LegacyLoginRoute: typeof LegacyLoginRoute
-  LegacyMaintenanceRoute: typeof LegacyMaintenanceRoute
-  LegacyProjectsRoute: typeof LegacyProjectsRoute
-  LegacySettingsRoute: typeof LegacySettingsRoute
-  LegacyTeamsRoute: typeof LegacyTeamsRoute
-  LegacyTemplatesRoute: typeof LegacyTemplatesRoute
-  LegacyWebhooksRoute: typeof LegacyWebhooksRoute
-  LegacyIndexRoute: typeof LegacyIndexRoute
-}
-
-const LegacyRouteChildren: LegacyRouteChildren = {
-  LegacyAccountsRoute: LegacyAccountsRoute,
-  LegacyClientsRoute: LegacyClientsRoute,
-  LegacyFinanceRoute: LegacyFinanceRoute,
-  LegacyFlowsRoute: LegacyFlowsRouteWithChildren,
-  LegacyInboxRoute: LegacyInboxRoute,
-  LegacyLoginRoute: LegacyLoginRoute,
-  LegacyMaintenanceRoute: LegacyMaintenanceRoute,
-  LegacyProjectsRoute: LegacyProjectsRoute,
-  LegacySettingsRoute: LegacySettingsRoute,
-  LegacyTeamsRoute: LegacyTeamsRoute,
-  LegacyTemplatesRoute: LegacyTemplatesRoute,
-  LegacyWebhooksRoute: LegacyWebhooksRoute,
-  LegacyIndexRoute: LegacyIndexRoute,
-}
-
-const LegacyRouteWithChildren =
-  LegacyRoute._addFileChildren(LegacyRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   HealthzRoute: HealthzRoute,
-  LegacyRoute: LegacyRouteWithChildren,
   ReadyzRoute: ReadyzRoute,
   ApiPublicJobsAutomationRoute: ApiPublicJobsAutomationRoute,
   ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
