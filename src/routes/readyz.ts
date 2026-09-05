@@ -83,15 +83,13 @@ export const Route = createFileRoute("/readyz")({
             });
           }
 
+          // Public readiness must not disclose internal inventory, table health,
+          // credential state, or WhatsApp-number counts. Full details stay in logs.
           return Response.json(
             {
               ok,
               service: "az-wa",
               status: ok ? "ready" : "not_ready",
-              checks,
-              inventory: {
-                activeNumbers: numbersCheck.count ?? 0,
-              },
             },
             { status: ok ? 200 : 503, headers },
           );
@@ -102,13 +100,6 @@ export const Route = createFileRoute("/readyz")({
               ok: false,
               service: "az-wa",
               status: "not_ready",
-              checks: {
-                database: false,
-                runtimeTables: false,
-                activeNumbers: false,
-                centralWebhook: false,
-                webhookCredentials: false,
-              },
             },
             { status: 503, headers },
           );
