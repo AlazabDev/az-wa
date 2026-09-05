@@ -1,8 +1,11 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 const MEDIA_PERMISSION = "media.read";
+const TOTALS_BATCH_SIZE = 1000;
 
 export type StoredFile = {
   id: string;
@@ -27,6 +30,9 @@ export type FilesResponse = {
   files: StoredFile[];
   numbers: { id: string; label: string }[];
   totals: { all: number; stored: number; pending: number; failed: number; bytes: number };
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 type ListInput = {
@@ -34,10 +40,11 @@ type ListInput = {
   status?: string | undefined;
   mediaType?: string | undefined;
   search?: string | undefined;
-  limit?: number | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
 };
 
-async function authorize(context: { supabase: { rpc: Function } }) {
+async function authorize(context: { supabase: SupabaseClient<Database> }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: organization, error: organizationError } = await supabaseAdmin
     .from("organizations")
@@ -57,7 +64,13 @@ async function authorize(context: { supabase: { rpc: Function } }) {
   return { organizationId: organization.id as string, supabaseAdmin };
 }
 
-/** Lists every archived WhatsApp file across all connected numbers. */
+function normalizedSearch(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return `%${trimmed.replace(/[%_,()]/g, " ")}%`;
+}
+
+/** Lists archived WhatsApp files across every connected number in Alazab Group. */
 export const listStoredFiles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: ListInput) => input ?? {})
@@ -65,42 +78,80 @@ export const listStoredFiles = createServerFn({ method: "POST" })
     const { organizationId, supabaseAdmin } = await authorize(context);
     const { minioBucketName } = await import("@/lib/storage/minio.server");
 
-    const limit = Math.min(500, Math.max(1, Math.trunc(data.limit ?? 200)));
+    const pageSize = Math.min(200, Math.max(25, Math.trunc(data.pageSize ?? 100)));
+    const page = Math.max(1, Math.trunc(data.page ?? 1));
+    const search = normalizedSearch(data.search);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
-    const [{ data: numberRows }, mediaResult] = await Promise.all([
-      supabaseAdmin
-        .from("whatsapp_numbers")
-        .select("id, display_phone_number, verified_name")
-        .eq("organization_id", organizationId),
-      (async () => {
-        let query = supabaseAdmin
+    const numberQuery = supabaseAdmin
+      .from("whatsapp_numbers")
+      .select("id, display_phone_number, verified_name")
+      .eq("organization_id", organizationId)
+      .order("display_phone_number", { ascending: true });
+
+    let mediaQuery = supabaseAdmin
+      .from("media")
+      .select(
+        "id, created_at, received_at, stored_at, media_type, mime_type, filename, file_size, download_status, storage_provider, storage_bucket, storage_path, last_error, whatsapp_number_id",
+      )
+      .eq("organization_id", organizationId);
+
+    if (data.numberId) mediaQuery = mediaQuery.eq("whatsapp_number_id", data.numberId);
+    if (data.status) mediaQuery = mediaQuery.eq("download_status", data.status);
+    if (data.mediaType) mediaQuery = mediaQuery.eq("media_type", data.mediaType);
+    if (search) mediaQuery = mediaQuery.or(`filename.ilike.${search},storage_path.ilike.${search}`);
+
+    const totalsPromise = (async () => {
+      const totals = { all: 0, stored: 0, pending: 0, failed: 0, bytes: 0 };
+      let offset = 0;
+
+      for (;;) {
+        let totalsQuery = supabaseAdmin
           .from("media")
-          .select(
-            "id, created_at, received_at, stored_at, media_type, mime_type, filename, file_size, download_status, storage_provider, storage_bucket, storage_path, last_error, whatsapp_number_id",
-          )
+          .select("file_size, download_status")
           .eq("organization_id", organizationId);
 
-        if (data.numberId) query = query.eq("whatsapp_number_id", data.numberId);
-        if (data.status) query = query.eq("download_status", data.status);
-        if (data.mediaType) query = query.eq("media_type", data.mediaType);
-        if (data.search?.trim()) {
-          const term = `%${data.search.trim()}%`;
-          query = query.or(`filename.ilike.${term},storage_path.ilike.${term}`);
+        if (data.numberId) totalsQuery = totalsQuery.eq("whatsapp_number_id", data.numberId);
+        if (data.status) totalsQuery = totalsQuery.eq("download_status", data.status);
+        if (data.mediaType) totalsQuery = totalsQuery.eq("media_type", data.mediaType);
+        if (search) totalsQuery = totalsQuery.or(`filename.ilike.${search},storage_path.ilike.${search}`);
+
+        const batch = await totalsQuery.range(offset, offset + TOTALS_BATCH_SIZE - 1);
+        if (batch.error) throw new Error(batch.error.message);
+
+        const rows = batch.data ?? [];
+        for (const row of rows) {
+          totals.all += 1;
+          totals.bytes += row.file_size ?? 0;
+          if (row.download_status === "downloaded") totals.stored += 1;
+          else if (row.download_status === "failed") totals.failed += 1;
+          else totals.pending += 1;
         }
 
-        return query.order("created_at", { ascending: false }).limit(limit);
-      })(),
+        if (rows.length < TOTALS_BATCH_SIZE) break;
+        offset += TOTALS_BATCH_SIZE;
+      }
+
+      return totals;
+    })();
+
+    const [numberResult, mediaResult, totals] = await Promise.all([
+      numberQuery,
+      mediaQuery.order("created_at", { ascending: false }).range(from, to),
+      totalsPromise,
     ]);
 
+    if (numberResult.error) throw new Error(numberResult.error.message);
     if (mediaResult.error) throw new Error(mediaResult.error.message);
 
-    const numbers = (numberRows ?? []).map((row) => ({
+    const numbers = (numberResult.data ?? []).map((row) => ({
       id: row.id,
       label: row.verified_name
         ? `${row.verified_name} · ${row.display_phone_number ?? ""}`.trim()
         : (row.display_phone_number ?? row.id),
     }));
-    const numberLabels = new Map(numbers.map((n) => [n.id, n.label]));
+    const numberLabels = new Map(numbers.map((number) => [number.id, number.label]));
 
     const files: StoredFile[] = (mediaResult.data ?? []).map((row) => ({
       id: row.id,
@@ -122,18 +173,6 @@ export const listStoredFiles = createServerFn({ method: "POST" })
         : "Unmapped number",
     }));
 
-    const totals = files.reduce(
-      (acc, file) => {
-        acc.all += 1;
-        acc.bytes += file.fileSize ?? 0;
-        if (file.downloadStatus === "downloaded") acc.stored += 1;
-        else if (file.downloadStatus === "failed") acc.failed += 1;
-        else acc.pending += 1;
-        return acc;
-      },
-      { all: 0, stored: 0, pending: 0, failed: 0, bytes: 0 },
-    );
-
     let bucket = "";
     try {
       bucket = minioBucketName();
@@ -141,10 +180,18 @@ export const listStoredFiles = createServerFn({ method: "POST" })
       bucket = "not configured";
     }
 
-    return { bucket, files, numbers, totals };
+    return {
+      bucket,
+      files,
+      numbers,
+      totals,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(totals.all / pageSize)),
+    };
   });
 
-/** Issues a short-lived presigned MinIO URL for one archived file. */
+/** Issues a short-lived presigned Milano/MinIO URL without exposing credentials. */
 export const getStoredFileUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { mediaId: string }) => input)
@@ -154,12 +201,14 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
 
     const { data: media, error } = await supabaseAdmin
       .from("media")
-      .select("id, storage_bucket, storage_path, filename, download_status")
+      .select("id, storage_provider, storage_bucket, storage_path, filename, download_status")
       .eq("id", data.mediaId)
       .eq("organization_id", organizationId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!media?.storage_path) throw new Error("This file is not archived in MinIO yet");
+    if (!media?.storage_path || media.storage_provider !== "minio") {
+      throw new Error("This file is not archived in Milano yet");
+    }
 
     const expiresIn = 900;
     const url = presignMinioGetUrl({
@@ -171,20 +220,27 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
     return { url, expiresIn };
   });
 
-/** Retries the MinIO archive for one media row (failed or pending downloads). */
+/** Retries Meta -> Milano archival for one failed or pending media row. */
 export const retryStoredFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { mediaId: string }) => input)
   .handler(async ({ data, context }) => {
     const { organizationId, supabaseAdmin } = await authorize(context);
 
-    const { data: media } = await supabaseAdmin
+    const { data: media, error } = await supabaseAdmin
       .from("media")
-      .select("id")
+      .select("id, download_status")
       .eq("id", data.mediaId)
       .eq("organization_id", organizationId)
       .maybeSingle();
+    if (error) throw new Error(error.message);
     if (!media) throw new Error("File not found");
+    if (media.download_status === "downloaded") {
+      return { mediaId: media.id, status: "skipped" as const, storagePath: undefined };
+    }
+    if (media.download_status === "downloading") {
+      throw new Error("This file is already being archived");
+    }
 
     const { downloadMedia } = await import("@/lib/meta/media.server");
     return downloadMedia(media.id);
