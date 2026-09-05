@@ -31,20 +31,26 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function requiredServerEnv() {
-  const SUPABASE_URL = process.env["SUPABASE_URL"]?.trim();
-  const SUPABASE_SERVICE_ROLE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim();
+function requiredServerEnv(): {
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+} {
+  const supabaseUrl = process.env["SUPABASE_URL"]?.trim();
+  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim();
 
   const missing = [
-    ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-    ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
+    ...(!supabaseUrl ? ["SUPABASE_URL"] : []),
+    ...(!serviceRoleKey ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
   ];
 
-  if (missing.length > 0) {
+  if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(`Missing required server Supabase configuration: ${missing.join(", ")}`);
   }
 
-  return { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY };
+  return {
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+  };
 }
 
 function clientOptions(serviceRoleKey: string) {
