@@ -143,3 +143,63 @@ export async function putMinioObject(input: {
     status: response.status,
   };
 }
+
+/**
+ * Builds a time-limited presigned GET URL for a private object so the AzWA UI
+ * can stream/download archived WhatsApp media without exposing MinIO keys.
+ */
+export function presignMinioGetUrl(input: {
+  key: string;
+  expiresIn?: number;
+  bucket?: string;
+  downloadName?: string;
+}): string {
+  const config = readConfig();
+  const bucket = input.bucket?.trim() || config.bucket;
+  const expiresIn = Math.min(60 * 60 * 24 * 7, Math.max(60, Math.trunc(input.expiresIn ?? 900)));
+  const { amzDate, dateStamp } = timestampParts();
+
+  const basePath = config.endpoint.pathname.replace(/\/$/, "");
+  const canonicalUri = `${basePath}/${encodePathPart(bucket)}/${encodeObjectKey(input.key)}`.replace(
+    /\/+/g,
+    "/",
+  );
+
+  const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
+  const query: Record<string, string> = {
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": `${config.accessKey}/${scope}`,
+    "X-Amz-Date": amzDate,
+    "X-Amz-Expires": String(expiresIn),
+    "X-Amz-SignedHeaders": "host",
+  };
+  if (input.downloadName) {
+    query["response-content-disposition"] =
+      `attachment; filename="${input.downloadName.replace(/["\\]/g, "")}"`;
+  }
+
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map((key) => `${encodePathPart(key)}=${encodePathPart(query[key] as string)}`)
+    .join("&");
+
+  const canonicalRequest = [
+    "GET",
+    canonicalUri,
+    canonicalQuery,
+    `host:${config.endpoint.host}\n`,
+    "host",
+    "UNSIGNED-PAYLOAD",
+  ].join("\n");
+
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hashHex(canonicalRequest)].join("\n");
+  const signature = createHmac("sha256", signingKey(config.secretKey, dateStamp, config.region))
+    .update(stringToSign, "utf8")
+    .digest("hex");
+
+  return `${config.endpoint.origin}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+}
+
+export function minioBucketName(): string {
+  return readConfig().bucket;
+}
