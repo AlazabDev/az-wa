@@ -65,7 +65,7 @@ function normalize(raw: Partial<FinanceExtraction>, provider: string): FinanceEx
     return Number.isFinite(number) ? number : null;
   };
   const str = (value: unknown) =>
-    typeof value === "string" && value.trim() ? value.trim() : null;
+    (typeof value === "string" && value.trim() ? value.trim() : null);
   const date =
     typeof raw.invoice_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invoice_date)
       ? raw.invoice_date
