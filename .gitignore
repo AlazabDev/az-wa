@@ -7,15 +7,16 @@ dist-ssr/
 .tanstack/
 .nitro/
 
-# Environment / secrets
+# Environment / runtime secrets
+.env
 .env.*
-!.env
 !.env.example
-meta-complete.env
 *.env
 *.local
 .dev.vars
+meta-complete.env
 
+# Meta local artifacts
 /meta/
 meta/
 
@@ -49,8 +50,3 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
-
-# AzWA environment policy
-!.env
-!.env.example
-.env.local
