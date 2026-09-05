@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { productionAuthStorage } from "./authStorage";
 import type { Database } from "./types";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"]?.trim();
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]?.trim();
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   throw new Error(
