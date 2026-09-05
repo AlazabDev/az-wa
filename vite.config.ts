@@ -1,15 +1,20 @@
-// @lovable.dev/vite-tanstack-config already includes TanStack Start, React,
-// Tailwind, path aliases and Nitro. Keep a single server runtime and override
-// only the TanStack/Nitro options supported by the wrapper.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  tanstackStart: {
-    // Route the server bundle through src/server.ts so catastrophic SSR errors
-    // are normalized consistently.
-    server: { entry: "server" },
+  server: {
+    host: "0.0.0.0",
+    port: 8082,
   },
-  nitro: {
-    preset: "node-server",
-  },
+  plugins: [
+    tsconfigPaths(),
+    tanstackStart(),
+    nitro({ preset: "node-server" }),
+    viteReact(),
+    tailwindcss(),
+  ],
 });
