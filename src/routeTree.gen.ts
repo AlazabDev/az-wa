@@ -27,6 +27,7 @@ import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeadLetterRouteImport } from './routes/_authenticated/dead-letter'
 import { Route as AuthenticatedErrorsRouteImport } from './routes/_authenticated/errors'
+import { Route as AuthenticatedFilesRouteImport } from './routes/_authenticated/files'
 import { Route as AuthenticatedFlowsRouteImport } from './routes/_authenticated/flows'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
@@ -153,6 +154,11 @@ const AuthenticatedDeadLetterRoute = AuthenticatedDeadLetterRouteImport.update({
 const AuthenticatedErrorsRoute = AuthenticatedErrorsRouteImport.update({
   id: '/errors',
   path: '/errors',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFilesRoute = AuthenticatedFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFlowsRoute = AuthenticatedFlowsRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/errors': typeof AuthenticatedErrorsRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/flows': typeof AuthenticatedFlowsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -416,6 +423,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/errors': typeof AuthenticatedErrorsRoute
+  '/files': typeof AuthenticatedFilesRoute
   '/flows': typeof AuthenticatedFlowsRoute
   '/health': typeof AuthenticatedHealthRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/dead-letter': typeof AuthenticatedDeadLetterRoute
   '/_authenticated/errors': typeof AuthenticatedErrorsRoute
+  '/_authenticated/files': typeof AuthenticatedFilesRoute
   '/_authenticated/flows': typeof AuthenticatedFlowsRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dead-letter'
     | '/errors'
+    | '/files'
     | '/flows'
     | '/health'
     | '/inbox'
@@ -586,6 +596,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dead-letter'
     | '/errors'
+    | '/files'
     | '/flows'
     | '/health'
     | '/inbox'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/dead-letter'
     | '/_authenticated/errors'
+    | '/_authenticated/files'
     | '/_authenticated/flows'
     | '/_authenticated/health'
     | '/_authenticated/inbox'
@@ -823,6 +835,13 @@ declare module '@tanstack/react-router' {
       path: '/errors'
       fullPath: '/errors'
       preLoaderRoute: typeof AuthenticatedErrorsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/files': {
+      id: '/_authenticated/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof AuthenticatedFilesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/flows': {
@@ -1100,6 +1119,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadLetterRoute: typeof AuthenticatedDeadLetterRoute
   AuthenticatedErrorsRoute: typeof AuthenticatedErrorsRoute
+  AuthenticatedFilesRoute: typeof AuthenticatedFilesRoute
   AuthenticatedFlowsRoute: typeof AuthenticatedFlowsRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
@@ -1130,6 +1150,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadLetterRoute: AuthenticatedDeadLetterRoute,
   AuthenticatedErrorsRoute: AuthenticatedErrorsRoute,
+  AuthenticatedFilesRoute: AuthenticatedFilesRoute,
   AuthenticatedFlowsRoute: AuthenticatedFlowsRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
