@@ -12,6 +12,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { supabaseAdmin, supabaseRuntimeAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
+import { drainMediaQueue } from "@/lib/meta/media.server";
 import { drainWebhookQueue } from "@/lib/meta/webhook-worker.server";
 import { listWebhookSecrets, matchSignature, matchVerifyToken } from "@/lib/meta/webhook.server";
 
@@ -79,8 +80,11 @@ async function enqueueWebhookProcessing(input: {
 function kickWebhookWorker() {
   const workerId = `webhook-live-${randomUUID()}`;
   setImmediate(() => {
-    void drainWebhookQueue(25, workerId).catch((error) => {
-      console.error("[AzWA webhook] immediate worker drain failed", error);
+    void (async () => {
+      await drainWebhookQueue(25, workerId);
+      await drainMediaQueue(25);
+    })().catch((error) => {
+      console.error("[AzWA webhook] immediate webhook/media drain failed", error);
     });
   });
 }
