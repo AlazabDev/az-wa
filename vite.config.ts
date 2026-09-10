@@ -2,10 +2,12 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-// The Lovable wrapper pins the preview/build shape the platform expects.
-// Self-hosted production deploys (wa.alazab.com) target Node by exporting
-// NITRO_PRESET=node-server before `bun run build`, which nitro honours.
+// Inside the Lovable sandbox the wrapper pins the build to cloudflare-module
+// with dist/ output regardless of this option. On the self-hosted server
+// (wa.alazab.com) the sandbox override is absent, so the explicit
+// node-server preset applies and nitro emits .output/server/index.mjs,
+// which deploy/ecosystem.config.cjs runs under PM2.
 export default defineConfig({
   plugins: [tsconfigPaths(), tailwindcss()],
-  nitro: true,
+  nitro: { preset: "node-server" },
 });
