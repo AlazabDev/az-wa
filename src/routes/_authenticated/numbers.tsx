@@ -12,6 +12,8 @@ import { useNumbers, useWabas } from "@/lib/azwa-data";
 import { useNumberInventoryExtras } from "@/lib/meta/inventory-data";
 import { numbersInScope, useScope } from "@/lib/scope";
 import { testWhatsappNumber } from "@/lib/meta/meta.functions";
+import { refreshNumberMetaData, setNumberEnabled } from "@/lib/meta/number-admin.functions";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/numbers")({
   head: () => ({
@@ -35,6 +37,8 @@ function NumbersPage() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const test = useServerFn(testWhatsappNumber);
+  const refreshMeta = useServerFn(refreshNumberMetaData);
+  const toggleEnabled = useServerFn(setNumberEnabled);
   const queryClient = useQueryClient();
 
   const rows = useMemo(() => {
@@ -59,6 +63,38 @@ function NumbersPage() {
     });
   }, [allNumbers, inventoryExtras, scope, q]);
 
+  function invalidateNumbers() {
+    queryClient.invalidateQueries({ queryKey: ["whatsapp_numbers"] });
+    queryClient.invalidateQueries({ queryKey: ["azwa-inventory"] });
+  }
+
+  async function runRefresh(id: string) {
+    setBusy(id);
+    try {
+      const res = await refreshMeta({ data: { numberId: id } });
+      if (res.ok) toast.success(res.detail);
+      else toast.error(res.detail);
+      invalidateNumbers();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Meta refresh failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runToggle(id: string, enabled: boolean) {
+    setBusy(id);
+    try {
+      await toggleEnabled({ data: { numberId: id, enabled } });
+      toast.success(enabled ? "Number enabled" : "Number disabled");
+      invalidateNumbers();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function runTest(id: string) {
     setBusy(id);
     try {
@@ -66,7 +102,7 @@ function NumbersPage() {
       const failed = res.results.filter((r) => r.status === "FAIL").length;
       if (failed) toast.error(`${failed} check(s) failed — see Infrastructure for details`);
       else toast.success("All checks passed");
-      queryClient.invalidateQueries({ queryKey: ["whatsapp_numbers"] });
+      invalidateNumbers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Test failed");
     } finally {
@@ -102,6 +138,7 @@ function NumbersPage() {
                 <th className="py-2 pr-4 font-medium">Platform</th>
                 <th className="py-2 pr-4 font-medium">Throughput</th>
                 <th className="py-2 pr-4 font-medium">Code</th>
+                <th className="py-2 pr-4 font-medium">Enabled</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 pr-4 font-medium">Quality</th>
                 <th className="py-2 pr-4 font-medium">Limit</th>
@@ -131,6 +168,14 @@ function NumbersPage() {
                     <td className="py-2 pr-4 text-xs">{extra?.throughput_level ?? "—"}</td>
                     <td className="py-2 pr-4 text-xs">{extra?.code_verification_status ?? "—"}</td>
                     <td className="py-2 pr-4">
+                      <Switch
+                        checked={n.enabled}
+                        disabled={busy !== null}
+                        onCheckedChange={(checked) => void runToggle(n.id, checked)}
+                        aria-label={`Enable ${n.display_phone_number}`}
+                      />
+                    </td>
+                    <td className="py-2 pr-4">
                       <StatusBadge value={n.status} />
                     </td>
                     <td className="py-2 pr-4 text-xs">{n.quality_rating ?? "—"}</td>
@@ -148,14 +193,24 @@ function NumbersPage() {
                       {n.last_outgoing_at ? new Date(n.last_outgoing_at).toLocaleString() : "—"}
                     </td>
                     <td className="py-2 pr-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => runTest(n.id)}
-                      >
-                        {busy === n.id ? "Testing…" : "Test API"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void runRefresh(n.id)}
+                        >
+                          Sync Meta
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void runTest(n.id)}
+                        >
+                          {busy === n.id ? "Working…" : "Test API"}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
