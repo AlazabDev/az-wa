@@ -47,31 +47,27 @@ export async function syncNumberMetadata(numberId: string): Promise<void> {
   });
 
   // Fetch number details from Meta Graph API
-  const result = await client.request<{
-    id?: string;
-    display_phone_number?: string;
-    quality_rating?: string;
-    status?: string;
-    messaging_limit?: number | null;
-  }>(`${number.meta_phone_number_id}`);
+  const result = await client.request<Record<string, unknown>>(`${number.meta_phone_number_id}`);
 
   if (!result.ok || !result.data) {
     throw new Error(`Failed to fetch number metadata: ${result.errorMessage}`);
   }
 
-  const updateData: Record<string, unknown> = {};
+  // Build update object with only valid schema fields
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: any = {};
 
-  if (result.data.display_phone_number) {
-    updateData.display_phone_number = result.data.display_phone_number;
+  if (result.data["display_phone_number"]) {
+    updateData.display_phone_number = result.data["display_phone_number"];
   }
-  if (result.data.quality_rating) {
-    updateData.quality_rating = result.data.quality_rating;
+  if (result.data["quality_rating"]) {
+    updateData.quality_rating = result.data["quality_rating"];
   }
-  if (result.data.status) {
-    updateData.status = result.data.status;
+  if (result.data["status"]) {
+    updateData.status = result.data["status"];
   }
-  if (result.data.messaging_limit !== undefined) {
-    updateData.messaging_limit = result.data.messaging_limit;
+  if (result.data["messaging_limit"] !== undefined) {
+    updateData.messaging_limit = result.data["messaging_limit"];
   }
 
   // Update the number in database
