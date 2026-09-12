@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, X } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
+import { Loader2, Bot, Send as SendIcon } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   bodyText,
   buttonsOf,
@@ -159,6 +160,60 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
 
   const [expertComponents, setExpertComponents] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "agent"; text: string }[]>([
+    {
+      role: "agent",
+      text: "مرحباً! أنا المساعد الذكي من Foundry. أخبرني عن نوع القالب الذي تود إنشاؤه وسأقوم باقتراح المحتوى لك.",
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
+    setChatMessages((prev) => [...prev, { role: "user", text: userMsg }]);
+    setChatInput("");
+    setIsTyping(true);
+
+    // Mock API call to Foundry Agent
+    setTimeout(() => {
+      let reply = "هذا قالب مقترح بناءً على طلبك.";
+      let suggestedBody = "";
+      let suggestedHeader = "";
+
+      if (userMsg.includes("خصم") || userMsg.includes("عرض")) {
+        suggestedHeader = "عرض خاص لك! 🎁";
+        suggestedBody =
+          "مرحباً {{1}}،\n\nنقدم لك خصم حصري بنسبة 20% على جميع منتجاتنا بمناسبة الموسم الجديد.\n\nاستخدم الكود: DISCOUNT20\n\nتسوق الآن واستفد من العرض قبل انتهائه!";
+        reply = "لقد قمت بإعداد قالب ترويجي يحتوي على متغير للاسم. يمكنك تطبيقه الآن.";
+      } else if (userMsg.includes("تذكير") || userMsg.includes("موعد")) {
+        suggestedHeader = "تذكير بموعدك 📅";
+        suggestedBody =
+          "مرحباً {{1}}،\n\nنود تذكيرك بموعدك القادم يوم {{2}} الساعة {{3}}.\n\nيرجى التواصل معنا في حال رغبتك بتعديل الموعد.";
+        reply = "إليك قالب تذكير بالموعد مع 3 متغيرات جاهز للاستخدام.";
+      } else {
+        suggestedBody = `مرحباً {{1}}،\n\nنود إعلامك بخصوص استفسارك الأخير.\n\nلمزيد من التفاصيل، يرجى التواصل معنا.\n\nشكراً لك!`;
+        reply = "لقد قمت بصياغة رسالة عامة بناءً على طلبك. هل ترغب في تعديلها؟";
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "agent", text: reply, suggestedBody, suggestedHeader } as any,
+      ]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const applySuggestion = (bodyText: string, headerText?: string) => {
+    setBody(bodyText);
+    if (headerText) {
+      setHeaderFormat("TEXT");
+      setHeader(headerText);
+    }
+    toast.success("تم تطبيق اقتراح المساعد الذكي");
+  };
 
   const effectiveCategory: Category = kind === "AUTHENTICATION" ? "AUTHENTICATION" : category;
 
@@ -366,10 +421,28 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-xl">
-        <div className="mb-5 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="max-h-[95vh] w-full max-w-[95vw] lg:max-w-7xl overflow-y-auto bg-background rounded-xl shadow-2xl flex flex-col">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-muted/30 p-5 backdrop-blur-md">
           <div>
+            <h2 className="text-lg font-semibold text-foreground">Create Message Template</h2>
+            <p className="text-sm text-muted-foreground">
+              Draft and submit a new template to Meta.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="p-6 grid gap-6 lg:grid-cols-[1fr_320px_350px]">
+          {/* Form Column */}
+          <div className="space-y-6">
             <h2 className="flex items-center gap-2 text-sm font-semibold">
               <FileText className="h-4 w-4" /> New message template
             </h2>
@@ -739,6 +812,102 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
               <p>Variables: {placeholdersOf(components).join(", ") || "none"}</p>
               <p className="mt-1">Category: {effectiveCategory}</p>
               <p className="mt-1">Components: {components.length}</p>
+            </div>
+          </div>
+
+          {/* Chat Column */}
+          <div className="flex flex-col rounded-xl border border-border bg-card overflow-hidden h-[calc(100vh-250px)] min-h-[500px]">
+            <div className="flex items-center gap-2 border-b border-border bg-primary/5 p-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Bot className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Foundry Agent</p>
+                <p className="text-[10px] text-muted-foreground">AI Template Assistant</p>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-tr-sm"
+                          : "bg-muted text-foreground rounded-tl-sm"
+                      }`}
+                    >
+                      <p
+                        className="whitespace-pre-wrap leading-relaxed"
+                        dir={msg.role === "agent" ? "rtl" : "auto"}
+                      >
+                        {msg.text}
+                      </p>
+                    </div>
+                    {msg.role === "agent" && (msg as any).suggestedBody && (
+                      <div
+                        className="mt-2 w-full max-w-[90%] rounded-lg border border-primary/20 bg-primary/5 p-3"
+                        dir="rtl"
+                      >
+                        <p className="text-xs font-semibold text-primary mb-1">اقتراح القالب:</p>
+                        {(msg as any).suggestedHeader && (
+                          <p className="text-xs font-medium text-foreground mb-1">
+                            العنوان: {(msg as any).suggestedHeader}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                          {(msg as any).suggestedBody}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="mt-3 w-full h-7 text-xs"
+                          onClick={() =>
+                            applySuggestion(
+                              (msg as any).suggestedBody,
+                              (msg as any).suggestedHeader,
+                            )
+                          }
+                        >
+                          تطبيق الاقتراح (Apply)
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex items-start">
+                    <div className="bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-3 text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            <div className="p-3 border-t border-border bg-muted/10">
+              <div className="flex gap-2" dir="rtl">
+                <input
+                  className={`${inputClass} rounded-full`}
+                  placeholder="اكتب طلبك للمساعد الذكي..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  disabled={isTyping}
+                />
+                <Button
+                  size="icon"
+                  className="rounded-full shrink-0"
+                  onClick={handleSendMessage}
+                  disabled={isTyping || !chatInput.trim()}
+                >
+                  <SendIcon className="h-4 w-4 rtl:-scale-x-100" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

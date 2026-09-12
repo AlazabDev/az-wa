@@ -35,6 +35,7 @@ import { Route as AuthenticatedInfrastructureRouteImport } from './routes/_authe
 import { Route as AuthenticatedMediaRouteImport } from './routes/_authenticated/media'
 import { Route as AuthenticatedMetaAppRouteImport } from './routes/_authenticated/meta-app'
 import { Route as AuthenticatedMonitorRouteImport } from './routes/_authenticated/monitor'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -64,6 +65,7 @@ import { Route as ApiPublicJobsMessagesRouteImport } from './routes/api/public/j
 import { Route as ApiPublicJobsRecoverRouteImport } from './routes/api/public/jobs/recover'
 import { Route as ApiPublicJobsRuntimeRouteImport } from './routes/api/public/jobs/runtime'
 import { Route as ApiPublicJobsWebhooksRouteImport } from './routes/api/public/jobs/webhooks'
+import { Route as ApiPublicNotifyIdRouteImport } from './routes/api/public/notify.$id'
 import { Route as ApiPublicWebhooksMetaWhatsappRouteImport } from './routes/api/public/webhooks/meta/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -197,6 +199,12 @@ const AuthenticatedMonitorRoute = AuthenticatedMonitorRouteImport.update({
   path: '/monitor',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
   id: '/numbers',
   path: '/numbers',
@@ -342,6 +350,11 @@ const ApiPublicJobsWebhooksRoute = ApiPublicJobsWebhooksRouteImport.update({
   path: '/api/public/jobs/webhooks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotifyIdRoute = ApiPublicNotifyIdRouteImport.update({
+  id: '/api/public/notify/$id',
+  path: '/api/public/notify/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMetaWhatsappRoute =
   ApiPublicWebhooksMetaWhatsappRouteImport.update({
     id: '/api/public/webhooks/meta/whatsapp',
@@ -375,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
   '/monitor': typeof AuthenticatedMonitorRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -404,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
   '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
   '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
+  '/api/public/notify/$id': typeof ApiPublicNotifyIdRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -431,6 +446,7 @@ export interface FileRoutesByTo {
   '/media': typeof AuthenticatedMediaRoute
   '/meta-app': typeof AuthenticatedMetaAppRoute
   '/monitor': typeof AuthenticatedMonitorRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -459,6 +475,7 @@ export interface FileRoutesByTo {
   '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
   '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
   '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
+  '/api/public/notify/$id': typeof ApiPublicNotifyIdRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRoutesById {
@@ -489,6 +506,7 @@ export interface FileRoutesById {
   '/_authenticated/media': typeof AuthenticatedMediaRoute
   '/_authenticated/meta-app': typeof AuthenticatedMetaAppRoute
   '/_authenticated/monitor': typeof AuthenticatedMonitorRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -518,6 +536,7 @@ export interface FileRoutesById {
   '/api/public/jobs/recover': typeof ApiPublicJobsRecoverRoute
   '/api/public/jobs/runtime': typeof ApiPublicJobsRuntimeRoute
   '/api/public/jobs/webhooks': typeof ApiPublicJobsWebhooksRoute
+  '/api/public/notify/$id': typeof ApiPublicNotifyIdRoute
   '/api/public/webhooks/meta/whatsapp': typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -548,6 +567,7 @@ export interface FileRouteTypes {
     | '/media'
     | '/meta-app'
     | '/monitor'
+    | '/notifications'
     | '/numbers'
     | '/queues'
     | '/reports'
@@ -577,6 +597,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/recover'
     | '/api/public/jobs/runtime'
     | '/api/public/jobs/webhooks'
+    | '/api/public/notify/$id'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -604,6 +625,7 @@ export interface FileRouteTypes {
     | '/media'
     | '/meta-app'
     | '/monitor'
+    | '/notifications'
     | '/numbers'
     | '/queues'
     | '/reports'
@@ -632,6 +654,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/recover'
     | '/api/public/jobs/runtime'
     | '/api/public/jobs/webhooks'
+    | '/api/public/notify/$id'
     | '/api/public/webhooks/meta/whatsapp'
   id:
     | '__root__'
@@ -661,6 +684,7 @@ export interface FileRouteTypes {
     | '/_authenticated/media'
     | '/_authenticated/meta-app'
     | '/_authenticated/monitor'
+    | '/_authenticated/notifications'
     | '/_authenticated/numbers'
     | '/_authenticated/queues'
     | '/_authenticated/reports'
@@ -690,6 +714,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/recover'
     | '/api/public/jobs/runtime'
     | '/api/public/jobs/webhooks'
+    | '/api/public/notify/$id'
     | '/api/public/webhooks/meta/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -706,6 +731,7 @@ export interface RootRouteChildren {
   ApiPublicJobsRecoverRoute: typeof ApiPublicJobsRecoverRoute
   ApiPublicJobsRuntimeRoute: typeof ApiPublicJobsRuntimeRoute
   ApiPublicJobsWebhooksRoute: typeof ApiPublicJobsWebhooksRoute
+  ApiPublicNotifyIdRoute: typeof ApiPublicNotifyIdRoute
   ApiPublicWebhooksMetaWhatsappRoute: typeof ApiPublicWebhooksMetaWhatsappRoute
 }
 
@@ -891,6 +917,13 @@ declare module '@tanstack/react-router' {
       path: '/monitor'
       fullPath: '/monitor'
       preLoaderRoute: typeof AuthenticatedMonitorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/numbers': {
@@ -1096,6 +1129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsWebhooksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notify/$id': {
+      id: '/api/public/notify/$id'
+      path: '/api/public/notify/$id'
+      fullPath: '/api/public/notify/$id'
+      preLoaderRoute: typeof ApiPublicNotifyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/meta/whatsapp': {
       id: '/api/public/webhooks/meta/whatsapp'
       path: '/api/public/webhooks/meta/whatsapp'
@@ -1127,6 +1167,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMediaRoute: typeof AuthenticatedMediaRoute
   AuthenticatedMetaAppRoute: typeof AuthenticatedMetaAppRoute
   AuthenticatedMonitorRoute: typeof AuthenticatedMonitorRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -1158,6 +1199,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMediaRoute: AuthenticatedMediaRoute,
   AuthenticatedMetaAppRoute: AuthenticatedMetaAppRoute,
   AuthenticatedMonitorRoute: AuthenticatedMonitorRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
@@ -1233,6 +1275,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicJobsRecoverRoute: ApiPublicJobsRecoverRoute,
   ApiPublicJobsRuntimeRoute: ApiPublicJobsRuntimeRoute,
   ApiPublicJobsWebhooksRoute: ApiPublicJobsWebhooksRoute,
+  ApiPublicNotifyIdRoute: ApiPublicNotifyIdRoute,
   ApiPublicWebhooksMetaWhatsappRoute: ApiPublicWebhooksMetaWhatsappRoute,
 }
 export const routeTree = rootRouteImport

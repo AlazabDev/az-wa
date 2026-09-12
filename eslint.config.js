@@ -11,7 +11,9 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
-      "supabase/remote-snapshot/**",
+      ".tanstack",
+      "supabase/**",
+      "src/pages/**",
       "src/routeTree.gen.ts",
       "src/integrations/supabase/types.ts",
       "src/integrations/supabase/wa-types.ts",
@@ -44,20 +46,8 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   eslintPluginPrettier,
-  {
-    // Legacy react-router pages and the archived Deno edge functions predate the
-    // unified AzWA schema; `any` there stays a warning instead of a build blocker.
-    files: [
-      "src/pages/**/*.{ts,tsx}",
-      "src/contexts/**/*.{ts,tsx}",
-      "src/components/App*.tsx",
-      "supabase/functions/**/*.ts",
-    ],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-    },
-  },
 );

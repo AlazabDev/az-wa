@@ -1,13 +1,14 @@
-# AzWA — wa.alazab.com Nginx Configuration
-# Host reverse proxy for the AzWA TanStack Node server.
-# Install as /etc/nginx/sites-available/wa.alazab.com and enable it.
-# SSL certificate is managed by certbot.
+# AzWA — wa.alazab.com
+# Canonical reverse proxy for the TanStack/Nitro Node runtime on 127.0.0.1:8085.
 
 server {
   listen 80;
   listen [::]:80;
   server_name wa.alazab.com;
   server_tokens off;
+
+  access_log /var/log/nginx/wa.alazab.com.access.log;
+  error_log  /var/log/nginx/wa.alazab.com.error.log warn;
 
   location /.well-known/acme-challenge/ {
     root /var/www/html;
@@ -24,6 +25,9 @@ server {
   server_name wa.alazab.com;
   server_tokens off;
 
+  access_log /var/log/nginx/wa.alazab.com.access.log;
+  error_log  /var/log/nginx/wa.alazab.com.error.log warn;
+
   ssl_certificate     /etc/letsencrypt/live/wa.alazab.com/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/wa.alazab.com/privkey.pem;
   ssl_protocols TLSv1.2 TLSv1.3;
@@ -36,11 +40,12 @@ server {
 
   client_max_body_size 25m;
 
-  # Canonical public Meta callback. The application keeps the implementation
-  # under /api/public while Meta always sees the stable product URL below.
+  # Never expose local configuration, VCS metadata, archived source or legacy UI.
+  location ~ /(?:\.git|\.env|_isolated_legacy)(?:/|$) { return 404; }
+  location ^~ /legacy { return 404; }
+
+  # Stable public Meta callback mapped to the internal TanStack route.
   location = /webhooks/meta/whatsapp {
-    # Meta webhook notifications carry metadata, not the media object itself.
-    # Keep this public ingress deliberately small to reduce request-abuse surface.
     client_max_body_size 2m;
     proxy_pass http://127.0.0.1:8085/api/public/webhooks/meta/whatsapp;
     proxy_http_version 1.1;

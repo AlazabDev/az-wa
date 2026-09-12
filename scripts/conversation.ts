@@ -100,35 +100,35 @@ export class Conversation {
 
     switch (message.type) {
       case constants.REPLY_INTERACTIVE_MEDIA_ID: {
-        const interactiveMediaResponse = await sendInteractiveMediaMessage(
+        const res = (await sendInteractiveMediaMessage(
           message.id,
           senderPhoneNumberId,
           message.senderPhoneNumber,
-        );
-        if (interactiveMediaResponse?.messages?.[0]?.id) {
-          await markMessageForFollowUp(interactiveMediaResponse.messages[0].id);
+        )) as { messages?: Array<{ id?: string }> } | undefined;
+        if (res?.messages?.[0]?.id) {
+          await markMessageForFollowUp(res.messages[0].id);
         }
         break;
       }
       case constants.REPLY_MEDIA_CAROUSEL_ID: {
-        const mediaCarouselResponse = await sendMediaCarouselMessage(
+        const res = (await sendMediaCarouselMessage(
           message.id,
           senderPhoneNumberId,
           message.senderPhoneNumber,
-        );
-        if (mediaCarouselResponse?.messages?.[0]?.id) {
-          await markMessageForFollowUp(mediaCarouselResponse.messages[0].id);
+        )) as { messages?: Array<{ id?: string }> } | undefined;
+        if (res?.messages?.[0]?.id) {
+          await markMessageForFollowUp(res.messages[0].id);
         }
         break;
       }
       case constants.REPLY_OFFER_ID: {
-        const ltoResponse = await sendLimitedTimeOfferMessage(
+        const res = (await sendLimitedTimeOfferMessage(
           message.id,
           senderPhoneNumberId,
           message.senderPhoneNumber,
-        );
-        if (ltoResponse?.messages?.[0]?.id) {
-          await markMessageForFollowUp(ltoResponse.messages[0].id);
+        )) as { messages?: Array<{ id?: string }> } | undefined;
+        if (res?.messages?.[0]?.id) {
+          await markMessageForFollowUp(res.messages[0].id);
         }
         break;
       }

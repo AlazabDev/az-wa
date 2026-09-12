@@ -189,161 +189,214 @@ function TemplatesPage() {
   };
 
   return (
-    <>
-      <PageHeader
-        title="Message Templates"
-        description="Manage the template library per WABA. Sync follows the active scope and pulls approval and quality state from Meta."
-        actions={
-          <>
-            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing…" : "Sync from Meta"}
-            </Button>
-            <Button size="sm" onClick={() => setCreating(true)} disabled={!scopedWabas.length}>
-              <Plus className="mr-2 h-4 w-4" /> New template
-            </Button>
-          </>
-        }
-      />
+    <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] overflow-hidden">
+      <div className="flex-none p-4 pb-2">
+        <PageHeader
+          title="Message Templates"
+          description="Manage the template library per WABA. Sync follows the active scope and pulls approval and quality state from Meta."
+          actions={
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? "Syncing…" : "Sync from Meta"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setCreating(true)}
+                disabled={!scopedWabas.length}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="mr-2 h-4 w-4" /> New template
+              </Button>
+            </div>
+          }
+        />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        {[
-          { label: "Approved", value: counts.approved },
-          { label: "Pending", value: counts.pending },
-          { label: "Rejected", value: counts.rejected },
-          { label: "Other", value: counts.other },
-        ].map((item) => (
-          <div key={item.label} className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">{item.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{item.value}</p>
-          </div>
-        ))}
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          {[
+            {
+              label: "Approved",
+              value: counts.approved,
+              color: "text-emerald-500",
+              bg: "bg-emerald-500/10",
+            },
+            {
+              label: "Pending",
+              value: counts.pending,
+              color: "text-amber-500",
+              bg: "bg-amber-500/10",
+            },
+            {
+              label: "Rejected",
+              value: counts.rejected,
+              color: "text-red-500",
+              bg: "bg-red-500/10",
+            },
+            { label: "Other", value: counts.other, color: "text-slate-500", bg: "bg-slate-500/10" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className={`flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md`}
+            >
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${item.bg}`}>
+                <span className={`text-lg font-bold ${item.color}`}>{item.value}</span>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="text-lg font-semibold leading-none mt-1">{item.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <Panel>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              className={`${inputClass} pl-9`}
-              placeholder="Search name or body…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+      <div className="flex-1 flex overflow-hidden p-4 pt-2 gap-4">
+        {/* Left Column: List */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden ${selected ? "hidden lg:flex" : "flex"}`}
+        >
+          <div className="p-4 border-b border-border bg-muted/20">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative min-w-[200px] flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className={`${inputClass} pl-9`}
+                  placeholder="Search name or body…"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+
+              <select
+                className={`${inputClass} w-[140px]`}
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+              >
+                <option value="all">All statuses</option>
+                {STATUSES.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className={`${inputClass} w-[140px]`}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                <option value="all">All categories</option>
+                {CATEGORIES.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className={`${inputClass} w-[140px]`}
+                value={wabaFilter}
+                onChange={(event) => setWabaFilter(event.target.value)}
+              >
+                <option value="all">All WABAs</option>
+                {scopedWabas.map((waba) => (
+                  <option key={waba.id} value={waba.id}>
+                    {waba.name ?? waba.meta_waba_id ?? "—"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <select
-            className={`${inputClass} w-[150px]`}
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="all">All statuses</option>
-            {STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className={`${inputClass} w-[165px]`}
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            <option value="all">All categories</option>
-            {CATEGORIES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className={`${inputClass} w-[210px]`}
-            value={wabaFilter}
-            onChange={(event) => setWabaFilter(event.target.value)}
-          >
-            <option value="all">All WABAs</option>
-            {scopedWabas.map((waba) => (
-              <option key={waba.id} value={waba.id}>
-                {waba.name ?? waba.meta_waba_id ?? "—"}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="p-8">
+                <EmptyState
+                  title="No templates found"
+                  hint="Run “Sync from Meta” for the current scope, or create and submit a new template."
+                />
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm">
+                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-widest text-muted-foreground">
+                    <th className="py-3 px-4 font-medium">Name</th>
+                    <th className="py-3 pr-4 font-medium">WABA</th>
+                    <th className="py-3 pr-4 font-medium">Category</th>
+                    <th className="py-3 pr-4 font-medium">Status</th>
+                    <th className="py-3 pr-4 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((template) => (
+                    <tr
+                      key={template.id}
+                      className={`cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40 transition-colors ${selected?.id === template.id ? "bg-primary/5" : ""}`}
+                      onClick={() => setSelected(template)}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="font-mono text-xs font-semibold text-foreground">
+                          {template.name}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {template.language} • {placeholdersOf(template.components).length} vars
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-xs text-muted-foreground">
+                        {wabaName(template.waba_id)}
+                      </td>
+                      <td className="py-3 pr-4 text-xs">
+                        <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-[10px] font-medium text-secondary-foreground ring-1 ring-inset ring-secondary/20">
+                          {template.category}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <StatusBadge value={template.status} />
+                          {template.quality_rating && (
+                            <StatusBadge value={template.quality_rating} />
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleDelete(template);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
-        {isLoading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
-        ) : visible.length === 0 ? (
-          <EmptyState
-            title="No templates found"
-            hint="Run “Sync from Meta” for the current scope, or create and submit a new template."
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-widest text-muted-foreground">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">WABA</th>
-                  <th className="py-2 pr-4 font-medium">Category</th>
-                  <th className="py-2 pr-4 font-medium">Lang</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">Quality</th>
-                  <th className="py-2 pr-4 font-medium">Vars</th>
-                  <th className="py-2 pr-4 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((template) => (
-                  <tr
-                    key={template.id}
-                    className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/40"
-                    onClick={() => setSelected(template)}
-                  >
-                    <td className="py-2 pr-4 font-mono text-xs">{template.name}</td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {wabaName(template.waba_id)}
-                    </td>
-                    <td className="py-2 pr-4 text-xs">{template.category}</td>
-                    <td className="py-2 pr-4 text-xs">{template.language}</td>
-                    <td className="py-2 pr-4">
-                      <StatusBadge value={template.status} />
-                    </td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {template.quality_rating ?? "—"}
-                    </td>
-                    <td className="py-2 pr-4 text-xs text-muted-foreground">
-                      {placeholdersOf(template.components).length}
-                    </td>
-                    <td className="py-2 pr-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void handleDelete(template);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Right Column: Detail */}
+        {selected && (
+          <div className="w-full lg:w-[450px] flex-none flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden animate-in slide-in-from-right-4 duration-200">
+            <TemplateDetail
+              key={selected.id}
+              template={selected}
+              wabaName={wabaName(selected.waba_id)}
+              onClose={() => setSelected(null)}
+            />
           </div>
         )}
-      </Panel>
-
-      {selected && (
-        <TemplateDetail
-          key={selected.id}
-          template={selected}
-          wabaName={wabaName(selected.waba_id)}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      </div>
 
       {creating && (
         <CreateTemplateDialog
@@ -358,7 +411,7 @@ function TemplatesPage() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -483,12 +536,9 @@ function TemplateDetail({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
-      <aside
-        className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="mb-4 flex items-start justify-between gap-4">
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex-none p-4 border-b border-border bg-muted/20">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-mono text-sm font-semibold">{template.name}</h2>
             <p className="text-xs text-muted-foreground">
@@ -499,12 +549,13 @@ function TemplateDetail({
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <StatusBadge value={template.status} />
           {template.quality_rating && <StatusBadge value={template.quality_rating} />}
         </div>
+      </div>
 
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {template.rejection_reason && (
           <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
             {template.rejection_reason}
@@ -590,7 +641,7 @@ function TemplateDetail({
             </Button>
           </div>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }

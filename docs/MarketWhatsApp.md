@@ -53,9 +53,11 @@ You will need:
 ## Using ngrok
 
 #### 1. Setup templates
+
 In order for the app to send templated messages, you need to first create those templates under your WhatsApp Business Account. You can either do this by running `./template.sh` or through [WhatsApp Manager](https://business.facebook.com/latest/whatsapp_manager/message_templates).
 
 #### 2. Install Redis
+
 If not already installed, install redis via [download](https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/).
 
 You can then start a redis daemon locally via command line:
@@ -73,6 +75,7 @@ npm install -g ngrok
 ```
 
 In the directory of this repo, request a tunnel to your local server with your preferred port
+
 ```bash
 ngrok http 8080
 ```
@@ -91,6 +94,7 @@ Forwarding                    https://1c3b838deacb.ngrok.io -> http://localhost:
 Connections                   ttl     opn     rt1     rt5     p50     p90
                               0       0       0.00    0.00    0.00    0.00
 ```
+
 Note the https URL of the external server that is forwarded to your local machine. In the above example, it is `https://1c3b838deacb.ngrok.io`.
 
 #### 4. Install the dependencies

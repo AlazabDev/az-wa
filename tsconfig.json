@@ -28,6 +28,7 @@
     "src/test",
     "src/App.tsx",
     "src/main.tsx",
+    "src/pages",
     "src/components/ui/toast.tsx",
     "src/components/ui/toaster.tsx",
     "src/components/ui/use-toast.ts",

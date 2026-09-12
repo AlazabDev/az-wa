@@ -1,12 +1,10 @@
 import * as facebookSdk from "facebook-nodejs-business-sdk";
 import config from "./config";
 
-type SdkModule = {
-  FacebookAdsApi?: new (token: string) => unknown;
-  default?: { FacebookAdsApi?: new (token: string) => unknown };
-};
-const sdk = facebookSdk as unknown as SdkModule;
-const FacebookAdsApi = sdk.FacebookAdsApi || sdk.default?.FacebookAdsApi;
+const sdkObj = facebookSdk as unknown as Record<string, unknown>;
+const FacebookAdsApi = (sdkObj["FacebookAdsApi"] ||
+  (sdkObj["default"] as Record<string, unknown> | undefined)?.["FacebookAdsApi"]) as
+  (new (token: string) => { call: (...args: unknown[]) => Promise<unknown> }) | undefined;
 const api = FacebookAdsApi ? new FacebookAdsApi(config.accessToken || "") : null;
 
 export interface ReplyCTA {
