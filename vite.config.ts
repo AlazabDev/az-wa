@@ -8,8 +8,5 @@ import tailwindcss from "@tailwindcss/vite";
 // which deploy/ecosystem.config.cjs runs under PM2.
 export default defineConfig({
   plugins: [tailwindcss()],
-  resolve: {
-    tsconfigPaths: true,
-  },
   nitro: { preset: "node-server" },
 });
