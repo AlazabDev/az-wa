@@ -85,9 +85,13 @@ function NumbersPage() {
   async function runToggle(id: string, enabled: boolean) {
     setBusy(id);
     try {
-      await toggleEnabled({ data: { numberId: id, enabled } });
-      toast.success(enabled ? "Number enabled" : "Number disabled");
-      invalidateNumbers();
+      const res = await toggleEnabled({ data: { numberId: id, enabled } });
+      if (res.ok) {
+        toast.success(res.detail);
+        invalidateNumbers();
+      } else {
+        toast.error(res.detail);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     } finally {

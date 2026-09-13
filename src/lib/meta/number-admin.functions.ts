@@ -41,7 +41,6 @@ export const refreshNumberMetaData = createServerFn({ method: "POST" })
     }
 
     try {
-      // Import server-only Meta operations
       const { syncNumberMetadata } = await import("./number-admin.server");
       await syncNumberMetadata(data.numberId);
 
@@ -87,13 +86,34 @@ export const setNumberEnabled = createServerFn({ method: "POST" })
     }
 
     try {
-      // Note: The whatsapp_numbers table doesn't have an 'enabled' column.
-      // This function validates permissions and the enabled state, but doesn't
-      // persist it. You'll need to either:
-      // 1. Add an 'enabled' column to whatsapp_numbers table, or
-      // 2. Create a separate number_status or number_config table
-      
-      // For now, just validate and return success
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: updated, error: updateError } = await supabaseAdmin
+        .from("whatsapp_numbers")
+        .update({
+          is_enabled: data.enabled,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", number.id)
+        .eq("organization_id", number.organization_id)
+        .select("is_enabled")
+        .single();
+
+      if (updateError || !updated) {
+        return {
+          ok: false,
+          detail: updateError?.message ?? "Unable to update number state",
+        };
+      }
+
+      if (updated.is_enabled !== data.enabled) {
+        return {
+          ok: false,
+          detail: data.enabled
+            ? "Number cannot be enabled in its current lifecycle state"
+            : "Number could not be disabled",
+        };
+      }
+
       return {
         ok: true,
         detail: `Number ${data.enabled ? "enabled" : "disabled"} successfully`,
