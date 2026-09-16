@@ -31,7 +31,7 @@ const productionItems = [
   { title: "لوحة التحكم", url: "/legacy", icon: LayoutDashboard },
   { title: "صندوق الوارد", url: "/legacy/inbox", icon: MessageCircle },
   { title: "المالية", url: "/legacy/finance", icon: WalletCards },
-  { title: "الويب هوك", url: "/legacy/webhooks", icon: Webhook },
+  { title: "طلبات Meta / Webhook", url: "/webhooks", icon: Webhook },
   { title: "الإعدادات", url: "/legacy/settings", icon: Settings },
 ];
 
