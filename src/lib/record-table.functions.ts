@@ -40,6 +40,11 @@ const TABLE_RULES: Record<string, TableRule> = {
   automation_rules: { permission: "automation.read" },
   automation_runs: { permission: "automation.read" },
   webhook_events: { permission: "webhooks.read" },
+  meta_webhook_request_audit: {
+    permission: "webhooks.read",
+    safeColumns:
+      "id, organization_id, webhook_endpoint_id, method, received_at, verification_type, verification_valid, http_status, event_type, meta_waba_id, meta_phone_number_id, request_id, created_at",
+  },
   unmapped_number_events: { permission: "webhooks.read" },
   api_requests: { permission: "health.read" },
   api_errors: { permission: "health.read" },
