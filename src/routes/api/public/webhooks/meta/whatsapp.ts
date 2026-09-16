@@ -56,6 +56,35 @@ function asIngestResult(value: unknown): IngestResult {
   return value as IngestResult;
 }
 
+async function auditMetaRequest(input: {
+  organizationId: string | null;
+  webhookEndpointId?: string | null;
+  method: "GET" | "POST";
+  verificationType: "verify_token" | "signature";
+  verificationValid: boolean;
+  httpStatus: number;
+  eventType?: string | null;
+  metaWabaId?: string | null;
+  metaPhoneNumberId?: string | null;
+}) {
+  if (!input.organizationId) return;
+
+  const { error } = await supabaseRuntimeAdmin.from("meta_webhook_request_audit").insert({
+    organization_id: input.organizationId,
+    webhook_endpoint_id: input.webhookEndpointId ?? null,
+    method: input.method,
+    verification_type: input.verificationType,
+    verification_valid: input.verificationValid,
+    http_status: input.httpStatus,
+    event_type: input.eventType ?? null,
+    meta_waba_id: input.metaWabaId ?? null,
+    meta_phone_number_id: input.metaPhoneNumberId ?? null,
+    request_id: randomUUID(),
+  });
+
+  if (error) console.error("[AzWA webhook] request audit failed", error);
+}
+
 async function enqueueWebhookProcessing(input: {
   organizationId: string;
   eventId: string;
@@ -97,11 +126,41 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
         const mode = url.searchParams.get("hub.mode");
         const token = url.searchParams.get("hub.verify_token");
         const challenge = url.searchParams.get("hub.challenge") ?? "";
-        if (mode !== "subscribe") return new Response("Bad Request", { status: 400 });
-
         const secrets = await listWebhookSecrets();
         const endpoint = matchVerifyToken(secrets, token);
-        if (!endpoint) return new Response("Forbidden", { status: 403 });
+
+        if (mode !== "subscribe") {
+          await auditMetaRequest({
+            organizationId: secrets[0]?.organization_id ?? null,
+            webhookEndpointId: secrets[0]?.webhook_endpoint_id ?? null,
+            method: "GET",
+            verificationType: "verify_token",
+            verificationValid: false,
+            httpStatus: 400,
+          });
+          return new Response("Bad Request", { status: 400 });
+        }
+
+        if (!endpoint) {
+          await auditMetaRequest({
+            organizationId: secrets[0]?.organization_id ?? null,
+            webhookEndpointId: secrets[0]?.webhook_endpoint_id ?? null,
+            method: "GET",
+            verificationType: "verify_token",
+            verificationValid: false,
+            httpStatus: 403,
+          });
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        await auditMetaRequest({
+          organizationId: endpoint.organization_id,
+          webhookEndpointId: endpoint.webhook_endpoint_id,
+          method: "GET",
+          verificationType: "verify_token",
+          verificationValid: true,
+          httpStatus: 200,
+        });
         return new Response(challenge, { status: 200 });
       },
 
@@ -113,14 +172,48 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           raw,
           request.headers.get("x-hub-signature-256"),
         );
-        if (!endpoint || !signatureValid) return new Response("Unauthorized", { status: 401 });
+
+        if (!endpoint || !signatureValid) {
+          await auditMetaRequest({
+            organizationId: endpoint?.organization_id ?? secrets[0]?.organization_id ?? null,
+            webhookEndpointId: endpoint?.webhook_endpoint_id ?? secrets[0]?.webhook_endpoint_id ?? null,
+            method: "POST",
+            verificationType: "signature",
+            verificationValid: false,
+            httpStatus: 401,
+          });
+          return new Response("Unauthorized", { status: 401 });
+        }
 
         let payload: MetaWebhookPayload;
         try {
           payload = JSON.parse(raw) as MetaWebhookPayload;
         } catch {
+          await auditMetaRequest({
+            organizationId: endpoint.organization_id,
+            webhookEndpointId: endpoint.webhook_endpoint_id,
+            method: "POST",
+            verificationType: "signature",
+            verificationValid: true,
+            httpStatus: 400,
+          });
           return new Response("Bad Request", { status: 400 });
         }
+
+        const firstEntry = payload.entry?.[0];
+        const firstChange = firstEntry?.changes?.[0];
+        const firstValue = firstChange?.value ?? {};
+        await auditMetaRequest({
+          organizationId: endpoint.organization_id,
+          webhookEndpointId: endpoint.webhook_endpoint_id,
+          method: "POST",
+          verificationType: "signature",
+          verificationValid: true,
+          httpStatus: 200,
+          eventType: firstChange?.field ?? "unknown",
+          metaWabaId: firstEntry?.id ?? null,
+          metaPhoneNumberId: firstValue.metadata?.phone_number_id ?? null,
+        });
 
         let queuedAny = false;
         try {
