@@ -47,6 +47,9 @@ export function RecordTable({
   limit = 100,
   title,
   emptyLabel = "No records yet.",
+  searchText = "",
+  searchKeys = [],
+  filters = {},
 }: {
   table: string;
   columns: Column[];
@@ -54,6 +57,9 @@ export function RecordTable({
   limit?: number;
   title?: string;
   emptyLabel?: string;
+  searchText?: string;
+  searchKeys?: string[];
+  filters?: Record<string, string | undefined>;
 }) {
   const readRecords = useServerFn(readRecordTable);
   const {
@@ -66,6 +72,21 @@ export function RecordTable({
     queryFn: async (): Promise<Row[]> =>
       (await readRecords({ data: { table, orderBy, limit } })) as Row[],
     refetchInterval: 30_000,
+  });
+
+  const normalizedSearch = searchText.trim().toLowerCase();
+  const filteredData = data.filter((row) => {
+    const passesSearch =
+      !normalizedSearch ||
+      (searchKeys.length > 0 ? searchKeys : columns.map((column) => column.key)).some((key) =>
+        String(row[key] ?? "").toLowerCase().includes(normalizedSearch),
+      );
+
+    const passesFilters = Object.entries(filters).every(
+      ([key, value]) => !value || String(row[key] ?? "") === value,
+    );
+
+    return passesSearch && passesFilters;
   });
 
   return (
@@ -82,7 +103,7 @@ export function RecordTable({
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {filteredData.map((row, i) => (
               <tr key={String(row["id"] ?? i)} className="border-b border-border/60 last:border-0">
                 {columns.map((c) => (
                   <td key={c.key} className="py-2 pr-4 align-top">
@@ -100,7 +121,7 @@ export function RecordTable({
           </p>
         ) : null}
 
-        {!isLoading && !isError && data.length === 0 ? (
+        {!isLoading && !isError && filteredData.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>
         ) : null}
 
