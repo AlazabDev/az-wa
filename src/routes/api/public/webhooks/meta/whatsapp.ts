@@ -203,17 +203,9 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
         const firstEntry = payload.entry?.[0];
         const firstChange = firstEntry?.changes?.[0];
         const firstValue = firstChange?.value ?? {};
-        await auditMetaRequest({
-          organizationId: endpoint.organization_id,
-          webhookEndpointId: endpoint.webhook_endpoint_id,
-          method: "POST",
-          verificationType: "signature",
-          verificationValid: true,
-          httpStatus: 200,
-          eventType: firstChange?.field ?? "unknown",
-          metaWabaId: firstEntry?.id ?? null,
-          metaPhoneNumberId: firstValue.metadata?.phone_number_id ?? null,
-        });
+        const auditEventType = firstChange?.field ?? "unknown";
+        const auditMetaWabaId = firstEntry?.id ?? null;
+        const auditMetaPhoneNumberId = firstValue.metadata?.phone_number_id ?? null;
 
         let queuedAny = false;
         try {
@@ -264,8 +256,31 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
           }
         } catch (error) {
           console.error("[AzWA webhook] persistence/queue failure", error);
+          await auditMetaRequest({
+            organizationId: endpoint.organization_id,
+            webhookEndpointId: endpoint.webhook_endpoint_id,
+            method: "POST",
+            verificationType: "signature",
+            verificationValid: true,
+            httpStatus: 503,
+            eventType: auditEventType,
+            metaWabaId: auditMetaWabaId,
+            metaPhoneNumberId: auditMetaPhoneNumberId,
+          });
           return new Response("Service Unavailable", { status: 503 });
         }
+
+        await auditMetaRequest({
+          organizationId: endpoint.organization_id,
+          webhookEndpointId: endpoint.webhook_endpoint_id,
+          method: "POST",
+          verificationType: "signature",
+          verificationValid: true,
+          httpStatus: 200,
+          eventType: auditEventType,
+          metaWabaId: auditMetaWabaId,
+          metaPhoneNumberId: auditMetaPhoneNumberId,
+        });
 
         if (queuedAny) kickWebhookWorker();
         return new Response("EVENT_RECEIVED", { status: 200 });
