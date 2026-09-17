@@ -72,7 +72,7 @@ async function finalizeWebhookEvent(
 ) {
   // The live clean database contains this 002 RPC; the checked-in generated
   // Supabase type can lag behind the runtime schema between type regenerations.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const runtime = supabaseRuntimeAdmin as any;
   const { error } = await runtime.rpc("backend_finalize_webhook_event", {
     p_event_id: eventId,

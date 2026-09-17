@@ -25,7 +25,7 @@ export const getAuthenticatedOrganizationScopes = createServerFn({ method: "POST
   .handler(async ({ context }): Promise<AuthOrganizationScope[]> => {
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
     // Runtime client intentionally follows the live clean schema.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const runtime = supabaseRuntimeAdmin as any;
 
     const { data: membershipData, error: membershipError } = await runtime

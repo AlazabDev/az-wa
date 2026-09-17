@@ -33,7 +33,6 @@ export const getWabaStats = createServerFn({ method: "POST" })
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const runtime = supabaseRuntimeAdmin as any;
     const [wabaResult, numberResult, templateResult, messageResult, errorResult] =
       await Promise.all([

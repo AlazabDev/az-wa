@@ -38,6 +38,7 @@ export const Route = createFileRoute("/_authenticated")({
         throw redirect({ to: "/auth" });
       }
     } catch (error) {
+      console.error("[Auth] getAuthenticatedOrganizationScopes failed:", error);
       if (error && typeof error === "object" && "redirect" in error) throw error;
       throw redirect({ to: "/auth" });
     }

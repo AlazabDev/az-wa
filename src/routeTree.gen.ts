@@ -46,7 +46,10 @@ import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as LegacyIndexRouteImport } from './routes/legacy.index'
 import { Route as LegacyAccountsRouteImport } from './routes/legacy.accounts'
+import { Route as LegacyApikeysRouteImport } from './routes/legacy.apikeys'
+import { Route as LegacyChannelsRouteImport } from './routes/legacy.channels'
 import { Route as LegacyClientsRouteImport } from './routes/legacy.clients'
+import { Route as LegacyDealchatRouteImport } from './routes/legacy.dealchat'
 import { Route as LegacyFinanceRouteImport } from './routes/legacy.finance'
 import { Route as LegacyFlowsRouteImport } from './routes/legacy.flows'
 import { Route as LegacyInboxRouteImport } from './routes/legacy.inbox'
@@ -255,9 +258,24 @@ const LegacyAccountsRoute = LegacyAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => LegacyRoute,
 } as any)
+const LegacyApikeysRoute = LegacyApikeysRouteImport.update({
+  id: '/apikeys',
+  path: '/apikeys',
+  getParentRoute: () => LegacyRoute,
+} as any)
+const LegacyChannelsRoute = LegacyChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => LegacyRoute,
+} as any)
 const LegacyClientsRoute = LegacyClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
+  getParentRoute: () => LegacyRoute,
+} as any)
+const LegacyDealchatRoute = LegacyDealchatRouteImport.update({
+  id: '/dealchat',
+  path: '/dealchat',
   getParentRoute: () => LegacyRoute,
 } as any)
 const LegacyFinanceRoute = LegacyFinanceRouteImport.update({
@@ -398,7 +416,10 @@ export interface FileRoutesByFullPath {
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/legacy/accounts': typeof LegacyAccountsRoute
+  '/legacy/apikeys': typeof LegacyApikeysRoute
+  '/legacy/channels': typeof LegacyChannelsRoute
   '/legacy/clients': typeof LegacyClientsRoute
+  '/legacy/dealchat': typeof LegacyDealchatRoute
   '/legacy/finance': typeof LegacyFinanceRoute
   '/legacy/flows': typeof LegacyFlowsRouteWithChildren
   '/legacy/inbox': typeof LegacyInboxRoute
@@ -456,7 +477,10 @@ export interface FileRoutesByTo {
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/legacy/accounts': typeof LegacyAccountsRoute
+  '/legacy/apikeys': typeof LegacyApikeysRoute
+  '/legacy/channels': typeof LegacyChannelsRoute
   '/legacy/clients': typeof LegacyClientsRoute
+  '/legacy/dealchat': typeof LegacyDealchatRoute
   '/legacy/finance': typeof LegacyFinanceRoute
   '/legacy/inbox': typeof LegacyInboxRoute
   '/legacy/login': typeof LegacyLoginRoute
@@ -516,7 +540,10 @@ export interface FileRoutesById {
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/legacy/accounts': typeof LegacyAccountsRoute
+  '/legacy/apikeys': typeof LegacyApikeysRoute
+  '/legacy/channels': typeof LegacyChannelsRoute
   '/legacy/clients': typeof LegacyClientsRoute
+  '/legacy/dealchat': typeof LegacyDealchatRoute
   '/legacy/finance': typeof LegacyFinanceRoute
   '/legacy/flows': typeof LegacyFlowsRouteWithChildren
   '/legacy/inbox': typeof LegacyInboxRoute
@@ -577,7 +604,10 @@ export interface FileRouteTypes {
     | '/wabas'
     | '/webhooks'
     | '/legacy/accounts'
+    | '/legacy/apikeys'
+    | '/legacy/channels'
     | '/legacy/clients'
+    | '/legacy/dealchat'
     | '/legacy/finance'
     | '/legacy/flows'
     | '/legacy/inbox'
@@ -635,7 +665,10 @@ export interface FileRouteTypes {
     | '/wabas'
     | '/webhooks'
     | '/legacy/accounts'
+    | '/legacy/apikeys'
+    | '/legacy/channels'
     | '/legacy/clients'
+    | '/legacy/dealchat'
     | '/legacy/finance'
     | '/legacy/inbox'
     | '/legacy/login'
@@ -694,7 +727,10 @@ export interface FileRouteTypes {
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
     | '/legacy/accounts'
+    | '/legacy/apikeys'
+    | '/legacy/channels'
     | '/legacy/clients'
+    | '/legacy/dealchat'
     | '/legacy/finance'
     | '/legacy/flows'
     | '/legacy/inbox'
@@ -996,11 +1032,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegacyAccountsRouteImport
       parentRoute: typeof LegacyRoute
     }
+    '/legacy/apikeys': {
+      id: '/legacy/apikeys'
+      path: '/apikeys'
+      fullPath: '/legacy/apikeys'
+      preLoaderRoute: typeof LegacyApikeysRouteImport
+      parentRoute: typeof LegacyRoute
+    }
+    '/legacy/channels': {
+      id: '/legacy/channels'
+      path: '/channels'
+      fullPath: '/legacy/channels'
+      preLoaderRoute: typeof LegacyChannelsRouteImport
+      parentRoute: typeof LegacyRoute
+    }
     '/legacy/clients': {
       id: '/legacy/clients'
       path: '/clients'
       fullPath: '/legacy/clients'
       preLoaderRoute: typeof LegacyClientsRouteImport
+      parentRoute: typeof LegacyRoute
+    }
+    '/legacy/dealchat': {
+      id: '/legacy/dealchat'
+      path: '/dealchat'
+      fullPath: '/legacy/dealchat'
+      preLoaderRoute: typeof LegacyDealchatRouteImport
       parentRoute: typeof LegacyRoute
     }
     '/legacy/finance': {
@@ -1229,7 +1286,10 @@ const LegacyFlowsRouteWithChildren = LegacyFlowsRoute._addFileChildren(
 
 interface LegacyRouteChildren {
   LegacyAccountsRoute: typeof LegacyAccountsRoute
+  LegacyApikeysRoute: typeof LegacyApikeysRoute
+  LegacyChannelsRoute: typeof LegacyChannelsRoute
   LegacyClientsRoute: typeof LegacyClientsRoute
+  LegacyDealchatRoute: typeof LegacyDealchatRoute
   LegacyFinanceRoute: typeof LegacyFinanceRoute
   LegacyFlowsRoute: typeof LegacyFlowsRouteWithChildren
   LegacyInboxRoute: typeof LegacyInboxRoute
@@ -1245,7 +1305,10 @@ interface LegacyRouteChildren {
 
 const LegacyRouteChildren: LegacyRouteChildren = {
   LegacyAccountsRoute: LegacyAccountsRoute,
+  LegacyApikeysRoute: LegacyApikeysRoute,
+  LegacyChannelsRoute: LegacyChannelsRoute,
   LegacyClientsRoute: LegacyClientsRoute,
+  LegacyDealchatRoute: LegacyDealchatRoute,
   LegacyFinanceRoute: LegacyFinanceRoute,
   LegacyFlowsRoute: LegacyFlowsRouteWithChildren,
   LegacyInboxRoute: LegacyInboxRoute,

@@ -19,7 +19,7 @@
 import { supabaseAdmin as typedSupabaseAdmin } from "@/integrations/supabase/client.server";
 
 // Runtime client intentionally follows the live clean schema.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const supabaseAdmin = typedSupabaseAdmin as any;
 
 import { evaluateConditions } from "./evaluate.server";

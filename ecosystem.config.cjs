@@ -1,6 +1,6 @@
 const path = require("node:path");
 
-const APP_DIR = path.resolve(__dirname, "..");
+const APP_DIR = __dirname;
 
 module.exports = {
   apps: [
@@ -10,6 +10,7 @@ module.exports = {
       script: ".output/server/index.mjs",
       instances: 1,
       exec_mode: "fork",
+      node_args: "--env-file=/etc/az-wa/az-wa.env",
       env: {
         NODE_ENV: "production",
         HOST: "127.0.0.1",
