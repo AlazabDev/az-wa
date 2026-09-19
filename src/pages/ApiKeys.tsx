@@ -41,17 +41,12 @@ import type { ApiKey } from "@/lib/types";
 type ApiKeyWithPlain = ApiKey & { plain?: string };
 
 const SCOPE_OPTIONS = [
+  { value: "read:inbox", label: "قراءة صندوق الوارد" },
+  { value: "write:messages", label: "إرسال رسائل" },
   { value: "read:contacts", label: "قراءة جهات الاتصال" },
-  { value: "write:contacts", label: "إدارة جهات الاتصال" },
-  { value: "read_write:messages", label: "الرسائل (قراءة وإرسال)" },
-  { value: "write:tags", label: "إدارة الوسوم" },
-  { value: "write:quick_replies", label: "إدارة الردود السريعة" },
-  { value: "read:orders", label: "قراءة الطلبات والمنتجات" },
-  { value: "write:orders", label: "إدارة الطلبات والمنتجات" },
-  { value: "read:campaigns", label: "قراءة الحملات" },
-  { value: "control:campaigns", label: "التحكم بالحملات (إيقاف مؤقت، استئناف، إلغاء)" },
-  { value: "read:bookings", label: "قراءة الحجوزات" },
-  { value: "write:bookings", label: "إدارة الحجوزات" },
+  { value: "read:templates", label: "قراءة القوالب" },
+  { value: "read:media", label: "قراءة الوسائط" },
+  { value: "write:media", label: "رفع وسائط" },
 ];
 
 const ApiKeysPage = () => {
@@ -61,9 +56,7 @@ const ApiKeysPage = () => {
   const [keys, setKeys] = useState<ApiKeyWithPlain[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [scopes, setScopes] = useState<string[]>([]);
-  const [expiresIn, setExpiresIn] = useState("365");
-  const [isSandbox, setIsSandbox] = useState(false);
+  const [scopes, setScopes] = useState<string[]>(["read:inbox", "write:messages"]);
   const [shownKey, setShownKey] = useState<string | null>(null);
 
   /* ── Fetch keys ─── */
@@ -87,7 +80,7 @@ const ApiKeysPage = () => {
 
   /* ── Create ─── */
   const { mutate: create, loading: creating } = useApiMutation(
-    (api, body: { name: string; scopes: string[]; expires_in: number; is_sandbox: boolean }, signal) =>
+    (api, body: { name: string; scopes: string[] }, signal) =>
       api.manageApiKey({ tenant_id: tenantId!, action: "create", ...body }, signal),
     {
       onSuccess: (d: any) => {
@@ -148,7 +141,7 @@ const ApiKeysPage = () => {
 
   const handleCreate = async () => {
     if (!newName.trim() || !tenantId) return;
-    await create({ name: newName.trim(), scopes, expires_in: parseInt(expiresIn), is_sandbox: isSandbox });
+    await create({ name: newName.trim(), scopes });
     setNewName("");
   };
 
@@ -164,33 +157,22 @@ const ApiKeysPage = () => {
 
   return (
     <DashboardLayout>
-      <PageHeader 
-        title="مفاتيح API" 
-        description="أنشئ مفتاحاً لربط الأنظمة الخارجية بحسابك عبر الـ API. المفتاح يحمل فقط الصلاحيات التي تمنحها له، ويُعرض مرة واحدة – انسخه الآن واحفظه في مكان آمن."
-      >
+      <PageHeader title="مفاتيح API" description={`${keys.length} مفتاح`}>
         <Dialog
           open={dialogOpen}
           onOpenChange={(v) => {
             setDialogOpen(v);
             if (!v) {
               setNewName("");
-              setScopes([]);
-              setExpiresIn("365");
-              setIsSandbox(false);
               setShownKey(null);
             }
           }}
         >
           <DialogTrigger asChild>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
-                اقرأ توثيق API
-              </Button>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                إنشاء مفتاح
-              </Button>
-            </div>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              إنشاء مفتاح
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -228,57 +210,29 @@ const ApiKeysPage = () => {
                     className="mt-1.5"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="مثال: مزامنة الطلبات، Zapier، سكريبت"
+                    placeholder="مفتاح الإنتاج"
                     onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                   />
                 </div>
                 <div>
                   <Label className="mb-2 block">الصلاحيات</Label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCOPE_OPTIONS.map((s) => (
                       <button
                         key={s.value}
                         onClick={() => toggleScope(s.value)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded border text-sm transition-colors ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors ${
                           scopes.includes(s.value)
-                            ? "bg-primary/5 border-primary/40 text-foreground font-medium"
+                            ? "bg-primary/10 border-primary/40 text-primary font-medium"
                             : "border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
-                        <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${scopes.includes(s.value) ? "bg-primary border-primary" : "border-input"}`}>
-                          {scopes.includes(s.value) && <CheckCircle2 className="w-2.5 h-2.5 text-primary-foreground" />}
-                        </div>
+                        <CheckCircle2
+                          className={`w-3 h-3 shrink-0 ${scopes.includes(s.value) ? "" : "opacity-0"}`}
+                        />
                         {s.label}
                       </button>
                     ))}
-                  </div>
-                </div>
-
-                <div className="flex items-end justify-between mt-6 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setIsSandbox(!isSandbox)}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${isSandbox ? "bg-primary border-primary" : "border-input"}`}>
-                        {isSandbox && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-                      </div>
-                      مفتاح تجريبي (Sandbox – لا يمس بيانات حقيقية)
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm text-muted-foreground">ينتهي بعد</Label>
-                    <select 
-                      className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                      value={expiresIn}
-                      onChange={(e) => setExpiresIn(e.target.value)}
-                    >
-                      <option value="30">30 يوماً</option>
-                      <option value="90">90 يوماً</option>
-                      <option value="180">180 يوماً</option>
-                      <option value="365">365 يوماً</option>
-                      <option value="1095">3 سنوات</option>
-                    </select>
                   </div>
                 </div>
                 <DialogFooter>
@@ -303,8 +257,12 @@ const ApiKeysPage = () => {
       </div>
 
       {keys.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-          لا توجد مفاتيح API بعد...
+        <div className="bg-card rounded-xl border border-border p-8">
+          <EmptyState
+            icon={Key}
+            title="لا توجد مفاتيح"
+            description="أنشئ مفتاحًا للوصول من تطبيقاتك"
+          />
         </div>
       ) : (
         <div className="space-y-3 animate-fade-in">

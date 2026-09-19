@@ -204,7 +204,7 @@ export async function syncWabaTemplates(wabaId: string) {
     const { error } = await supabaseAdmin
       .from("templates")
       // Runtime schema is ahead of the generated client types.
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .upsert(rows as any, { onConflict: "waba_id,name,language" });
 
     if (error) {
@@ -284,6 +284,7 @@ export async function createWabaTemplate(input: {
         components: components as unknown as Record<string, unknown>[],
         last_synced_at: now,
         updated_at: now,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       { onConflict: "waba_id,name,language" },
     )
@@ -314,6 +315,7 @@ export async function createWabaTemplate(input: {
         components,
         category: (response.data.category ?? input.category).toUpperCase(),
         language: input.language,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     });
 

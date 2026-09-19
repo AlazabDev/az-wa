@@ -109,7 +109,11 @@ function numberHealth(input: {
   return input.api === "unknown" ? "unknown" : "healthy";
 }
 
-async function organizationAndPermission(context: any, permission: string) {
+async function organizationAndPermission(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context: any,
+  permission: string,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: organization, error } = await supabaseAdmin
     .from("organizations")

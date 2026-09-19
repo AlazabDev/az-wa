@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * WhatsApp Flows control-plane integration — server only.
  * Flow state is WABA-scoped and reconciled from Meta without deleting history.

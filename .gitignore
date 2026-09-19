@@ -8,7 +8,7 @@ dist-ssr/
 .nitro/
 
 # Environment / runtime secrets
-
+.env
 .env.*
 !.env.example
 *.env

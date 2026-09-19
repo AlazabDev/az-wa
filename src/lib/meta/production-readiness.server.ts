@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { inspectMetaAppWebhook } from "./app-webhook.server";
 import { validatePortfolioCredential } from "./connectivity.server";

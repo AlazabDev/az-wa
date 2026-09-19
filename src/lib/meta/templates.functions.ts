@@ -18,7 +18,7 @@ const ALLOWED_CATEGORIES = new Set(["UTILITY", "MARKETING", "AUTHENTICATION"]);
 
 async function assertWabaPermission(
   // Runtime Supabase schema is ahead of generated types.
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   wabaId: string,
   permission = TEMPLATE_MANAGE_PERMISSION,

@@ -54,7 +54,7 @@ export async function syncNumberMetadata(numberId: string): Promise<void> {
   }
 
   // Build update object with only valid schema fields
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {};
 
   if (result.data["display_phone_number"]) {

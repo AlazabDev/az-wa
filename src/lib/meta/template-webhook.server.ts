@@ -136,7 +136,7 @@ export async function applyTemplateWebhookChange(input: {
   const { error } = await supabaseAdmin
     .from("templates")
     // Runtime schema is ahead of generated types.
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(patch as any)
     .eq("id", local.template.id);
 

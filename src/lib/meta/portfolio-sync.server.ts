@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Complete Business Portfolio -> WABA -> phone reconciliation.
  * Every Meta collection is cursor-paginated; no account is silently omitted.

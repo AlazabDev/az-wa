@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /** Meta App webhook subscription inspection/reconciliation — server only. */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MetaGraphClient } from "./graph.server";

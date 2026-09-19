@@ -132,7 +132,7 @@ export const readRecordTable = createServerFn({ method: "POST" })
     const orderBy = safeIdentifier(data.orderBy, "created_at");
 
     // Runtime client intentionally accepts the allowlisted table names above.
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const runtime = supabaseRuntimeAdmin as any;
     const globalCatalog = ["roles", "permissions", "role_permissions"].includes(data.table);
 

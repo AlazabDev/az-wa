@@ -35,7 +35,7 @@ export const getPerNumberMessages24h = createServerFn({ method: "POST" })
     if (numberIds.length === 0) return {};
 
     // Validate scope before querying messages.
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const runtime = supabaseRuntimeAdmin as any;
     const { data: numbers, error: numberError } = await runtime
       .from("whatsapp_numbers")

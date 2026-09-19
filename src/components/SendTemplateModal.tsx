@@ -85,7 +85,7 @@ export function SendTemplateModal({ open, onClose, template, tenantId }: Props) 
     };
 
     loadData();
-  }, [open, tenantId, template?.body, template?.variables]);
+  }, [open, tenantId]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {

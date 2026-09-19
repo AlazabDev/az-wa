@@ -77,7 +77,7 @@ export function useMediaUrl(
 
     // No resolvable media
     setResolvedUrl(null);
-  }, [media, media?.url, media?.storage_key, media?.media_file_id, tenantId]);
+  }, [media?.url, media?.storage_key, media?.media_file_id, tenantId]);
 
   return { url: resolvedUrl, loading };
 }

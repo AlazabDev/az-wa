@@ -49,217 +49,14 @@ import {
 } from "@/components/ui/table";
 
 const EVENT_OPTIONS = [
-  {
-    "group": "جهات الاتصال",
-    "events": [
-      {
-        "value": "contact.created",
-        "label": "إنشاء جهة اتصال"
-      },
-      {
-        "value": "contact.updated",
-        "label": "تعديل جهة اتصال"
-      },
-      {
-        "value": "contact.blocked",
-        "label": "حظر جهة اتصال"
-      },
-      {
-        "value": "contact.unblocked",
-        "label": "رفع الحظر عن جهة اتصال"
-      },
-      {
-        "value": "contact.tagged",
-        "label": "إضافة وسم لجهة اتصال"
-      },
-      {
-        "value": "contact.untagged",
-        "label": "إزالة وسم من جهة اتصال"
-      },
-      {
-        "value": "contact.deleted",
-        "label": "حذف جهة اتصال"
-      }
-    ]
-  },
-  {
-    "group": "الطلبات",
-    "events": [
-      {
-        "value": "order.created",
-        "label": "طلب جديد"
-      },
-      {
-        "value": "order.paid",
-        "label": "دفع الطلب"
-      },
-      {
-        "value": "order.shipped",
-        "label": "شحن الطلب"
-      },
-      {
-        "value": "order.ready_for_pickup",
-        "label": "الطلب جاهز للاستلام"
-      },
-      {
-        "value": "order.delivered",
-        "label": "تسليم الطلب"
-      },
-      {
-        "value": "order.cancelled",
-        "label": "إلغاء الطلب"
-      },
-      {
-        "value": "order.refunded",
-        "label": "استرداد الطلب"
-      },
-      {
-        "value": "product.created",
-        "label": "منتج جديد"
-      },
-      {
-        "value": "product.updated",
-        "label": "تحديث منتج"
-      },
-      {
-        "value": "cart.abandoned",
-        "label": "سلة متروكة"
-      }
-    ]
-  },
-  {
-    "group": "الحجوزات",
-    "events": [
-      {
-        "value": "booking.created",
-        "label": "إنشاء حجز"
-      },
-      {
-        "value": "booking.updated",
-        "label": "تعديل حجز"
-      },
-      {
-        "value": "booking.cancelled",
-        "label": "إلغاء حجز"
-      },
-      {
-        "value": "booking.confirmed",
-        "label": "تأكيد حجز"
-      }
-    ]
-  },
-  {
-    "group": "الحملات",
-    "events": [
-      {
-        "value": "campaign.completed",
-        "label": "اكتمال الحملة"
-      },
-      {
-        "value": "campaign.failed",
-        "label": "فشل الحملة"
-      }
-    ]
-  },
-  {
-    "group": "الرسائل",
-    "events": [
-      {
-        "value": "message.received",
-        "label": "وصول رسالة"
-      },
-      {
-        "value": "message.sent",
-        "label": "إرسال رسالة"
-      },
-      {
-        "value": "conversation.created",
-        "label": "إنشاء محادثة"
-      },
-      {
-        "value": "conversation.assigned",
-        "label": "إسناد محادثة"
-      },
-      {
-        "value": "conversation.transferred",
-        "label": "تحويل محادثة"
-      },
-      {
-        "value": "conversation.closed",
-        "label": "إغلاق محادثة"
-      },
-      {
-        "value": "conversation.reopened",
-        "label": "إعادة فتح محادثة"
-      },
-      {
-        "value": "conversation.muted",
-        "label": "كتم محادثة"
-      },
-      {
-        "value": "conversation.unmuted",
-        "label": "إلغاء كتم محادثة"
-      },
-      {
-        "value": "conversation.archived",
-        "label": "أرشفة محادثة"
-      },
-      {
-        "value": "conversation.unarchived",
-        "label": "استعادة محادثة"
-      },
-      {
-        "value": "conversation.tagged",
-        "label": "إضافة وسم لمحادثة"
-      },
-      {
-        "value": "conversation.untagged",
-        "label": "إزالة وسم من محادثة"
-      },
-      {
-        "value": "message.delivered",
-        "label": "تسليم رسالة"
-      },
-      {
-        "value": "message.read",
-        "label": "قراءة رسالة"
-      },
-      {
-        "value": "message.failed",
-        "label": "فشل رسالة"
-      },
-      {
-        "value": "conversation.unassigned",
-        "label": "إلغاء إسناد محادثة"
-      }
-    ]
-  },
-  {
-    "group": "الأتمتة",
-    "events": [
-      {
-        "value": "flow.completed",
-        "label": "اكتمل التدفق"
-      },
-      {
-        "value": "flow.handoff_requested",
-        "label": "طلب تحويل لموظف"
-      },
-      {
-        "value": "conversation.csat_received",
-        "label": "وصل تقييم رضا"
-      }
-    ]
-  },
-  {
-    "group": "الفوترة",
-    "events": [
-      {
-        "value": "invoice.paid",
-        "label": "دفعت الفاتورة"
-      }
-    ]
-  }
+  { value: "message.received", label: "رسالة واردة", icon: "📩" },
+  { value: "message.sent", label: "رسالة صادرة", icon: "📤" },
+  { value: "message.delivered", label: "تم التسليم", icon: "✅" },
+  { value: "message.read", label: "تمت القراءة", icon: "👁" },
+  { value: "message.failed", label: "فشل الإرسال", icon: "❌" },
+  { value: "conversation.started", label: "محادثة جديدة", icon: "💬" },
+  { value: "conversation.closed", label: "إغلاق محادثة", icon: "🔒" },
+  { value: "status.changed", label: "تغيير حالة", icon: "🔄" },
 ];
 
 interface WaNumber {
@@ -430,13 +227,7 @@ export default function Webhooks() {
       prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id],
     );
 
-  const getEventLabel = (val: string) => {
-    for (const g of EVENT_OPTIONS) {
-      const found = g.events.find((e: any) => e.value === val);
-      if (found) return found.label;
-    }
-    return val;
-  };
+  const getEventLabel = (val: string) => EVENT_OPTIONS.find((e) => e.value === val)?.label ?? val;
 
   const getNumberDisplay = (numberId: string) => {
     const num = waNumbers?.find((n) => n.id === numberId);
@@ -448,88 +239,70 @@ export default function Webhooks() {
 
   return (
     <AppLayout
-      title="Webhooks"
-      subtitle="أرسل الأحداث لحظياً إلى خادمك. سجل نقطة استقبال، اختر الأحداث التي تريد استقبالها، وسنرسل حمولة JSON موقعة عبر POST كلما وقعت. تحقق من ترويسة X-Widers-Signature للتحقق من المصداقية."
+      title="الويب هوك"
+      subtitle={`إدارة نقاط الاستقبال — ${activeWebhooks} نشط من ${webhooks?.length ?? 0}`}
       actions={
-        <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
-          اقرأ توثيق API
+        <Button onClick={() => setDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> إضافة ويب هوك
         </Button>
       }
     >
       <div className="space-y-6" dir="rtl">
-        <div className="bg-card rounded-xl border p-6 mb-6">
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>رابط نقطة الاستقبال</Label>
-                <Input
-                  placeholder="https://example.com/hooks/widers"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  dir="ltr"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الاسم (اختياري)</Label>
-                <Input
-                  placeholder="مثال: مزامنة الطلبات، Zapier"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4 mt-6">
-              <Label className="text-base font-semibold">الأحداث</Label>
-              {EVENT_OPTIONS.map((group) => (
-                <div key={group.group} className="space-y-3 mt-4">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2">{group.group}</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {group.events.map((ev) => (
-                      <label
-                        key={ev.value}
-                        className={`flex items-start gap-3 p-3 min-w-[200px] flex-1 rounded-xl border cursor-pointer transition-colors ${selectedEvents.includes(ev.value) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/50'}`}
-                      >
-                        <Checkbox
-                          className="mt-0.5"
-                          checked={selectedEvents.includes(ev.value)}
-                          onCheckedChange={() => toggleEvent(ev.value)}
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-mono text-muted-foreground" dir="ltr">{ev.value}</span>
-                          <span className="text-xs font-semibold">{ev.label}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end pt-6 mt-6 border-t border-border">
-              <Button onClick={handleSubmit} disabled={createMutation.isPending} className="px-8 bg-success hover:bg-success/90">
-                {createMutation.isPending ? "جاري الإضافة..." : "إضافة نقطة استقبال"}
-              </Button>
-            </div>
-          </div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-primary">{webhooks?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground">إجمالي الويب هوك</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-success">{activeWebhooks}</p>
+              <p className="text-xs text-muted-foreground">نشط</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-info">{waNumbers?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground">أرقام متاحة</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-warning">{totalDeliveries}</p>
+              <p className="text-xs text-muted-foreground">عمليات التسليم</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Webhooks List */}
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
         ) : !webhooks?.length ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-            لا توجد نقاط استقبال webhook بعد...
-          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
+              <Webhook className="h-12 w-12 text-muted-foreground/40" />
+              <p className="text-lg font-medium">لا توجد ويب هوك</p>
+              <p className="text-sm text-muted-foreground">
+                أنشئ ويب هوك لاستقبال إشعارات فورية عن رسائل جميع الأرقام
+              </p>
+              <Button onClick={() => setDialogOpen(true)} className="gap-2 mt-2">
+                <Plus className="h-4 w-4" /> إنشاء أول ويب هوك
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
             {webhooks.map((wh) => {
               const events = (wh.events_filter as string[]) || [];
+              const numbers = (wh.numbers_filter as string[]) || [];
               const stats = deliveryStats?.[wh.id];
 
               return (
                 <Card key={wh.id} className="shadow-card">
                   <CardContent className="p-5 space-y-4">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -552,9 +325,103 @@ export default function Webhooks() {
                             toggleMutation.mutate({ id: wh.id, is_active: checked })
                           }
                         />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => deleteMutation.mutate(wh.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive gap-2"
+                              onClick={() => deleteMutation.mutate(wh.id)}
+                            >
+                              <Trash2 className="h-4 w-4" /> حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    {/* Numbers Coverage */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">الأرقام:</span>
+                      {numbers.length === 0 ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-success/10 text-success border-success/20"
+                        >
+                          جميع الأرقام ({waNumbers?.length ?? 0})
+                        </Badge>
+                      ) : (
+                        numbers.map((nId) => (
+                          <Badge
+                            key={nId}
+                            variant="outline"
+                            className="text-xs font-mono"
+                            dir="ltr"
+                          >
+                            {getNumberDisplay(nId)}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Events */}
+                    {events.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">الأحداث:</span>
+                        {events.map((ev) => (
+                          <Badge key={ev} variant="outline" className="text-xs">
+                            {getEventLabel(ev)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Stats & Secret Row */}
+                    <div className="flex items-center gap-4 flex-wrap text-xs">
+                      {stats && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">تسليمات:</span>
+                          <span className="text-success">{stats.success} نجح</span>
+                          {stats.failed > 0 && (
+                            <span className="text-destructive">{stats.failed} فشل</span>
+                          )}
+                        </div>
+                      )}
+                      {wh.last_delivery_at && (
+                        <div className="flex items-center gap-1.5">
+                          {wh.last_error ? (
+                            <AlertCircle className="h-3 w-3 text-destructive" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3 text-success" />
+                          )}
+                          <span className="text-muted-foreground">
+                            آخر تسليم:{" "}
+                            {new Date(wh.last_delivery_at).toLocaleDateString("ar-SA", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Secret:</span>
+                        {wh.has_secret ? (
+                          <Badge variant="outline" className="text-[10px] gap-1">
+                            <ShieldCheck className="h-3 w-3 text-success" /> مضبوط (مخزّن على
+                            الخادم)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">
+                            غير مضبوط
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -563,6 +430,189 @@ export default function Webhooks() {
             })}
           </div>
         )}
+
+        {/* Numbers Overview */}
+        {waNumbers && waNumbers.length > 0 && (
+          <Card className="shadow-card">
+            <CardContent className="p-5">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                الأرقام المتاحة للويب هوك
+              </h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الرقم</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">ويب هوك مرتبطة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {waNumbers.map((num) => {
+                      const linkedCount =
+                        webhooks?.filter(
+                          (w) =>
+                            w.is_active &&
+                            ((w.numbers_filter as string[])?.length === 0 ||
+                              (w.numbers_filter as string[])?.includes(num.id)),
+                        ).length ?? 0;
+                      return (
+                        <TableRow key={num.id}>
+                          <TableCell className="font-mono text-sm" dir="ltr">
+                            {num.display_phone_number || num.phone_e164}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={num.status === "active" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {num.status === "active" ? "نشط" : "معلق"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {linkedCount} ويب هوك
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Create Dialog */}
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            if (!open) resetForm();
+            else setDialogOpen(true);
+          }}
+        >
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>إنشاء ويب هوك جديد</DialogTitle>
+              <DialogDescription>استقبل إشعارات فورية لرسائل أرقامك عبر HTTP</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5">
+              {/* Name */}
+              <div className="space-y-1.5">
+                <Label>الاسم</Label>
+                <Input
+                  placeholder="مثل: إشعارات الصيانة"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              {/* URL */}
+              <div className="space-y-1.5">
+                <Label>رابط نقطة النهاية (Endpoint URL)</Label>
+                <Input
+                  placeholder="https://api.example.com/webhook"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Numbers Selection */}
+              <div className="space-y-2">
+                <Label>الأرقام</Label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={allNumbers}
+                    onCheckedChange={(c) => {
+                      setAllNumbers(!!c);
+                      if (c) setSelectedNumbers([]);
+                    }}
+                  />
+                  <span className="text-sm">جميع الأرقام ({waNumbers?.length ?? 0})</span>
+                </label>
+                {!allNumbers && waNumbers && (
+                  <div className="space-y-1.5 mr-6 mt-1">
+                    {waNumbers.map((num) => (
+                      <label
+                        key={num.id}
+                        className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-muted/50"
+                      >
+                        <Checkbox
+                          checked={selectedNumbers.includes(num.id)}
+                          onCheckedChange={() => toggleNumber(num.id)}
+                        />
+                        <span className="text-sm font-mono" dir="ltr">
+                          {num.display_phone_number || num.phone_e164}
+                        </span>
+                        {num.status !== "active" && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            معلق
+                          </Badge>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Events */}
+              <div className="space-y-2">
+                <Label>الأحداث المراد استقبالها</Label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {EVENT_OPTIONS.map((ev) => (
+                    <label
+                      key={ev.value}
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer border border-transparent has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5"
+                    >
+                      <Checkbox
+                        checked={selectedEvents.includes(ev.value)}
+                        onCheckedChange={() => toggleEvent(ev.value)}
+                      />
+                      <span className="text-xs">{ev.icon}</span>
+                      <span className="text-sm">{ev.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Secret */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between px-0 text-sm">
+                    إعدادات متقدمة <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label>Signing Secret (اختياري)</Label>
+                    <Input
+                      placeholder="للتحقق من صحة الإشعارات"
+                      value={secret}
+                      onChange={(e) => setSecret(e.target.value)}
+                      dir="ltr"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      يُرسل في هيدر X-Webhook-Signature
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={resetForm}>
+                إلغاء
+              </Button>
+              <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "جاري الإنشاء..." : "إنشاء"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
