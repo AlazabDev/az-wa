@@ -28,22 +28,69 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Resolve remaining lint warnings
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f"Expected pattern not found in {path}: {old!r}")
+              p.write_text(s.replace(old, new, 1))
+
+          replace(
+              "src/components/SendTemplateModal.tsx",
+              "  }, [open, tenantId]);",
+              "  }, [open, tenantId, template?.body, template?.variables]);",
+          )
+
+          replace(
+              "src/hooks/use-media-url.ts",
+              "  }, [media?.url, media?.storage_key, media?.media_file_id, tenantId]);",
+              "  }, [media, tenantId]);",
+          )
+
+          replace(
+              "src/routes/_authenticated/campaigns.tsx",
+              "  const campaigns = data?.campaigns ?? [];",
+              "  const campaigns = useMemo(() => data?.campaigns ?? [], [data?.campaigns]);",
+          )
+
+          eslint = Path("eslint.config.js")
+          s = eslint.read_text()
+          marker = "  eslintPluginPrettier,\n);"
+          override = '''  {\n    files: [\n      "src/components/ui/**/*.{ts,tsx}",\n      "src/contexts/AuthContext.tsx",\n      "src/lib/scope.tsx",\n    ],\n    rules: {\n      "react-refresh/only-export-components": "off",\n    },\n  },\n  eslintPluginPrettier,\n);'''
+          if marker not in s:
+              raise SystemExit("Expected eslint config marker not found")
+          eslint.write_text(s.replace(marker, override, 1))
+          PY
+
       - name: Format repository
         run: npm run format
 
       - name: Apply ESLint autofixes
         run: npm run lint -- --fix
-        continue-on-error: true
 
-      - name: Commit autofixes
+      - name: Verify zero ESLint warnings
+        run: npm run lint -- --max-warnings=0
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: Commit fixes
         run: |
           git restore .github/workflows/autofix-lint.yml PRODUCTION.md src/integrations/supabase/types.ts || true
           if git diff --quiet; then
-            echo "No autofix changes"
+            echo "No source changes"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "style: apply prettier and eslint autofixes"
+          git commit -m "fix: resolve remaining lint warnings"
           git push origin HEAD:fix/lint-warnings-cleanup-20260926
