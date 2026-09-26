@@ -147,9 +147,7 @@ export const readRecordTable = createServerFn({ method: "POST" })
     const runtime = supabaseRuntimeAdmin as any;
     const globalCatalog = ["roles", "permissions", "role_permissions"].includes(data.table);
 
-    let query = runtime
-      .from(data.table)
-      .select(rule.safeColumns ?? "*", { count: "exact" });
+    let query = runtime.from(data.table).select(rule.safeColumns ?? "*", { count: "exact" });
     if (!globalCatalog) query = query.eq("organization_id", organization.id);
     query = query.order(orderBy, { ascending: false }).range(from, to);
 

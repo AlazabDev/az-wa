@@ -709,9 +709,8 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         />
                       </Field>
                     </div>
-                    {placeholdersOf([
-                      { type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] },
-                    ]).length > 0 && (
+                    {placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }])
+                      .length > 0 && (
                       <Field label="Website URL review example">
                         <input
                           className={inputClass}
@@ -748,9 +747,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <select
                         className={inputClass}
                         value={catalogButtonType}
-                        onChange={(e) =>
-                          setCatalogButtonType(e.target.value as "CATALOG" | "MPM")
-                        }
+                        onChange={(e) => setCatalogButtonType(e.target.value as "CATALOG" | "MPM")}
                       >
                         <option value="CATALOG">CATALOG</option>
                         <option value="MPM">MPM (multi-product)</option>

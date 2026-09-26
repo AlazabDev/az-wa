@@ -6,13 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type CampaignStatus =
-  | "draft"
-  | "scheduled"
-  | "running"
-  | "paused"
-  | "completed"
-  | "cancelled"
-  | "failed";
+  "draft" | "scheduled" | "running" | "paused" | "completed" | "cancelled" | "failed";
 
 export type CampaignRow = {
   id: string;
@@ -94,7 +88,11 @@ export const listCampaigns = createServerFn({ method: "POST" })
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data: rows, count, error } = await (supabaseRuntimeAdmin as any)
+    const {
+      data: rows,
+      count,
+      error,
+    } = await (supabaseRuntimeAdmin as any)
       .from("campaigns")
       .select("*", { count: "exact" })
       .eq("organization_id", organizationId)
@@ -104,7 +102,7 @@ export const listCampaigns = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const campaignIds = (rows ?? []).map((r: any) => r.id as string);
-    let recipientCounts: Record<string, number> = {};
+    const recipientCounts: Record<string, number> = {};
 
     if (campaignIds.length > 0) {
       const { data: rcRows, error: rcError } = await (supabaseRuntimeAdmin as any)
@@ -120,7 +118,7 @@ export const listCampaigns = createServerFn({ method: "POST" })
     }
 
     // Fetch template names
-    let templateNames: Record<string, string> = {};
+    const templateNames: Record<string, string> = {};
     const templateIds = [
       ...new Set((rows ?? []).map((r: any) => r.template_id).filter(Boolean) as string[]),
     ];
@@ -210,7 +208,8 @@ export const createCampaign = createServerFn({ method: "POST" })
       .select("id")
       .single();
 
-    if (campError || !campaign?.id) throw new Error(campError?.message ?? "Failed to create campaign");
+    if (campError || !campaign?.id)
+      throw new Error(campError?.message ?? "Failed to create campaign");
     const campaignId = String(campaign.id);
 
     // Insert recipients in batches of 500
@@ -254,7 +253,11 @@ export const launchCampaign = createServerFn({ method: "POST" })
     // Mark campaign running
     await (supabaseRuntimeAdmin as any)
       .from("campaigns")
-      .update({ status: "running", started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        status: "running",
+        started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", data.campaignId);
 
     // Get queued recipients

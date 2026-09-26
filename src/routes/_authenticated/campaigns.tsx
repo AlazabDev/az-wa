@@ -21,7 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNumbers, useWabas } from "@/lib/azwa-data";
-import { useTemplates, runtimeVariablesOf, runtimeComponentsFromValues, type Template } from "@/lib/azwa-templates";
+import {
+  useTemplates,
+  runtimeVariablesOf,
+  runtimeComponentsFromValues,
+  type Template,
+} from "@/lib/azwa-templates";
 import {
   cancelCampaign,
   createCampaign,
@@ -51,7 +56,9 @@ const STATUS_COLORS: Record<string, string> = {
 function StatusPill({ status }: { status: string }) {
   const cls = STATUS_COLORS[status] ?? "bg-slate-100 text-slate-600 border-slate-200";
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${cls}`}>
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${cls}`}
+    >
       {status}
     </span>
   );
@@ -67,7 +74,15 @@ function formatDate(value: string | null) {
 const inputClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20";
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block space-y-1.5">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -107,12 +122,7 @@ function CreateCampaignDialog({
   const wabaId = selectedNumber?.waba_id ?? null;
 
   const availableTemplates = useMemo(
-    () =>
-      templates.filter(
-        (t) =>
-          t.status === "approved" &&
-          (!wabaId || t.waba_id === wabaId),
-      ),
+    () => templates.filter((t) => t.status === "approved" && (!wabaId || t.waba_id === wabaId)),
     [templates, wabaId],
   );
 
@@ -139,10 +149,22 @@ function CreateCampaignDialog({
   }, [selectedTemplate, runtimeVars, variableValues]);
 
   async function handleSubmit(launch: boolean) {
-    if (!name.trim()) { toast.error("Campaign name is required"); return; }
-    if (!numberId) { toast.error("Select a sender number"); return; }
-    if (!templateId) { toast.error("Select a template"); return; }
-    if (recipientCount === 0) { toast.error("Add at least one valid recipient"); return; }
+    if (!name.trim()) {
+      toast.error("Campaign name is required");
+      return;
+    }
+    if (!numberId) {
+      toast.error("Select a sender number");
+      return;
+    }
+    if (!templateId) {
+      toast.error("Select a template");
+      return;
+    }
+    if (recipientCount === 0) {
+      toast.error("Add at least one valid recipient");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -191,7 +213,11 @@ function CreateCampaignDialog({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           <Field label="Campaign name">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ramadan offer 2026" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ramadan offer 2026"
+            />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -199,7 +225,10 @@ function CreateCampaignDialog({
               <select
                 className={inputClass}
                 value={numberId}
-                onChange={(e) => { setNumberId(e.target.value); setTemplateId(""); }}
+                onChange={(e) => {
+                  setNumberId(e.target.value);
+                  setTemplateId("");
+                }}
               >
                 <option value="">Select a number…</option>
                 {activeNumbers.map((n) => (
@@ -215,7 +244,10 @@ function CreateCampaignDialog({
               <select
                 className={inputClass}
                 value={templateId}
-                onChange={(e) => { setTemplateId(e.target.value); setVariableValues({}); }}
+                onChange={(e) => {
+                  setTemplateId(e.target.value);
+                  setVariableValues({});
+                }}
                 disabled={!numberId}
               >
                 <option value="">Select a template…</option>
@@ -281,19 +313,16 @@ function CreateCampaignDialog({
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleSubmit(false)}
-            disabled={submitting}
-          >
+          <Button variant="outline" onClick={() => handleSubmit(false)} disabled={submitting}>
             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save as draft
           </Button>
-          <Button
-            onClick={() => handleSubmit(true)}
-            disabled={submitting || recipientCount === 0}
-          >
-            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Megaphone className="mr-2 h-4 w-4" />}
+          <Button onClick={() => handleSubmit(true)} disabled={submitting || recipientCount === 0}>
+            {submitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Megaphone className="mr-2 h-4 w-4" />
+            )}
             Create campaign
           </Button>
         </div>
@@ -369,14 +398,23 @@ function CampaignDetailPanel({
         {/* Meta info */}
         <dl className="space-y-2 text-xs">
           {[
-            { label: "Sender", value: senderNumber?.display_phone_number ?? campaign.senderNumberId ?? "—" },
-            { label: "Template", value: template?.name ?? campaign.templateName ?? campaign.templateId ?? "—" },
+            {
+              label: "Sender",
+              value: senderNumber?.display_phone_number ?? campaign.senderNumberId ?? "—",
+            },
+            {
+              label: "Template",
+              value: template?.name ?? campaign.templateName ?? campaign.templateId ?? "—",
+            },
             { label: "Scheduled", value: formatDate(campaign.scheduledAt) },
             { label: "Started", value: formatDate(campaign.startedAt) },
             { label: "Completed", value: formatDate(campaign.completedAt) },
             { label: "Created", value: formatDate(campaign.createdAt) },
           ].map((item) => (
-            <div key={item.label} className="flex justify-between gap-4 border-b border-border/50 pb-1.5">
+            <div
+              key={item.label}
+              className="flex justify-between gap-4 border-b border-border/50 pb-1.5"
+            >
               <dt className="text-muted-foreground">{item.label}</dt>
               <dd className="font-medium text-right">{item.value}</dd>
             </div>
@@ -388,11 +426,7 @@ function CampaignDetailPanel({
       {(canLaunch || canCancel) && (
         <div className="shrink-0 flex gap-2 border-t border-border p-4">
           {canLaunch && (
-            <Button
-              className="flex-1"
-              onClick={() => onLaunch(campaign.id)}
-              disabled={isBusy}
-            >
+            <Button className="flex-1" onClick={() => onLaunch(campaign.id)} disabled={isBusy}>
               {isBusy ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -455,7 +489,9 @@ function CampaignsPage() {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (!q) return true;
       return [c.name, c.status, c.templateName].some((v) =>
-        String(v ?? "").toLowerCase().includes(q),
+        String(v ?? "")
+          .toLowerCase()
+          .includes(q),
       );
     });
   }, [campaigns, statusFilter, search]);
@@ -479,7 +515,7 @@ function CampaignsPage() {
       toast.success(`Campaign launched — ${result.queued} messages queued`);
       await refetch();
       // Refresh selected
-      setSelected((prev) => prev?.id === id ? { ...prev, status: "running" } : prev);
+      setSelected((prev) => (prev?.id === id ? { ...prev, status: "running" } : prev));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Launch failed");
     } finally {
@@ -494,7 +530,7 @@ function CampaignsPage() {
       await cancel({ data: { campaignId: id } });
       toast.success("Campaign cancelled");
       await refetch();
-      setSelected((prev) => prev?.id === id ? { ...prev, status: "cancelled" } : prev);
+      setSelected((prev) => (prev?.id === id ? { ...prev, status: "cancelled" } : prev));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Cancel failed");
     } finally {
@@ -526,11 +562,29 @@ function CampaignsPage() {
         <div className="mt-4 grid grid-cols-4 gap-3">
           {[
             { label: "Total", value: counters.total, color: "text-foreground", bg: "bg-muted/30" },
-            { label: "Draft / Scheduled", value: counters.draft, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Running", value: counters.running, color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Completed", value: counters.completed, color: "text-emerald-600", bg: "bg-emerald-50" },
+            {
+              label: "Draft / Scheduled",
+              value: counters.draft,
+              color: "text-blue-600",
+              bg: "bg-blue-50",
+            },
+            {
+              label: "Running",
+              value: counters.running,
+              color: "text-amber-600",
+              bg: "bg-amber-50",
+            },
+            {
+              label: "Completed",
+              value: counters.completed,
+              color: "text-emerald-600",
+              bg: "bg-emerald-50",
+            },
           ].map((card) => (
-            <div key={card.label} className={`rounded-xl border border-border ${card.bg} p-4 shadow-sm`}>
+            <div
+              key={card.label}
+              className={`rounded-xl border border-border ${card.bg} p-4 shadow-sm`}
+            >
               <p className={`text-2xl font-semibold tabular-nums ${card.color}`}>{card.value}</p>
               <p className="mt-1 text-xs text-muted-foreground">{card.label}</p>
             </div>
@@ -541,7 +595,9 @@ function CampaignsPage() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden p-4 pt-2 gap-4">
         {/* Left: list */}
-        <div className={`flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden ${selected ? "hidden lg:flex" : "flex"}`}>
+        <div
+          className={`flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden ${selected ? "hidden lg:flex" : "flex"}`}
+        >
           {/* Filters */}
           <div className="p-4 border-b border-border bg-muted/20">
             <div className="flex flex-wrap items-center gap-2">
@@ -559,8 +615,18 @@ function CampaignsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All statuses</option>
-                {["draft", "scheduled", "running", "paused", "completed", "cancelled", "failed"].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {[
+                  "draft",
+                  "scheduled",
+                  "running",
+                  "paused",
+                  "completed",
+                  "cancelled",
+                  "failed",
+                ].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -624,7 +690,10 @@ function CampaignsPage() {
                               variant="outline"
                               className="h-7 text-xs"
                               disabled={busy !== null}
-                              onClick={(e) => { e.stopPropagation(); void handleLaunch(campaign.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleLaunch(campaign.id);
+                              }}
                             >
                               {busy === campaign.id ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -640,7 +709,10 @@ function CampaignsPage() {
                               variant="ghost"
                               className="h-7 text-xs text-destructive hover:text-destructive"
                               disabled={busy !== null}
-                              onClick={(e) => { e.stopPropagation(); void handleCancel(campaign.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleCancel(campaign.id);
+                              }}
                             >
                               <XCircle className="h-3 w-3" />
                             </Button>
@@ -661,8 +733,22 @@ function CampaignsPage() {
                 {total} total · page {page} of {totalPages}
               </p>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" disabled={page <= 1 || isLoading} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages || isLoading} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoading}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isLoading}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}
