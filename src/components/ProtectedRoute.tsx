@@ -1,9 +1,8 @@
-import { Navigate, useRouterState } from "@tanstack/react-router";
+import { Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (loading) {
     return (
@@ -14,7 +13,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/legacy/login" search={{ from: pathname }} replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
