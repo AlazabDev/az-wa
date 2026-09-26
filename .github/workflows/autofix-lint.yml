@@ -37,6 +37,7 @@ jobs:
 
       - name: Commit autofixes
         run: |
+          git restore .github/workflows/autofix-lint.yml PRODUCTION.md src/integrations/supabase/types.ts || true
           if git diff --quiet; then
             echo "No autofix changes"
             exit 0
