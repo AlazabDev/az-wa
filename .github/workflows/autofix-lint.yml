@@ -58,21 +58,10 @@ jobs:
               "  const campaigns = useMemo(() => data?.campaigns ?? [], [data?.campaigns]);",
           )
 
-          protected = Path("src/components/ProtectedRoute.tsx")
-          s = protected.read_text()
-          s = s.replace(
-              'import { Navigate, useRouterState } from "@tanstack/react-router";',
-              'import { Navigate } from "@tanstack/react-router";',
-          )
-          s = s.replace(
-              '  const pathname = useRouterState({ select: (state) => state.location.pathname });\n',
-              '',
-          )
-          s = s.replace(
-              '    return <Navigate to="/legacy/login" search={{ from: pathname }} replace />;',
-              '    return <Navigate to="/auth" replace />;',
-          )
-          protected.write_text(s)
+          webhook_admin = Path("src/lib/meta/webhook-admin.functions.ts")
+          s = webhook_admin.read_text()
+          s = s.replace("context as ServerContext", "context as unknown as ServerContext")
+          webhook_admin.write_text(s)
 
           eslint = Path("eslint.config.js")
           s = eslint.read_text()
