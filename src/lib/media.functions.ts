@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { presignMinioGetUrl } from "@/lib/storage/minio.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type MediaItemWithUrl = Tables<"media"> & {
@@ -9,6 +10,7 @@ export type MediaItemWithUrl = Tables<"media"> & {
 };
 
 export const getMediaItems = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(
     (
       data: {
@@ -98,6 +100,7 @@ export const getMediaItems = createServerFn({ method: "POST" })
   });
 
 export const deleteMediaItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: string) => data)
   .handler(async ({ data: mediaId }) => {
     const { error } = await supabaseAdmin.from("media").delete().eq("id", mediaId);

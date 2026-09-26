@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     // Production access is granted only after Supabase validates the current user.
-    // Never fall back to browser-controlled preview/local storage values.
+    // Never fall back to browser-controlled test/local storage values.
     const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
 

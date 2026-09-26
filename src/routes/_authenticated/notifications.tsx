@@ -55,7 +55,7 @@ function NotificationsPage() {
 
   const { data: integrations = [], isLoading } = useQuery({
     queryKey: ["notification_integrations", scope?.id],
-    queryFn: () => getIntegrationsFn(),
+    queryFn: () => getIntegrationsFn({ data: undefined }),
     enabled: true,
   });
 

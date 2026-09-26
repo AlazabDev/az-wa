@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
 const MEDIA_PERMISSION = "media.read";
+const MEDIA_MANAGE_PERMISSION = "media.manage";
 const TOTALS_BATCH_SIZE = 1000;
 
 export type StoredFile = {
@@ -44,7 +45,10 @@ type ListInput = {
   pageSize?: number | undefined;
 };
 
-async function authorize(context: { supabase: SupabaseClient<Database> }) {
+async function authorize(
+  context: { supabase: SupabaseClient<Database> },
+  requiredPermission = MEDIA_PERMISSION
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: organization, error: organizationError } = await supabaseAdmin
     .from("organizations")
@@ -57,7 +61,7 @@ async function authorize(context: { supabase: SupabaseClient<Database> }) {
 
   const { data: allowed, error: permissionError } = await context.supabase.rpc(
     "azwa_has_org_permission",
-    { p_org_id: organization.id, p_permission: MEDIA_PERMISSION },
+    { p_org_id: organization.id, p_permission: requiredPermission },
   );
   if (permissionError || !allowed) throw new Error("Forbidden");
 
@@ -226,7 +230,7 @@ export const retryStoredFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { mediaId: string }) => input)
   .handler(async ({ data, context }) => {
-    const { organizationId, supabaseAdmin } = await authorize(context);
+    const { organizationId, supabaseAdmin } = await authorize(context, MEDIA_MANAGE_PERMISSION);
 
     const { data: media, error } = await supabaseAdmin
       .from("media")

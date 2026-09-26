@@ -49,6 +49,9 @@ jobs:
           npm run build
           test -f .output/server/index.mjs
 
+      - name: Production Guards
+        run: node scripts/production-guards.test.mjs
+
       - name: TypeScript
         run: npm run typecheck
 

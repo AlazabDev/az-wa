@@ -5,9 +5,9 @@ This runbook applies to the unified TanStack Start application in this repositor
 ## Production sources of truth
 
 - Web/server runtime: TanStack Start + Nitro `node-server`
-- Runtime process manager: systemd (`az-wa.service`)
+- Runtime process manager: pm2 (`ecosystem.config.cjs`)
 - Runtime Node version: Node.js 24
-- Dependency/build manager: Bun using `bun.lock`
+- Dependency/build manager: Bun using `bun.lock` (or NPM)
 - Application listener: `127.0.0.1:8085`
 - Supabase project: `pmhuylckjwrongxlrgrx`
 - Canonical web host: `https://wa.alazab.com`
@@ -207,47 +207,31 @@ Production checkout:
 cd /mnt/apps/az-wa
 git pull --ff-only
 chmod 600 .env
-./deploy/deploy.sh
+npm ci
+npm run build
+pm2 start ecosystem.config.cjs
 ```
 
-`deploy/deploy.sh` consumes the existing `.env` file. Do not create `.env.production`.
+The application consumes the existing `.env` file. Do not create `.env.production`.
 
-The deploy script performs the production sequence in this order:
-
-```text
-bun install --frozen-lockfile
-bun run build
-bun run typecheck
-bun run lint
-install/update az-wa.service
-systemctl restart az-wa.service
-health/readiness probes
-```
-
-The generated Nitro Node server runs directly on the host under `az-wa.service` and binds only to:
+The generated Nitro Node server runs directly on the host under PM2 and binds only to:
 
 ```text
 127.0.0.1:8085
 ```
 
-The repository service template is:
+The process management configuration is:
 
 ```text
-deploy/az-wa.service
-```
-
-The deploy script resolves the actual checkout path and Node binary before installing it as:
-
-```text
-/etc/systemd/system/az-wa.service
+ecosystem.config.cjs
 ```
 
 Useful runtime commands:
 
 ```bash
-systemctl status az-wa.service --no-pager
-journalctl -u az-wa.service -n 120 --no-pager
-systemctl restart az-wa.service
+pm2 status
+pm2 logs azwa-app
+pm2 restart azwa-app
 ```
 
 Liveness:
@@ -264,16 +248,25 @@ GET /readyz
 
 ## 7. Host Nginx
 
-The only repository Nginx site file for this application is:
+Configure Nginx to reverse-proxy requests to the local PM2 instance. Create `/etc/nginx/sites-available/wa.alazab.com` with standard proxy configuration pointing to `http://127.0.0.1:8085`:
 
-```text
-deploy/wa.alazab.com
+```nginx
+server {
+    server_name wa.alazab.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:8085;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-Install exactly that file:
+Enable the site:
 
 ```bash
-sudo cp deploy/wa.alazab.com /etc/nginx/sites-available/wa.alazab.com
 sudo ln -sfn /etc/nginx/sites-available/wa.alazab.com /etc/nginx/sites-enabled/wa.alazab.com
 sudo nginx -t
 sudo systemctl reload nginx
@@ -375,5 +368,7 @@ After every gate passes, deploy with:
 
 ```bash
 cd /mnt/apps/az-wa
-./deploy/deploy.sh
+npm ci
+npm run build
+pm2 restart azwa-app
 ```

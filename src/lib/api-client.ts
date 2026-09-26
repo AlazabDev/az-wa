@@ -336,12 +336,12 @@ export class SouqChatApiClient {
     }>("media_sync_wa", body, signal);
   }
 
-  manageApiKey(body: ApiKeyBody, signal?: AbortSignal) {
-    return this.post<unknown>("api_keys_manage", body, signal);
+  manageApiKey<T = unknown>(body: ApiKeyBody, signal?: AbortSignal) {
+    return this.post<T>("api_keys_manage", body, signal);
   }
 
-  manageWebhook(body: WebhookBody, signal?: AbortSignal) {
-    return this.post<unknown>("webhooks_manage", body, signal);
+  manageWebhook<T = unknown>(body: WebhookBody, signal?: AbortSignal) {
+    return this.post<T>("webhooks_manage", body, signal);
   }
 
   diagnoseNumber(body: DiagnoseNumberBody, signal?: AbortSignal) {

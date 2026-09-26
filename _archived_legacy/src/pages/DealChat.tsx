@@ -4,8 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, BellRing, Plus, CheckCircle2, Search, SlidersHorizontal, Settings2, ShieldCheck, MoreVertical } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MessageSquare,
+  BellRing,
+  Plus,
+  CheckCircle2,
+  Search,
+  SlidersHorizontal,
+  Settings2,
+  ShieldCheck,
+  MoreVertical,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function DealChat() {
@@ -63,16 +79,14 @@ export default function DealChat() {
       title: "العروض والتخفيضات",
       titleColor: "info",
       notificationTitle: "عروض خاصة لك! 🎁",
-      notificationBody: "احصل على خصم {{discount}}٪ على مشترياتك القادمة. استخدم الكود {{promo_code}}.",
+      notificationBody:
+        "احصل على خصم {{discount}}٪ على مشترياتك القادمة. استخدم الكود {{promo_code}}.",
       active: false,
-    }
+    },
   ];
 
   return (
-    <AppLayout
-      title="ديل شات"
-      subtitle="إدارة قوالب المحادثة والإشعارات."
-    >
+    <AppLayout title="ديل شات" subtitle="إدارة قوالب المحادثة والإشعارات.">
       <div className="space-y-8" dir="rtl">
         {/* DealChat Templates Section */}
         <div className="space-y-4">
@@ -84,7 +98,8 @@ export default function DealChat() {
               <div>
                 <h2 className="text-xl font-bold">قوالب ديل شات</h2>
                 <p className="text-sm text-muted-foreground">
-                  رسائل خاصة بعلامتك التجارية - تُرسل للعملاء الجدد أو الحالية للترحيب أو لتأكيد الطلبات.
+                  رسائل خاصة بعلامتك التجارية - تُرسل للعملاء الجدد أو الحالية للترحيب أو لتأكيد
+                  الطلبات.
                 </p>
               </div>
             </div>
@@ -152,9 +167,9 @@ export default function DealChat() {
                           يمكنك استخدام المتغيرات مثل &#123;&#123;customer_name&#125;&#125;
                         </span>
                       </div>
-                      <Textarea 
-                        className="h-32 resize-none" 
-                        defaultValue="أهلاً بك {{customer_name}} في متجرنا! يسعدنا تواصلك معنا. كيف يمكننا مساعدتك اليوم؟" 
+                      <Textarea
+                        className="h-32 resize-none"
+                        defaultValue="أهلاً بك {{customer_name}} في متجرنا! يسعدنا تواصلك معنا. كيف يمكننا مساعدتك اليوم؟"
                       />
                     </div>
 
@@ -180,7 +195,8 @@ export default function DealChat() {
               <div>
                 <h2 className="text-xl font-bold">قوالب إشعارات Push</h2>
                 <p className="text-sm text-muted-foreground">
-                  تخصيص الإشعارات التي تصل للعميل على الموبايل لتشجيعهم على إتمام عملية الشراء، تقييم المنتجات...
+                  تخصيص الإشعارات التي تصل للعميل على الموبايل لتشجيعهم على إتمام عملية الشراء،
+                  تقييم المنتجات...
                 </p>
               </div>
             </div>
@@ -191,22 +207,29 @@ export default function DealChat() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {pushTemplates.map((template) => (
-              <Card key={template.id} className="shadow-sm border-border flex flex-col hover:border-primary/30 transition-colors">
+              <Card
+                key={template.id}
+                className="shadow-sm border-border flex flex-col hover:border-primary/30 transition-colors"
+              >
                 <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0">
                   <div className="flex items-center gap-2">
-                    {template.active && (
-                      <CheckCircle2 className="w-4 h-4 text-[#25D366]" />
-                    )}
+                    {template.active && <CheckCircle2 className="w-4 h-4 text-[#25D366]" />}
                     <h3 className="font-bold text-sm">{template.title}</h3>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 -mr-2 text-muted-foreground"
+                  >
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </CardHeader>
                 <CardContent className="p-4 pt-2 flex-1 flex flex-col">
                   <div className="space-y-3 flex-1">
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1 block">عنوان الإشعار</Label>
+                      <Label className="text-xs text-muted-foreground mb-1 block">
+                        عنوان الإشعار
+                      </Label>
                       <div className="bg-muted/50 p-2 rounded text-sm font-medium border border-border/50">
                         {template.notificationTitle}
                       </div>
@@ -218,9 +241,13 @@ export default function DealChat() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1.5 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10"
+                    >
                       <Settings2 className="w-3.5 h-3.5" />
                       إعداد المتغيرات
                     </Button>

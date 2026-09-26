@@ -165,3 +165,25 @@ export function useNumberAccountModes() {
     ),
   };
 }
+
+export type MetaAppRow = {
+  id: string;
+  meta_app_id: string;
+  name: string | null;
+  business_portfolio_id: string | null;
+  status: string;
+};
+
+export function useMetaApps() {
+  const readRecords = useInventoryReader();
+  return useQuery({
+    queryKey: ["meta_apps"],
+    queryFn: async (): Promise<MetaAppRow[]> => {
+      const result = await readRecords({
+        data: { table: "meta_apps", orderBy: "created_at", limit: 100 },
+      });
+      return (result.rows ?? []) as unknown as MetaAppRow[];
+    },
+    refetchInterval: 60_000,
+  });
+}

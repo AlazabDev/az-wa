@@ -14,6 +14,7 @@ export default tseslint.config(
       ".tanstack",
       "supabase/**",
       "src/pages/**",
+      "_archived_legacy/**",
       "src/routeTree.gen.ts",
       "src/integrations/supabase/types.ts",
       "src/integrations/supabase/wa-types.ts",

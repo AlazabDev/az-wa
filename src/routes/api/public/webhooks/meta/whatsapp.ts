@@ -176,7 +176,8 @@ export const Route = createFileRoute("/api/public/webhooks/meta/whatsapp")({
         if (!endpoint || !signatureValid) {
           await auditMetaRequest({
             organizationId: endpoint?.organization_id ?? secrets[0]?.organization_id ?? null,
-            webhookEndpointId: endpoint?.webhook_endpoint_id ?? secrets[0]?.webhook_endpoint_id ?? null,
+            webhookEndpointId:
+              endpoint?.webhook_endpoint_id ?? secrets[0]?.webhook_endpoint_id ?? null,
             method: "POST",
             verificationType: "signature",
             verificationValid: false,

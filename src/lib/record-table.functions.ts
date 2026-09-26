@@ -9,6 +9,7 @@ type ReadInput = {
   table: string;
   orderBy?: string;
   limit?: number;
+  page?: number;
 };
 
 type TableRule = {
@@ -103,10 +104,18 @@ function normalizeCredentialRows(rows: RecordRow[]): RecordRow[] {
   });
 }
 
+export type RecordTableResponse = {
+  rows: RecordRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export const readRecordTable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: ReadInput) => input)
-  .handler(async ({ data, context }): Promise<RecordRow[]> => {
+  .handler(async ({ data, context }): Promise<RecordTableResponse> => {
     const rule = TABLE_RULES[data.table];
     if (!rule) throw new Error("Table is not exposed through the AzWA read contract");
 
@@ -128,21 +137,35 @@ export const readRecordTable = createServerFn({ method: "POST" })
     );
     if (permissionError || !allowed) throw new Error("Forbidden");
 
-    const limit = Math.min(500, Math.max(1, Math.trunc(data.limit ?? 100)));
+    const pageSize = Math.min(500, Math.max(1, Math.trunc(data.limit ?? 100)));
+    const page = Math.max(1, Math.trunc(data.page ?? 1));
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
     const orderBy = safeIdentifier(data.orderBy, "created_at");
 
     // Runtime client intentionally accepts the allowlisted table names above.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const runtime = supabaseRuntimeAdmin as any;
     const globalCatalog = ["roles", "permissions", "role_permissions"].includes(data.table);
 
-    let query = runtime.from(data.table).select(rule.safeColumns ?? "*");
+    let query = runtime
+      .from(data.table)
+      .select(rule.safeColumns ?? "*", { count: "exact" });
     if (!globalCatalog) query = query.eq("organization_id", organization.id);
-    query = query.order(orderBy, { ascending: false }).limit(limit);
+    query = query.order(orderBy, { ascending: false }).range(from, to);
 
-    const { data: rows, error } = await query;
+    const { data: rows, count, error } = await query;
     if (error) throw new Error(error.message);
 
+    const total = count ?? 0;
     const normalized = (rows ?? []) as unknown as RecordRow[];
-    return data.table === "meta_credentials" ? normalizeCredentialRows(normalized) : normalized;
+    const finalRows =
+      data.table === "meta_credentials" ? normalizeCredentialRows(normalized) : normalized;
+
+    return {
+      rows: finalRows,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
   });

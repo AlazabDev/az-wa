@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { FileText, X } from "lucide-react";
+import { Bot, FileText, Loader2, Send as SendIcon, X } from "lucide-react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { Loader2, Bot, Send as SendIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   bodyText,
@@ -120,6 +120,15 @@ function Preview({ components }: { components: TemplateComponent[] }) {
   );
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
   const create = useServerFn(createTemplate);
   const [wabaId, setWabaId] = useState(wabas[0]?.id ?? "");
@@ -177,7 +186,6 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
     setChatInput("");
     setIsTyping(true);
 
-    // Mock API call to Foundry Agent
     setTimeout(() => {
       let reply = "هذا قالب مقترح بناءً على طلبك.";
       let suggestedBody = "";
@@ -422,61 +430,55 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="max-h-[95vh] w-full max-w-[95vw] lg:max-w-7xl overflow-y-auto bg-background rounded-xl shadow-2xl flex flex-col">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-muted/30 p-5 backdrop-blur-md">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Create Message Template</h2>
-            <p className="text-sm text-muted-foreground">
-              Draft and submit a new template to Meta.
-            </p>
+      <div className="flex max-h-[95vh] w-full max-w-[95vw] lg:max-w-7xl flex-col overflow-hidden rounded-xl bg-background shadow-2xl">
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <FileText className="h-5 w-5 text-primary" />
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Create Message Template</h2>
+              <p className="text-xs text-muted-foreground">
+                Draft and submit a new template to Meta for review.
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+            className="rounded-full hover:bg-destructive/10 hover:text-destructive"
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <div className="p-6 grid gap-6 lg:grid-cols-[1fr_320px_350px]">
-          {/* Form Column */}
-          <div className="space-y-6">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <FileText className="h-4 w-4" /> New message template
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Structured Meta builder with an expert JSON escape hatch.
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Body — 3-column grid */}
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px_320px]">
+          {/* Column 1: Form */}
+          <div className="overflow-y-auto border-r border-border p-5">
+            {/* WABA + meta fields */}
+            <div className="mb-4">
+              <Field label="WABA">
+                <select
+                  className={inputClass}
+                  value={wabaId}
+                  onChange={(e) => setWabaId(e.target.value)}
+                >
+                  {wabas.map((waba) => (
+                    <option key={waba.id} value={waba.id}>
+                      {waba.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-4">
-            <Field label="WABA">
-              <select
-                className={inputClass}
-                value={wabaId}
-                onChange={(event) => setWabaId(event.target.value)}
-              >
-                {wabas.map((waba) => (
-                  <option key={waba.id} value={waba.id}>
-                    {waba.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="Name">
                 <input
                   className={inputClass}
                   value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="service_request_update"
                 />
               </Field>
@@ -484,11 +486,11 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 <select
                   className={inputClass}
                   value={kind}
-                  onChange={(event) => changeKind(event.target.value as Kind)}
+                  onChange={(e) => changeKind(e.target.value as Kind)}
                 >
-                  {KINDS.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
+                  {KINDS.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
                     </option>
                   ))}
                 </select>
@@ -498,11 +500,11 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   className={inputClass}
                   value={effectiveCategory}
                   disabled={kind === "AUTHENTICATION"}
-                  onChange={(event) => setCategory(event.target.value as Category)}
+                  onChange={(e) => setCategory(e.target.value as Category)}
                 >
-                  {CATEGORIES.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
+                  {CATEGORIES.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
                     </option>
                   ))}
                 </select>
@@ -511,27 +513,26 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 <select
                   className={inputClass}
                   value={language}
-                  onChange={(event) => setLanguage(event.target.value as Language)}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
                 >
-                  {LANGUAGES.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
+                  {LANGUAGES.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
                     </option>
                   ))}
                 </select>
               </Field>
             </div>
 
-            {kind === "AUTHENTICATION" ? (
-              <div className="space-y-4 rounded-lg border border-border p-4">
+            {/* Type-specific fields */}
+            {kind === "AUTHENTICATION" && (
+              <div className="mb-4 space-y-4 rounded-lg border border-border p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="OTP button type">
                     <select
                       className={inputClass}
                       value={authOtpType}
-                      onChange={(event) =>
-                        setAuthOtpType(event.target.value as "COPY_CODE" | "ONE_TAP")
-                      }
+                      onChange={(e) => setAuthOtpType(e.target.value as "COPY_CODE" | "ONE_TAP")}
                     >
                       <option value="COPY_CODE">COPY_CODE</option>
                       <option value="ONE_TAP">ONE_TAP</option>
@@ -544,7 +545,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       min={1}
                       max={90}
                       value={authExpiration}
-                      onChange={(event) => setAuthExpiration(event.target.value)}
+                      onChange={(e) => setAuthExpiration(e.target.value)}
                     />
                   </Field>
                 </div>
@@ -552,7 +553,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   <input
                     type="checkbox"
                     checked={authSecurityRecommendation}
-                    onChange={(event) => setAuthSecurityRecommendation(event.target.checked)}
+                    onChange={(e) => setAuthSecurityRecommendation(e.target.checked)}
                   />
                   Add Meta security recommendation
                 </label>
@@ -560,7 +561,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   <input
                     className={inputClass}
                     value={authButtonText}
-                    onChange={(event) => setAuthButtonText(event.target.value)}
+                    onChange={(e) => setAuthButtonText(e.target.value)}
                   />
                 </Field>
                 {authOtpType === "ONE_TAP" && (
@@ -569,14 +570,14 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <input
                         className={inputClass}
                         value={authAutofillText}
-                        onChange={(event) => setAuthAutofillText(event.target.value)}
+                        onChange={(e) => setAuthAutofillText(e.target.value)}
                       />
                     </Field>
                     <Field label="Android package name">
                       <input
                         className={inputClass}
                         value={authPackageName}
-                        onChange={(event) => setAuthPackageName(event.target.value)}
+                        onChange={(e) => setAuthPackageName(e.target.value)}
                         placeholder="com.example.app"
                       />
                     </Field>
@@ -584,34 +585,40 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <input
                         className={inputClass}
                         value={authSignatureHash}
-                        onChange={(event) => setAuthSignatureHash(event.target.value)}
+                        onChange={(e) => setAuthSignatureHash(e.target.value)}
                       />
                     </Field>
                   </div>
                 )}
               </div>
-            ) : kind === "EXPERT" ? (
-              <Field label="Meta components JSON">
-                <textarea
-                  className={`${textareaClass} min-h-72 font-mono text-xs`}
-                  value={expertComponents}
-                  onChange={(event) => setExpertComponents(event.target.value)}
-                  placeholder='[{"type":"BODY","text":"..."},{"type":"BUTTONS","buttons":[...]}]'
-                />
-              </Field>
-            ) : (
-              <>
+            )}
+
+            {kind === "EXPERT" && (
+              <div className="mb-4">
+                <Field label="Meta components JSON">
+                  <textarea
+                    className={`${textareaClass} min-h-72 font-mono text-xs`}
+                    value={expertComponents}
+                    onChange={(e) => setExpertComponents(e.target.value)}
+                    placeholder='[{"type":"BODY","text":"..."},{"type":"BUTTONS","buttons":[...]}]'
+                  />
+                </Field>
+              </div>
+            )}
+
+            {kind !== "AUTHENTICATION" && kind !== "EXPERT" && (
+              <div className="space-y-4">
                 {kind === "STANDARD" && (
                   <div className="space-y-3 rounded-lg border border-border p-4">
                     <Field label="Header format">
                       <select
                         className={inputClass}
                         value={headerFormat}
-                        onChange={(event) => setHeaderFormat(event.target.value as HeaderFormat)}
+                        onChange={(e) => setHeaderFormat(e.target.value as HeaderFormat)}
                       >
-                        {HEADER_FORMATS.map((value) => (
-                          <option key={value} value={value}>
-                            {value}
+                        {HEADER_FORMATS.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
                           </option>
                         ))}
                       </select>
@@ -622,7 +629,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                           <input
                             className={inputClass}
                             value={header}
-                            onChange={(event) => setHeader(event.target.value)}
+                            onChange={(e) => setHeader(e.target.value)}
                           />
                         </Field>
                         {placeholdersOf([{ type: "HEADER", text: header }]).length > 0 && (
@@ -630,7 +637,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                             <textarea
                               className={`${textareaClass} min-h-20`}
                               value={headerExamples}
-                              onChange={(event) => setHeaderExamples(event.target.value)}
+                              onChange={(e) => setHeaderExamples(e.target.value)}
                             />
                           </Field>
                         )}
@@ -641,7 +648,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         <input
                           className={inputClass}
                           value={headerHandle}
-                          onChange={(event) => setHeaderHandle(event.target.value)}
+                          onChange={(e) => setHeaderHandle(e.target.value)}
                           placeholder="4::..."
                         />
                       </Field>
@@ -653,7 +660,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   <textarea
                     className={`${textareaClass} min-h-32`}
                     value={body}
-                    onChange={(event) => setBody(event.target.value)}
+                    onChange={(e) => setBody(e.target.value)}
                     placeholder="مرحبًا {{1}}، تم تحديث حالة الطلب {{2}}."
                   />
                 </Field>
@@ -662,7 +669,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                     <textarea
                       className={`${textareaClass} min-h-20`}
                       value={bodyExamples}
-                      onChange={(event) => setBodyExamples(event.target.value)}
+                      onChange={(e) => setBodyExamples(e.target.value)}
                       placeholder={"محمد\nAUF-1024"}
                     />
                   </Field>
@@ -671,7 +678,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                   <input
                     className={inputClass}
                     value={footer}
-                    onChange={(event) => setFooter(event.target.value)}
+                    onChange={(e) => setFooter(e.target.value)}
                   />
                 </Field>
 
@@ -681,7 +688,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <textarea
                         className={`${textareaClass} min-h-20`}
                         value={quickReplies}
-                        onChange={(event) => setQuickReplies(event.target.value)}
+                        onChange={(e) => setQuickReplies(e.target.value)}
                       />
                     </Field>
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -689,7 +696,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         <input
                           className={inputClass}
                           value={ctaUrlText}
-                          onChange={(event) => setCtaUrlText(event.target.value)}
+                          onChange={(e) => setCtaUrlText(e.target.value)}
                           placeholder="Open website"
                         />
                       </Field>
@@ -697,18 +704,19 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         <input
                           className={inputClass}
                           value={ctaUrl}
-                          onChange={(event) => setCtaUrl(event.target.value)}
+                          onChange={(e) => setCtaUrl(e.target.value)}
                           placeholder="https://example.com/order/{{1}}"
                         />
                       </Field>
                     </div>
-                    {placeholdersOf([{ type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] }])
-                      .length > 0 && (
+                    {placeholdersOf([
+                      { type: "BUTTONS", buttons: [{ type: "URL", url: ctaUrl }] },
+                    ]).length > 0 && (
                       <Field label="Website URL review example">
                         <input
                           className={inputClass}
                           value={ctaUrlExample}
-                          onChange={(event) => setCtaUrlExample(event.target.value)}
+                          onChange={(e) => setCtaUrlExample(e.target.value)}
                           placeholder="AUF-1024"
                         />
                       </Field>
@@ -718,7 +726,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         <input
                           className={inputClass}
                           value={ctaPhoneText}
-                          onChange={(event) => setCtaPhoneText(event.target.value)}
+                          onChange={(e) => setCtaPhoneText(e.target.value)}
                           placeholder="Call us"
                         />
                       </Field>
@@ -726,7 +734,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         <input
                           className={inputClass}
                           value={ctaPhone}
-                          onChange={(event) => setCtaPhone(event.target.value)}
+                          onChange={(e) => setCtaPhone(e.target.value)}
                           placeholder="2010xxxxxxxx"
                         />
                       </Field>
@@ -740,8 +748,8 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <select
                         className={inputClass}
                         value={catalogButtonType}
-                        onChange={(event) =>
-                          setCatalogButtonType(event.target.value as "CATALOG" | "MPM")
+                        onChange={(e) =>
+                          setCatalogButtonType(e.target.value as "CATALOG" | "MPM")
                         }
                       >
                         <option value="CATALOG">CATALOG</option>
@@ -752,7 +760,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <input
                         className={inputClass}
                         value={catalogButtonText}
-                        onChange={(event) => setCatalogButtonText(event.target.value)}
+                        onChange={(e) => setCatalogButtonText(e.target.value)}
                       />
                     </Field>
                   </div>
@@ -764,38 +772,40 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                       <input
                         className={inputClass}
                         value={flowId}
-                        onChange={(event) => setFlowId(event.target.value)}
+                        onChange={(e) => setFlowId(e.target.value)}
                       />
                     </Field>
                     <Field label="Button text">
                       <input
                         className={inputClass}
                         value={flowButtonText}
-                        onChange={(event) => setFlowButtonText(event.target.value)}
+                        onChange={(e) => setFlowButtonText(e.target.value)}
                       />
                     </Field>
                     <Field label="Navigate screen (optional)">
                       <input
                         className={inputClass}
                         value={flowScreen}
-                        onChange={(event) => setFlowScreen(event.target.value)}
+                        onChange={(e) => setFlowScreen(e.target.value)}
                       />
                     </Field>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
 
-          <div className="space-y-4">
+          {/* Column 2: Preview + Validation */}
+          <div className="flex flex-col gap-4 overflow-y-auto border-r border-border p-5">
             <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 WhatsApp preview
               </p>
               <Preview components={components} />
             </div>
+
             <div className="rounded-lg border border-border p-3 text-xs">
-              <p className="font-medium">Submission validation</p>
+              <p className="font-semibold">Submission validation</p>
               {validationErrors.length === 0 ? (
                 <p className="mt-1 text-muted-foreground">
                   Component structure is ready for Meta submission.
@@ -808,16 +818,31 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 </ul>
               )}
             </div>
-            <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
+
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p>Variables: {placeholdersOf(components).join(", ") || "none"}</p>
               <p className="mt-1">Category: {effectiveCategory}</p>
               <p className="mt-1">Components: {components.length}</p>
             </div>
+
+            {/* Submit actions */}
+            <div className="mt-auto flex flex-col gap-2 border-t border-border pt-4">
+              <Button
+                onClick={() => void submit()}
+                disabled={submitting || validationErrors.length > 0 || !name.trim() || !wabaId}
+                className="w-full"
+              >
+                {submitting ? "Submitting…" : "Submit to Meta"}
+              </Button>
+              <Button variant="outline" onClick={onClose} disabled={submitting} className="w-full">
+                Cancel
+              </Button>
+            </div>
           </div>
 
-          {/* Chat Column */}
-          <div className="flex flex-col rounded-xl border border-border bg-card overflow-hidden h-[calc(100vh-250px)] min-h-[500px]">
-            <div className="flex items-center gap-2 border-b border-border bg-primary/5 p-3">
+          {/* Column 3: AI Chat */}
+          <div className="flex flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center gap-2 border-b border-border bg-primary/5 px-4 py-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Bot className="h-4 w-4" />
               </div>
@@ -853,19 +878,19 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                         className="mt-2 w-full max-w-[90%] rounded-lg border border-primary/20 bg-primary/5 p-3"
                         dir="rtl"
                       >
-                        <p className="text-xs font-semibold text-primary mb-1">اقتراح القالب:</p>
+                        <p className="mb-1 text-xs font-semibold text-primary">اقتراح القالب:</p>
                         {(msg as any).suggestedHeader && (
-                          <p className="text-xs font-medium text-foreground mb-1">
+                          <p className="mb-1 text-xs font-medium text-foreground">
                             العنوان: {(msg as any).suggestedHeader}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                        <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                           {(msg as any).suggestedBody}
                         </p>
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="mt-3 w-full h-7 text-xs"
+                          className="mt-3 h-7 w-full text-xs"
                           onClick={() =>
                             applySuggestion(
                               (msg as any).suggestedBody,
@@ -873,7 +898,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                             )
                           }
                         >
-                          تطبيق الاقتراح (Apply)
+                          تطبيق الاقتراح
                         </Button>
                       </div>
                     )}
@@ -881,7 +906,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 ))}
                 {isTyping && (
                   <div className="flex items-start">
-                    <div className="bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-3 text-sm">
+                    <div className="rounded-2xl rounded-tl-sm bg-muted px-4 py-3 text-sm text-foreground">
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     </div>
                   </div>
@@ -889,7 +914,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
               </div>
             </ScrollArea>
 
-            <div className="p-3 border-t border-border bg-muted/10">
+            <div className="shrink-0 border-t border-border bg-muted/10 p-3">
               <div className="flex gap-2" dir="rtl">
                 <input
                   className={`${inputClass} rounded-full`}
@@ -901,7 +926,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
                 />
                 <Button
                   size="icon"
-                  className="rounded-full shrink-0"
+                  className="shrink-0 rounded-full"
                   onClick={handleSendMessage}
                   disabled={isTyping || !chatInput.trim()}
                 >
@@ -911,28 +936,7 @@ export function CreateTemplateDialog({ wabas, onClose, onCreated }: Props) {
             </div>
           </div>
         </div>
-
-        <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void submit()}
-            disabled={submitting || validationErrors.length > 0}
-          >
-            {submitting ? "Submitting…" : "Submit to Meta"}
-          </Button>
-        </div>
       </div>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      {children}
-    </label>
   );
 }

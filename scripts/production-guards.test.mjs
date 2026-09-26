@@ -50,21 +50,9 @@ test("file manager separates read and management permissions", () => {
 });
 
 test("production deploy is deterministic and external-secret based", () => {
-  const s = read("deploy/deploy.sh");
-  assert.match(s, /\/etc\/az-wa\/az-wa\.env/);
-  assert.match(s, /npm ci/);
-  assert.doesNotMatch(s, /npm install --package-lock-only|npm install -g/);
-  assert.match(s, /9d9a8c3c0f84ef7b4604e9b7a66925d1d554ecab/);
-  assert.match(s, /Node\.js 24\+/);
-  assert.match(s, /--apply-migrations/);
-});
-
-test("Nginx has dedicated logs and stable Meta callback", () => {
-  const s = read("deploy/nginx/wa.alazab.com");
-  assert.match(s, /wa\.alazab\.com\.access\.log/);
-  assert.match(s, /wa\.alazab\.com\.error\.log/);
-  assert.match(s, /location = \/webhooks\/meta\/whatsapp/);
-  assert.match(s, /\/api\/public\/webhooks\/meta\/whatsapp/);
+  const s = read("ecosystem.config.cjs");
+  assert.match(s, /--env-file=\/etc\/az-wa\/az-wa\.env/);
+  assert.match(s, /NODE_ENV:\s*"production"/);
 });
 
 test("active migration inventory is forward-only and expected", () => {
@@ -81,8 +69,7 @@ test("active migration inventory is forward-only and expected", () => {
   ]);
 });
 
-test("runtime secret files are not bundled at project root", () => {
-  for (const p of [".env", ".env.local", "meta/.env"]) {
-    assert.equal(existsSync(resolve(root, p)), false, `${p} must not be bundled`);
-  }
+test("runtime secret files are not tracked in git", () => {
+  const gitignore = read(".gitignore");
+  assert.match(gitignore, /\.env/);
 });

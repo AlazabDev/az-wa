@@ -78,13 +78,13 @@ function signingKey(secretKey: string, dateStamp: string, region: string): Buffe
  */
 export async function putMinioObject(input: {
   key: string;
-  body: Uint8Array;
+  body: Uint8Array | ReadableStream<Uint8Array> | null;
   contentType: string;
+  contentLength?: number;
 }): Promise<MinioUploadResult> {
   const config = readConfig();
   const { amzDate, dateStamp } = timestampParts();
-  const requestBody = Uint8Array.from(input.body);
-  const payloadHash = hashHex(requestBody);
+  const payloadHash = "UNSIGNED-PAYLOAD";
 
   const bucketPath = encodePathPart(config.bucket);
   const objectPath = encodeObjectKey(input.key);
@@ -127,9 +127,11 @@ export async function putMinioObject(input: {
       "Content-Type": input.contentType,
       "x-amz-content-sha256": payloadHash,
       "x-amz-date": amzDate,
+      ...(input.contentLength ? { "Content-Length": String(input.contentLength) } : {}),
     },
-    body: requestBody.buffer,
-  });
+    body: input.body as any,
+    ...(input.body && !(input.body instanceof Uint8Array) ? { duplex: "half" } : {}),
+  } as RequestInit);
 
   if (!response.ok) {
     const detail = (await response.text().catch(() => "")).slice(0, 1000);

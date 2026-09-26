@@ -216,11 +216,10 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
   const binRes = await fetch(meta.url, {
     headers: { Authorization: `Bearer ${cred.token}` },
   });
-  if (!binRes.ok) {
+  if (!binRes.ok || !binRes.body) {
     return fail(`binary download failed (HTTP ${binRes.status})`, binRes.status);
   }
 
-  const bytes = new Uint8Array(await binRes.arrayBuffer());
   const mime = meta.mime_type ?? media.mime_type ?? binRes.headers.get("content-type");
   const object = storagePath({
     timestamp: media.received_at ?? media.created_at,
@@ -230,11 +229,16 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
   });
 
   let uploaded: Awaited<ReturnType<typeof putMinioObject>>;
+  const contentLengthHeader = binRes.headers.get("content-length");
+  const contentLength =
+    meta.file_size ?? (contentLengthHeader ? Number(contentLengthHeader) : undefined);
+
   try {
     uploaded = await putMinioObject({
       key: object.key,
-      body: bytes,
+      body: binRes.body as any,
       contentType: mime ?? "application/octet-stream",
+      ...(contentLength !== undefined ? { contentLength } : {}),
     });
   } catch (error) {
     return fail(error instanceof Error ? error.message : "MinIO upload failed", null);
@@ -250,7 +254,7 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
       storage_bucket: uploaded.bucket,
       storage_path: uploaded.key,
       mime_type: mime ?? null,
-      file_size: meta.file_size ?? bytes.byteLength,
+      file_size: contentLength ?? 0,
       sha256: meta.sha256 ?? null,
       stored_at: new Date().toISOString(),
       last_error: null,
