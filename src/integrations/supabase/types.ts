@@ -2466,6 +2466,69 @@ export type Database = {
           },
         ]
       }
+      meta_webhook_request_audit: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          http_status: number
+          id: string
+          meta_phone_number_id: string | null
+          meta_waba_id: string | null
+          method: string
+          organization_id: string
+          received_at: string
+          request_id: string
+          verification_type: string
+          verification_valid: boolean
+          webhook_endpoint_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          http_status: number
+          id?: string
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
+          method: string
+          organization_id: string
+          received_at?: string
+          request_id?: string
+          verification_type: string
+          verification_valid?: boolean
+          webhook_endpoint_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          http_status?: number
+          id?: string
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
+          method?: string
+          organization_id?: string
+          received_at?: string
+          request_id?: string
+          verification_type?: string
+          verification_valid?: boolean
+          webhook_endpoint_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_webhook_request_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_webhook_request_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_whatsapp_structure"
+            referencedColumns: ["organization_id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
