@@ -227,9 +227,7 @@ function EndpointFormDialog({
 
   const [metaAppId, setMetaAppId] = useState(initial?.meta_app_id ?? metaApps[0]?.id ?? "");
   const [url, setUrl] = useState(initial?.url ?? META_WEBHOOK_CALLBACK_URL);
-  const [endpointType, setEndpointType] = useState(
-    initial?.endpoint_type ?? "meta_whatsapp",
-  );
+  const [endpointType, setEndpointType] = useState(initial?.endpoint_type ?? "meta_whatsapp");
   const [verifyToken, setVerifyToken] = useState("");
   const [appSecret, setAppSecret] = useState("");
   const [showVerify, setShowVerify] = useState(false);
@@ -303,7 +301,11 @@ function EndpointFormDialog({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           <Field label="Callback URL" hint="Must match exactly what is registered in the Meta App.">
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={META_WEBHOOK_CALLBACK_URL} />
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={META_WEBHOOK_CALLBACK_URL}
+            />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -336,11 +338,7 @@ function EndpointFormDialog({
 
           {/* Verify Token */}
           <Field
-            label={
-              isEdit
-                ? "Verify token (leave blank to keep existing)"
-                : "Verify token *"
-            }
+            label={isEdit ? "Verify token (leave blank to keep existing)" : "Verify token *"}
             hint="Sent by Meta during webhook verification (hub.verify_token). Stored encrypted in Vault."
           >
             <div className="relative">
@@ -707,7 +705,10 @@ function EndpointCard({
                 ),
               },
             ].map((item) => (
-              <div key={item.label} className="rounded-md border border-border/60 bg-muted/20 p-2.5">
+              <div
+                key={item.label}
+                className="rounded-md border border-border/60 bg-muted/20 p-2.5"
+              >
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                   {item.label}
                 </p>
@@ -718,8 +719,7 @@ function EndpointCard({
 
           <div className="mt-3 rounded-md border border-border/60 bg-muted/10 p-2.5 font-mono text-[11px] text-muted-foreground">
             <p>
-              Internal route:{" "}
-              <span className="text-foreground">{META_WEBHOOK_INTERNAL_PATH}</span>
+              Internal route: <span className="text-foreground">{META_WEBHOOK_INTERNAL_PATH}</span>
             </p>
             <p className="mt-0.5">
               Endpoint ID: <span className="text-foreground">{endpoint.id}</span>
@@ -816,12 +816,7 @@ function WebhooksPage() {
               )}
               Reconcile Meta App
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
@@ -894,11 +889,7 @@ function WebhooksPage() {
 
       {/* MinIO storage */}
       {ctx ? (
-        <MinioStatusCard
-          minio={ctx.minio}
-          onTest={handleTestMinio}
-          testing={testingMinio}
-        />
+        <MinioStatusCard minio={ctx.minio} onTest={handleTestMinio} testing={testingMinio} />
       ) : null}
 
       {/* Endpoint management */}
@@ -941,8 +932,11 @@ function WebhooksPage() {
               .filter((ep) => {
                 const q = search.trim().toLowerCase();
                 if (!q) return true;
-                return [ep.url, ep.meta_app_name, ep.endpoint_type, ep.status]
-                  .some((v) => String(v ?? "").toLowerCase().includes(q));
+                return [ep.url, ep.meta_app_name, ep.endpoint_type, ep.status].some((v) =>
+                  String(v ?? "")
+                    .toLowerCase()
+                    .includes(q),
+                );
               })
               .map((ep) => (
                 <EndpointCard

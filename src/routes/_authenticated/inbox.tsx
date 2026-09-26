@@ -61,7 +61,12 @@ function formatTime(value: string | null) {
   const isToday = d.toDateString() === now.toDateString();
   return isToday
     ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 }
 
 // ─── Conversation thread ──────────────────────────────────────────────────────
@@ -88,17 +93,20 @@ function ConversationThread({
 
   const senderNumber = (numbers ?? []).find((n) => n.id === numberId);
 
-  const { data: msgData, isLoading, refetch } = useQuery({
+  const {
+    data: msgData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["conversation-messages", conversationId],
-    queryFn: () => readRecords({ data: { table: "messages", orderBy: "created_at", limit: 200, page: 1 } }),
+    queryFn: () =>
+      readRecords({ data: { table: "messages", orderBy: "created_at", limit: 200, page: 1 } }),
     refetchInterval: 10_000,
   });
 
   const messages: MessageRow[] = useMemo(
     () =>
-      ((msgData?.rows ?? []) as MessageRow[]).filter(
-        (m) => m.conversation_id === conversationId,
-      ),
+      ((msgData?.rows ?? []) as MessageRow[]).filter((m) => m.conversation_id === conversationId),
     [msgData, conversationId],
   );
 
@@ -150,7 +158,13 @@ function ConversationThread({
             {conversationId.slice(0, 12)}…
           </p>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => refetch()} disabled={isLoading}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
       </div>
@@ -189,7 +203,9 @@ function ConversationThread({
                       isOutbound={isOut}
                     />
                   ) : (
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.body ?? "—"}</p>
+                    <p className="whitespace-pre-wrap break-words leading-relaxed">
+                      {msg.body ?? "—"}
+                    </p>
                   )}
                   <div
                     className={`mt-1 flex items-center gap-1 text-[10px] ${
@@ -197,9 +213,7 @@ function ConversationThread({
                     }`}
                   >
                     <span>{formatTime(msg.created_at)}</span>
-                    {isOut && msg.status && (
-                      <span className="capitalize">{msg.status}</span>
-                    )}
+                    {isOut && msg.status && <span className="capitalize">{msg.status}</span>}
                   </div>
                 </div>
               </div>
@@ -275,9 +289,16 @@ function InboxPage() {
     numberId && senders.some((n) => n.id === numberId) ? numberId : (senders[0]?.id ?? "");
 
   // Conversations query
-  const { data: convData, isLoading: convLoading, refetch: refetchConvs } = useQuery({
+  const {
+    data: convData,
+    isLoading: convLoading,
+    refetch: refetchConvs,
+  } = useQuery({
     queryKey: ["record-table", "conversations", "last_message_at", 100, 1],
-    queryFn: () => readRecords({ data: { table: "conversations", orderBy: "last_message_at", limit: 100, page: 1 } }),
+    queryFn: () =>
+      readRecords({
+        data: { table: "conversations", orderBy: "last_message_at", limit: 100, page: 1 },
+      }),
     refetchInterval: 15_000,
   });
 
@@ -346,7 +367,8 @@ function InboxPage() {
                   {senders.length === 0 && <option value="">No enabled number in scope</option>}
                   {senders.map((n) => (
                     <option key={n.id} value={n.id}>
-                      {n.internal_name || n.verified_name || n.display_phone_number} — {n.display_phone_number}
+                      {n.internal_name || n.verified_name || n.display_phone_number} —{" "}
+                      {n.display_phone_number}
                     </option>
                   ))}
                 </select>
@@ -373,8 +395,16 @@ function InboxPage() {
                 />
               </label>
 
-              <Button onClick={handleCompose} disabled={sending || !effectiveNumberId} className="h-10 gap-2">
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="size-4" />}
+              <Button
+                onClick={handleCompose}
+                disabled={sending || !effectiveNumberId}
+                className="h-10 gap-2"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
                 {sending ? "Sending…" : "Send"}
               </Button>
             </div>
@@ -417,7 +447,10 @@ function InboxPage() {
                 </div>
               ) : conversations.length === 0 ? (
                 <div className="p-6">
-                  <EmptyState title="No conversations" hint="Messages will appear here once the webhook is receiving." />
+                  <EmptyState
+                    title="No conversations"
+                    hint="Messages will appear here once the webhook is receiving."
+                  />
                 </div>
               ) : (
                 conversations.map((conv) => {
@@ -480,7 +513,9 @@ function InboxPage() {
             <div className="hidden lg:flex flex-1 items-center justify-center bg-card border border-border rounded-xl shadow-sm">
               <div className="text-center">
                 <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-3 text-sm text-muted-foreground">Select a conversation to read messages</p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Select a conversation to read messages
+                </p>
               </div>
             </div>
           )}
