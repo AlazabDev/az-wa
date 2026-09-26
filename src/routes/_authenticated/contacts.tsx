@@ -95,14 +95,35 @@ function ContactFormDialog({
   const isEdit = Boolean(initial);
 
   async function handleSave() {
-    if (!displayName.trim()) { toast.error("Display name is required"); return; }
+    if (!displayName.trim()) {
+      toast.error("Display name is required");
+      return;
+    }
     setSaving(true);
     try {
       if (isEdit && initial) {
-        await doUpdate({ data: { contactId: initial.id, displayName, email: email || null, phone: phone || null, company: company || null, notes: notes || null } });
+        await doUpdate({
+          data: {
+            contactId: initial.id,
+            displayName,
+            email: email || null,
+            phone: phone || null,
+            company: company || null,
+            notes: notes || null,
+          },
+        });
         toast.success("Contact updated");
       } else {
-        await doCreate({ data: { displayName, email: email || null, phone: phone || null, company: company || null, notes: notes || null, primaryPhone: primaryPhone || null } });
+        await doCreate({
+          data: {
+            displayName,
+            email: email || null,
+            phone: phone || null,
+            company: company || null,
+            notes: notes || null,
+            primaryPhone: primaryPhone || null,
+          },
+        });
         toast.success("Contact created");
       }
       onSaved();
@@ -125,18 +146,36 @@ function ContactFormDialog({
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <Field label="Display name *">
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Mohammed Al-Azzab" />
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Mohammed Al-Azzab"
+            />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Email">
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="user@example.com" />
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                placeholder="user@example.com"
+              />
             </Field>
             <Field label="Phone">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="2010xxxxxxxx" inputMode="tel" />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="2010xxxxxxxx"
+                inputMode="tel"
+              />
             </Field>
           </div>
           <Field label="Company">
-            <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" />
+            <Input
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Company name"
+            />
           </Field>
           <Field label="Notes">
             <textarea
@@ -159,7 +198,9 @@ function ContactFormDialog({
         </div>
 
         <div className="flex shrink-0 justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={saving || !displayName.trim()}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? "Save changes" : "Create contact"}
@@ -189,10 +230,15 @@ function AddChannelDialog({
 
   async function handleSave() {
     const phone = address.replace(/[^0-9]/g, "");
-    if (phone.length < 7) { toast.error("Enter a valid phone number"); return; }
+    if (phone.length < 7) {
+      toast.error("Enter a valid phone number");
+      return;
+    }
     setSaving(true);
     try {
-      await doAdd({ data: { contactId, address: phone, profileName: profileName || null, isPrimary } });
+      await doAdd({
+        data: { contactId, address: phone, profileName: profileName || null, isPrimary },
+      });
       toast.success("Channel added");
       onSaved();
     } catch (err) {
@@ -207,22 +253,40 @@ function AddChannelDialog({
       <div className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-background shadow-2xl">
         <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-6 py-4">
           <h2 className="text-base font-semibold">Add WhatsApp channel</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full"><X className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X className="h-5 w-5" />
+          </Button>
         </div>
         <div className="flex-1 p-6 space-y-4">
           <Field label="WhatsApp number *">
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="2010xxxxxxxx" inputMode="tel" />
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="2010xxxxxxxx"
+              inputMode="tel"
+            />
           </Field>
           <Field label="Profile name (optional)">
-            <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Name shown in WhatsApp" />
+            <Input
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder="Name shown in WhatsApp"
+            />
           </Field>
           <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-            <input type="checkbox" checked={isPrimary} onChange={(e) => setIsPrimary(e.target.checked)} className="rounded" />
+            <input
+              type="checkbox"
+              checked={isPrimary}
+              onChange={(e) => setIsPrimary(e.target.checked)}
+              className="rounded"
+            />
             Set as primary channel
           </label>
         </div>
         <div className="flex shrink-0 justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add channel
@@ -268,10 +332,7 @@ function ContactDetailPanel({
   });
 
   const channels: ChannelRow[] = useMemo(
-    () =>
-      ((channelData?.rows ?? []) as ChannelRow[]).filter(
-        (ch) => ch.contact_id === contact.id,
-      ),
+    () => ((channelData?.rows ?? []) as ChannelRow[]).filter((ch) => ch.contact_id === contact.id),
     [channelData, contact.id],
   );
 
@@ -327,7 +388,11 @@ function ContactDetailPanel({
             onClick={handleDelete}
             disabled={deleting}
           >
-            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {deleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -348,7 +413,10 @@ function ContactDetailPanel({
           ].map(
             (item) =>
               item.value && (
-                <div key={item.label} className="flex justify-between gap-4 border-b border-border/50 pb-1.5">
+                <div
+                  key={item.label}
+                  className="flex justify-between gap-4 border-b border-border/50 pb-1.5"
+                >
                   <dt className="text-muted-foreground">{item.label}</dt>
                   <dd className="font-medium text-right break-all">{item.value}</dd>
                 </div>
@@ -450,7 +518,9 @@ function ContactsPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["record-table", "contacts", "last_interaction_at", PAGE_SIZE, page],
     queryFn: () =>
-      readRecords({ data: { table: "contacts", orderBy: "last_interaction_at", limit: PAGE_SIZE, page } }),
+      readRecords({
+        data: { table: "contacts", orderBy: "last_interaction_at", limit: PAGE_SIZE, page },
+      }),
     refetchInterval: 30_000,
   });
 
@@ -463,8 +533,11 @@ function ContactsPage() {
     return rows.filter((c) => {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (!q) return true;
-      return [c.display_name, c.email, c.phone, c.company]
-        .some((v) => String(v ?? "").toLowerCase().includes(q));
+      return [c.display_name, c.email, c.phone, c.company].some((v) =>
+        String(v ?? "")
+          .toLowerCase()
+          .includes(q),
+      );
     });
   }, [rows, search, statusFilter]);
 
@@ -490,7 +563,9 @@ function ContactsPage() {
       {/* Main */}
       <div className="flex flex-1 overflow-hidden p-4 pt-2 gap-4">
         {/* Left: list */}
-        <div className={`flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden ${selected ? "hidden lg:flex" : "flex"}`}>
+        <div
+          className={`flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden ${selected ? "hidden lg:flex" : "flex"}`}
+        >
           {/* Filters */}
           <div className="p-4 border-b border-border bg-muted/20">
             <div className="flex flex-wrap items-center gap-2">
@@ -498,7 +573,10 @@ function ContactsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Search name, email, phone…"
                   className="pl-9"
                 />
@@ -506,7 +584,10 @@ function ContactsPage() {
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="all">All statuses</option>
                 <option value="active">Active</option>
@@ -576,8 +657,22 @@ function ContactsPage() {
                 {total.toLocaleString()} contacts · page {page} of {totalPages}
               </p>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" disabled={page <= 1 || isLoading} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages || isLoading} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoading}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isLoading}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}
@@ -620,9 +715,7 @@ function ContactsPage() {
             setEditing(null);
             // Update selected with new name if same contact
             setSelected((prev) =>
-              prev?.id === editing.id
-                ? { ...prev, display_name: editing.display_name }
-                : prev,
+              prev?.id === editing.id ? { ...prev, display_name: editing.display_name } : prev,
             );
             invalidate();
           }}

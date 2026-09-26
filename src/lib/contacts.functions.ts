@@ -15,7 +15,7 @@ export type ContactInput = {
 
 export type ContactChannelInput = {
   contactId: string;
-  address: string;     // WhatsApp phone number
+  address: string; // WhatsApp phone number
   profileName?: string | null;
   isPrimary?: boolean;
 };
@@ -40,9 +40,7 @@ async function authorize(context: any, permission = "contacts.manage") {
 /** Create a new contact with an optional primary WhatsApp channel. */
 export const createContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
-    (input: ContactInput & { primaryPhone?: string | null }) => input,
-  )
+  .validator((input: ContactInput & { primaryPhone?: string | null }) => input)
   .handler(async ({ data, context }): Promise<{ ok: true; contactId: string }> => {
     const { organizationId, supabaseAdmin } = await authorize(context);
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");

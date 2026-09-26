@@ -47,7 +47,7 @@ type ListInput = {
 
 async function authorize(
   context: { supabase: SupabaseClient<Database> },
-  requiredPermission = MEDIA_PERMISSION
+  requiredPermission = MEDIA_PERMISSION,
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: organization, error: organizationError } = await supabaseAdmin

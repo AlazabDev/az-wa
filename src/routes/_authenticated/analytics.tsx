@@ -25,7 +25,15 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 
 // ─── Tiny metric card ─────────────────────────────────────────────────────────
 
-function Metric({ label, value, tone }: { label: string; value: string | number; tone?: string | undefined }) {
+function Metric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  tone?: string | undefined;
+}) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -47,7 +55,8 @@ function ChartTooltip({ active, payload, label }: any) {
       {label && <p className="mb-1 font-semibold text-foreground">{label}</p>}
       {payload.map((entry: any) => (
         <p key={entry.name} style={{ color: entry.color }}>
-          {entry.name}: <span className="font-semibold tabular-nums">{entry.value.toLocaleString()}</span>
+          {entry.name}:{" "}
+          <span className="font-semibold tabular-nums">{entry.value.toLocaleString()}</span>
         </p>
       ))}
     </div>
@@ -108,10 +117,26 @@ function AnalyticsPage() {
 
   // Health breakdown
   const healthData = [
-    { name: "Healthy", value: numbers.filter((n) => n.health === "healthy").length, fill: "#10b981" },
-    { name: "Warning", value: numbers.filter((n) => n.health === "warning").length, fill: "#f59e0b" },
-    { name: "Critical", value: numbers.filter((n) => n.health === "critical").length, fill: "#ef4444" },
-    { name: "Unknown", value: numbers.filter((n) => n.health === "unknown").length, fill: "#6b7280" },
+    {
+      name: "Healthy",
+      value: numbers.filter((n) => n.health === "healthy").length,
+      fill: "#10b981",
+    },
+    {
+      name: "Warning",
+      value: numbers.filter((n) => n.health === "warning").length,
+      fill: "#f59e0b",
+    },
+    {
+      name: "Critical",
+      value: numbers.filter((n) => n.health === "critical").length,
+      fill: "#ef4444",
+    },
+    {
+      name: "Unknown",
+      value: numbers.filter((n) => n.health === "unknown").length,
+      fill: "#6b7280",
+    },
   ].filter((d) => d.value > 0);
 
   return (
@@ -126,7 +151,11 @@ function AnalyticsPage() {
         <Metric label="Messages (24h)" value={isLoading ? "…" : (counters?.messagesToday ?? 0)} />
         <Metric label="Delivery rate" value={deliveryRate} tone="text-emerald-600" />
         <Metric label="Read rate" value={readRate} tone="text-indigo-600" />
-        <Metric label="Failure rate" value={failRate} tone={failed > 0 ? "text-destructive" : undefined} />
+        <Metric
+          label="Failure rate"
+          value={failRate}
+          tone={failed > 0 ? "text-destructive" : undefined}
+        />
         <Metric label="Incoming" value={incoming} tone="text-amber-600" />
         <Metric label="Outgoing" value={outgoing} tone="text-violet-600" />
         <Metric label="Inbound share" value={inboundShare} />
@@ -138,7 +167,9 @@ function AnalyticsPage() {
         {/* Message flow bar chart */}
         <Panel title="Message funnel (24h)">
           {flowData.every((d) => d.value === 0) ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No messages in the last 24 hours.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No messages in the last 24 hours.
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={flowData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -159,7 +190,9 @@ function AnalyticsPage() {
         {/* Direction bar chart */}
         <Panel title="Traffic direction (24h)">
           {incoming + outgoing === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No traffic in the last 24 hours.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No traffic in the last 24 hours.
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={directionData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -248,12 +281,28 @@ function AnalyticsPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="Numbers in scope" value={numbers.length} />
             <Metric label="Templates" value={counters?.templates ?? 0} />
-            <Metric label="Approved templates" value={counters?.approvedTemplates ?? 0} tone="text-emerald-600" />
+            <Metric
+              label="Approved templates"
+              value={counters?.approvedTemplates ?? 0}
+              tone="text-emerald-600"
+            />
             <Metric label="Contacts" value={counters?.contacts ?? 0} />
-            <Metric label="Running campaigns" value={counters?.runningCampaigns ?? 0} tone="text-amber-600" />
+            <Metric
+              label="Running campaigns"
+              value={counters?.runningCampaigns ?? 0}
+              tone="text-amber-600"
+            />
             <Metric label="Media received" value={counters?.mediaReceived ?? 0} />
-            <Metric label="API errors" value={counters?.apiErrors ?? 0} tone={counters?.apiErrors ? "text-destructive" : undefined} />
-            <Metric label="Webhook errors" value={counters?.webhookErrors ?? 0} tone={counters?.webhookErrors ? "text-destructive" : undefined} />
+            <Metric
+              label="API errors"
+              value={counters?.apiErrors ?? 0}
+              tone={counters?.apiErrors ? "text-destructive" : undefined}
+            />
+            <Metric
+              label="Webhook errors"
+              value={counters?.webhookErrors ?? 0}
+              tone={counters?.webhookErrors ? "text-destructive" : undefined}
+            />
           </div>
         </Panel>
       </div>

@@ -69,12 +69,7 @@ export function RecordTable({
   const readRecords = useServerFn(readRecordTable);
   const [page, setPage] = useState(1);
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["record-table", table, orderBy, limit, page],
     queryFn: () => readRecords({ data: { table, orderBy, limit, page } }),
     refetchInterval: 30_000,
