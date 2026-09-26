@@ -479,7 +479,7 @@ function CampaignsPage() {
     refetchInterval: 30_000,
   });
 
-  const campaigns = data?.campaigns ?? [];
+  const campaigns = useMemo(() => data?.campaigns ?? [], [data?.campaigns]);
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

@@ -120,25 +120,31 @@ export const loadWebhookAdminContext = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.read");
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.read",
+    );
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
 
-    const [{ data: endpoints, error: endpointError }, { data: apps, error: appError }, secretsResult] =
-      await Promise.all([
-        db
-          .from("webhook_endpoints")
-          .select(
-            "id,organization_id,meta_app_id,endpoint_type,url,status,verification_status,verify_token_credential_id,app_secret_credential_id,last_event_at,last_success_at,last_failure_at",
-          )
-          .eq("organization_id", organizationId)
-          .order("created_at", { ascending: true }),
-        db
-          .from("meta_apps")
-          .select("id,display_name,meta_app_id")
-          .eq("organization_id", organizationId),
-        supabaseAdmin.rpc("backend_list_webhook_secrets"),
-      ]);
+    const [
+      { data: endpoints, error: endpointError },
+      { data: apps, error: appError },
+      secretsResult,
+    ] = await Promise.all([
+      db
+        .from("webhook_endpoints")
+        .select(
+          "id,organization_id,meta_app_id,endpoint_type,url,status,verification_status,verify_token_credential_id,app_secret_credential_id,last_event_at,last_success_at,last_failure_at",
+        )
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: true }),
+      db
+        .from("meta_apps")
+        .select("id,display_name,meta_app_id")
+        .eq("organization_id", organizationId),
+      supabaseAdmin.rpc("backend_list_webhook_secrets"),
+    ]);
 
     if (endpointError) throw new Error(endpointError.message);
     if (appError) throw new Error(appError.message);
@@ -148,7 +154,10 @@ export const loadWebhookAdminContext = createServerFn({ method: "POST" })
       (apps ?? []).map((app: any) => [String(app.id), app]),
     );
     const secretByEndpoint = new Map<string, WebhookSecretRow>(
-      ((secretsResult.data ?? []) as WebhookSecretRow[]).map((row) => [row.webhook_endpoint_id, row]),
+      ((secretsResult.data ?? []) as WebhookSecretRow[]).map((row) => [
+        row.webhook_endpoint_id,
+        row,
+      ]),
     );
 
     const rows: WebhookEndpointRow[] = (endpoints ?? []).map((endpoint: any) => {
@@ -209,7 +218,10 @@ export const upsertWebhookEndpoint = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ data, context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.manage");
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.manage",
+    );
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
 
@@ -274,7 +286,10 @@ export const setWebhookEndpointStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { endpointId: string; status: "active" | "inactive" }) => input)
   .handler(async ({ data, context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.manage");
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.manage",
+    );
     await loadEndpointForOrg(data.endpointId, organizationId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any)
@@ -290,11 +305,15 @@ export const deleteWebhookEndpoint = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { endpointId: string }) => input)
   .handler(async ({ data, context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.manage");
-    const endpoint = await loadEndpointForOrg(data.endpointId, organizationId);
-    const credentialIds = [endpoint.verify_token_credential_id, endpoint.app_secret_credential_id].filter(
-      Boolean,
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.manage",
     );
+    const endpoint = await loadEndpointForOrg(data.endpointId, organizationId);
+    const credentialIds = [
+      endpoint.verify_token_credential_id,
+      endpoint.app_secret_credential_id,
+    ].filter(Boolean);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     const { error } = await db
@@ -317,7 +336,10 @@ export const testWebhookChallenge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { endpointId: string }) => input)
   .handler(async ({ data, context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.manage");
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.manage",
+    );
     const endpoint = await loadEndpointForOrg(data.endpointId, organizationId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: secrets, error: secretError } = await supabaseAdmin.rpc(
@@ -366,7 +388,10 @@ export const reconcileMetaWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
-    const organizationId = await requireOrganization(context as ServerContext, "webhooks.manage");
+    const organizationId = await requireOrganization(
+      context as unknown as ServerContext,
+      "webhooks.manage",
+    );
     const { reconcileMetaAppWebhook } = await import("./app-webhook.server");
     return reconcileMetaAppWebhook(organizationId);
   });
@@ -375,7 +400,7 @@ export const testMinioConnectivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: Record<string, never>) => input)
   .handler(async ({ context }) => {
-    await requireOrganization(context as ServerContext, "webhooks.read");
+    await requireOrganization(context as unknown as ServerContext, "webhooks.read");
     const endpoint = envValue("MINIO_ENDPOINT");
     if (!endpoint) return { ok: false as const, detail: "MINIO_ENDPOINT is not configured" };
 
