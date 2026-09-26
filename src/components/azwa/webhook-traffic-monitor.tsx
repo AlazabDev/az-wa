@@ -96,7 +96,11 @@ function renderCell(value: unknown, kind: Column["kind"]) {
   if (value === null || value === undefined || value === "") return "—";
 
   if (kind === "date") {
-    return <span className="whitespace-nowrap text-xs text-muted-foreground">{new Date(String(value)).toLocaleString()}</span>;
+    return (
+      <span className="whitespace-nowrap text-xs text-muted-foreground">
+        {new Date(String(value)).toLocaleString()}
+      </span>
+    );
   }
   if (kind === "mono") return <span className="font-mono text-xs">{String(value)}</span>;
   if (kind === "status") return <StatusBadge value={String(value)} />;
@@ -184,7 +188,8 @@ export function WebhookTrafficMonitor() {
             </Button>
           ))}
           <span className="ml-auto self-center text-xs text-muted-foreground">
-            Live refresh: 5s{data?.refreshedAt ? ` · ${new Date(data.refreshedAt).toLocaleTimeString()}` : ""}
+            Live refresh: 5s
+            {data?.refreshedAt ? ` · ${new Date(data.refreshedAt).toLocaleTimeString()}` : ""}
           </span>
         </div>
 
@@ -289,7 +294,10 @@ export function WebhookTrafficMonitor() {
             </thead>
             <tbody>
               {rows.map((row, index) => (
-                <tr key={String(row["id"] ?? index)} className="border-b border-border/60 last:border-0">
+                <tr
+                  key={String(row["id"] ?? index)}
+                  className="border-b border-border/60 last:border-0"
+                >
                   {columns.map((column) => (
                     <td key={column.key} className="px-3 py-2 align-top">
                       {renderCell(row[column.key], column.kind)}
@@ -300,20 +308,27 @@ export function WebhookTrafficMonitor() {
             </tbody>
           </table>
 
-          {isLoading ? <p className="py-10 text-center text-sm text-muted-foreground">Loading webhook traffic…</p> : null}
+          {isLoading ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Loading webhook traffic…
+            </p>
+          ) : null}
           {isError ? (
             <p className="py-10 text-center text-sm text-destructive">
               {error instanceof Error ? error.message : "Unable to load webhook traffic"}
             </p>
           ) : null}
           {!isLoading && !isError && rows.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">No matching webhook records.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No matching webhook records.
+            </p>
           ) : null}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>
-            {data?.total.toLocaleString() ?? 0} records · page {data?.page ?? page} of {data?.totalPages ?? 1}
+            {data?.total.toLocaleString() ?? 0} records · page {data?.page ?? page} of{" "}
+            {data?.totalPages ?? 1}
           </span>
           <div className="flex items-center gap-1">
             <Button

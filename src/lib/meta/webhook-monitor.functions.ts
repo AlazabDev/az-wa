@@ -146,9 +146,11 @@ export const readWebhookMonitor = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: rows, count, error } = await query
-      .order(orderColumn, { ascending: false })
-      .range(from, to);
+    const {
+      data: rows,
+      count,
+      error,
+    } = await query.order(orderColumn, { ascending: false }).range(from, to);
 
     if (error) throw new Error(error.message);
 

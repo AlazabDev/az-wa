@@ -7,6 +7,7 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${AZWA_ENV_FILE:-/etc/az-wa/az-wa.env}"
 PM2_CONFIG="$APP_DIR/deploy/ecosystem.config.cjs"
 ARCHIVE_ROOT="$APP_DIR/_isolated_legacy/build-artifacts"
+EXPECTED_LOCK_BLOB="af24791d67512a37e288e2324ac4ab5930bcd680"
 DO_MIGRATE=false
 ARCHIVE_EXTRA=false
 
