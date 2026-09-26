@@ -23,8 +23,10 @@ jobs:
           node-version: '24'
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Repair lockfile and install dependencies
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm ci
 
       - name: Integrate interactive monitor and refresh deploy lock guard
         run: |
@@ -91,6 +93,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/routes/_authenticated/webhooks.tsx src/components/azwa/webhook-traffic-monitor.tsx src/lib/meta/webhook-monitor.functions.ts deploy/deploy.sh
+          git add package-lock.json src/routes/_authenticated/webhooks.tsx src/components/azwa/webhook-traffic-monitor.tsx src/lib/meta/webhook-monitor.functions.ts deploy/deploy.sh
           git commit -m "feat: wire live webhook monitor and deploy guard"
           git push origin HEAD:feat/webhook-monitor-screen-20260926
