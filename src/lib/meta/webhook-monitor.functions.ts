@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
 type MonitorSource = "audit" | "events" | "unmapped";
 type VerificationFilter = "all" | "valid" | "invalid";
+type MonitorRow = Record<string, Json>;
 
 type MonitorInput = {
   source: MonitorSource;
@@ -26,7 +28,7 @@ type ServerContext = {
 };
 
 export type WebhookMonitorResponse = {
-  rows: Array<Record<string, unknown>>;
+  rows: MonitorRow[];
   total: number;
   page: number;
   pageSize: number;
@@ -152,7 +154,7 @@ export const readWebhookMonitor = createServerFn({ method: "POST" })
 
     const total = count ?? 0;
     return {
-      rows: (rows ?? []) as Array<Record<string, unknown>>,
+      rows: (rows ?? []) as MonitorRow[],
       total,
       page,
       pageSize,
