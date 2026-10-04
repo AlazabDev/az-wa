@@ -35,7 +35,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   // Keep diagnostic details on the application's own server/browser console.
   // Production no longer forwards stack traces to preview/editor globals.
   console.error("[AzWA] Route error", error);
