@@ -48,3 +48,24 @@ export const reconcileMetaWebhookSubscription = createServerFn({ method: "POST" 
     const { reconcileMetaAppWebhook } = await import("./app-webhook.server");
     return reconcileMetaAppWebhook(membership.organization_id);
   });
+
+export const linkAllWabasWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: Record<string, never>) => input)
+  .handler(async ({ context }) => {
+    const { data: membership, error } = await context.supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", context.userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (error || !membership) throw new Error("No active organization membership");
+    const { data: allowed } = await context.supabase.rpc("azwa_has_org_permission", {
+      p_org_id: membership.organization_id,
+      p_permission: "credentials.manage",
+    });
+    if (!allowed) throw new Error("Forbidden");
+    const { linkAllWabasToWebhook } = await import("./app-webhook.server");
+    return linkAllWabasToWebhook(membership.organization_id);
+  });

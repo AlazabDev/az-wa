@@ -187,3 +187,49 @@ export async function reconcileMetaAppWebhook(organizationId: string) {
         ...verified,
       };
 }
+
+/**
+ * Links every WABA of the organization to our webhook. Uses each WABA's own
+ * scoped token and override_callback_uri so events reach our server even when
+ * the token belongs to a different Meta App.
+ */
+export async function linkAllWabasToWebhook(organizationId: string) {
+  const runtime = await loadAppRuntime(organizationId);
+  const { resolveCredential } = await import("./graph.server");
+  const { data: wabas, error } = await supabaseAdmin
+    .from("wabas")
+    .select("id,meta_waba_id,name,business_portfolio_id")
+    .eq("organization_id", organizationId);
+  if (error) throw new Error(error.message);
+
+  const results: Array<{ waba: string; name: string | null; ok: boolean; error?: string }> = [];
+  for (const waba of wabas ?? []) {
+    const cred = await resolveCredential({
+      wabaId: waba.id,
+      businessPortfolioId: waba.business_portfolio_id,
+    });
+    if (!cred.token) {
+      results.push({ waba: waba.meta_waba_id, name: waba.name, ok: false, error: "No token" });
+      continue;
+    }
+    const client = new MetaGraphClient(cred.token, { organizationId, wabaId: waba.id });
+    const res = await client.request<{ success?: boolean }>(`${waba.meta_waba_id}/subscribed_apps`, {
+      method: "POST",
+      query: { override_callback_uri: runtime.callbackUrl, verify_token: runtime.verifyToken },
+    });
+    let finalRes = res;
+    if (!res.ok) {
+      // Fallback: plain subscription of the token's app.
+      finalRes = await client.request<{ success?: boolean }>(`${waba.meta_waba_id}/subscribed_apps`, {
+        method: "POST",
+      });
+    }
+    results.push({
+      waba: waba.meta_waba_id,
+      name: waba.name,
+      ok: finalRes.ok,
+      ...(finalRes.ok ? {} : { error: finalRes.errorMessage ?? res.errorMessage ?? "failed" }),
+    });
+  }
+  return { linked: results.filter((r) => r.ok).length, total: results.length, results };
+}
