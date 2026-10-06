@@ -15,7 +15,12 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
-import { putMinioObject } from "@/lib/storage/minio.server";
+import {
+  LOCAL_PROVIDER,
+  newPublicToken,
+  publicFileUrl,
+  putLocalObject,
+} from "@/lib/storage/local.server";
 
 import { GRAPH_BASE, resolveCredential } from "./graph.server";
 
@@ -228,21 +233,18 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     filename: media.filename,
   });
 
-  let uploaded: Awaited<ReturnType<typeof putMinioObject>>;
   const contentLengthHeader = binRes.headers.get("content-length");
-  const contentLength =
-    meta.file_size ?? (contentLengthHeader ? Number(contentLengthHeader) : undefined);
+  const headerLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
 
+  let stored: { key: string; size: number };
   try {
-    uploaded = await putMinioObject({
-      key: object.key,
-      body: binRes.body as any,
-      contentType: mime ?? "application/octet-stream",
-      ...(contentLength !== undefined ? { contentLength } : {}),
-    });
+    stored = await putLocalObject({ key: object.key, body: binRes.body as any });
   } catch (error) {
-    return fail(error instanceof Error ? error.message : "MinIO upload failed", null);
+    return fail(error instanceof Error ? error.message : "Local storage write failed", null);
   }
+  const contentLength = meta.file_size ?? stored.size ?? headerLength;
+  const uploaded = { key: stored.key, status: 200 };
+  const publicToken = newPublicToken();
 
   const currentMetadata = objectMetadata(media.metadata);
 
@@ -250,9 +252,9 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
     .from("media")
     .update({
       download_status: "downloaded",
-      storage_provider: "minio",
-      storage_bucket: uploaded.bucket,
-      storage_path: uploaded.key,
+      storage_provider: LOCAL_PROVIDER,
+      storage_bucket: "local",
+      storage_path: stored.key,
       mime_type: mime ?? null,
       file_size: contentLength ?? 0,
       sha256: meta.sha256 ?? null,
@@ -262,7 +264,8 @@ export async function downloadMedia(mediaRowId: string): Promise<MediaDownloadRe
         ...currentMetadata,
         archive_folder: object.folder,
         archive_extension: object.extension,
-        minio_etag: uploaded.etag,
+        public_token: publicToken,
+        public_url: publicFileUrl(publicToken),
       },
     })
     .eq("id", media.id);

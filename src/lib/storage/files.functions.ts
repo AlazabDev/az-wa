@@ -206,13 +206,26 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
 
     const { data: media, error } = await supabaseAdmin
       .from("media")
-      .select("id, storage_provider, storage_bucket, storage_path, filename, download_status")
+      .select("id, storage_provider, storage_bucket, storage_path, filename, download_status, metadata")
       .eq("id", data.mediaId)
       .eq("organization_id", organizationId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    if (media?.storage_provider === "local" && media.storage_path) {
+      const meta = (media.metadata ?? {}) as Record<string, unknown>;
+      let token = typeof meta["public_token"] === "string" ? (meta["public_token"] as string) : "";
+      const { newPublicToken, publicFileUrl } = await import("@/lib/storage/local.server");
+      if (!token) {
+        token = newPublicToken();
+        await supabaseAdmin
+          .from("media")
+          .update({ metadata: { ...meta, public_token: token, public_url: publicFileUrl(token) } })
+          .eq("id", media.id);
+      }
+      return { url: publicFileUrl(token), expiresIn: 0 };
+    }
     if (!media?.storage_path || media.storage_provider !== "minio") {
-      throw new Error("This file is not archived in Milano yet");
+      throw new Error("This file is not stored yet");
     }
 
     const expiresIn = 900;
