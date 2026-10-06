@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
 import { useNumbers, type WhatsappNumber } from "@/lib/azwa-data";
 import { syncMetaLiveStatus } from "@/lib/meta/live-status.functions";
+import { linkAllWabasWebhook } from "@/lib/meta/app-webhook.functions";
 import { getPerNumberMessages24h } from "@/lib/monitor.functions";
 
 export const Route = createFileRoute("/_authenticated/monitor")({
@@ -108,6 +109,23 @@ function MonitorPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  const runLink = useServerFn(linkAllWabasWebhook);
+  const [linking, setLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState<string | null>(null);
+  async function linkAll() {
+    setLinking(true);
+    setLinkMsg(null);
+    try {
+      const r = await runLink({ data: {} });
+      const failed = r.results.filter((x) => !x.ok).map((x) => `${x.name ?? x.waba}: ${x.error}`);
+      setLinkMsg(`Linked ${r.linked}/${r.total} accounts.${failed.length ? " Failed: " + failed.join(" | ") : ""}`);
+    } catch (cause) {
+      setLinkMsg(cause instanceof Error ? cause.message : "Linking failed");
+    } finally {
+      setLinking(false);
+    }
+  }
+
   async function refresh() {
     setSyncing(true);
     setSyncError(null);
@@ -126,14 +144,20 @@ function MonitorPage() {
         title="Live Monitor"
         description="Production Meta status and per-number health from authenticated server contracts."
         actions={
+          <div className="flex gap-2">
+          <Button type="button" onClick={() => void linkAll()} disabled={linking}>
+            {linking ? "Linking…" : "Link all numbers to webhook"}
+          </Button>
           <Button type="button" variant="outline" onClick={() => void refresh()} disabled={syncing}>
             <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync live with Meta"}
           </Button>
+          </div>
         }
       />
 
       <div className="space-y-6">
+        {linkMsg ? <p className="rounded-md border p-3 text-sm">{linkMsg}</p> : null}
         <Panel title="Live Meta status">
           {syncError ? (
             <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
