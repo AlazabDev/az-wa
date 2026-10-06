@@ -43,6 +43,7 @@ import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
+import { Route as ApiPublicFilesTokenRouteImport } from './routes/api/public/files.$token'
 import { Route as ApiPublicJobsAutomationRouteImport } from './routes/api/public/jobs/automation'
 import { Route as ApiPublicJobsMediaRouteImport } from './routes/api/public/jobs/media'
 import { Route as ApiPublicJobsMessagesRouteImport } from './routes/api/public/jobs/messages'
@@ -224,6 +225,11 @@ const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicFilesTokenRoute = ApiPublicFilesTokenRouteImport.update({
+  id: '/api/public/files/$token',
+  path: '/api/public/files/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicJobsAutomationRoute = ApiPublicJobsAutomationRouteImport.update({
   id: '/api/public/jobs/automation',
   path: '/api/public/jobs/automation',
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/files/$token': typeof ApiPublicFilesTokenRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/files/$token': typeof ApiPublicFilesTokenRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -388,6 +396,7 @@ export interface FileRoutesById {
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
+  '/api/public/files/$token': typeof ApiPublicFilesTokenRoute
   '/api/public/jobs/automation': typeof ApiPublicJobsAutomationRoute
   '/api/public/jobs/media': typeof ApiPublicJobsMediaRoute
   '/api/public/jobs/messages': typeof ApiPublicJobsMessagesRoute
@@ -433,6 +442,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/wabas'
     | '/webhooks'
+    | '/api/public/files/$token'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/wabas'
     | '/webhooks'
+    | '/api/public/files/$token'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -520,6 +531,7 @@ export interface FileRouteTypes {
     | '/_authenticated/users'
     | '/_authenticated/wabas'
     | '/_authenticated/webhooks'
+    | '/api/public/files/$token'
     | '/api/public/jobs/automation'
     | '/api/public/jobs/media'
     | '/api/public/jobs/messages'
@@ -536,6 +548,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HealthzRoute: typeof HealthzRoute
   ReadyzRoute: typeof ReadyzRoute
+  ApiPublicFilesTokenRoute: typeof ApiPublicFilesTokenRoute
   ApiPublicJobsAutomationRoute: typeof ApiPublicJobsAutomationRoute
   ApiPublicJobsMediaRoute: typeof ApiPublicJobsMediaRoute
   ApiPublicJobsMessagesRoute: typeof ApiPublicJobsMessagesRoute
@@ -786,6 +799,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/files/$token': {
+      id: '/api/public/files/$token'
+      path: '/api/public/files/$token'
+      fullPath: '/api/public/files/$token'
+      preLoaderRoute: typeof ApiPublicFilesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/automation': {
       id: '/api/public/jobs/automation'
       path: '/api/public/jobs/automation'
@@ -918,6 +938,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HealthzRoute: HealthzRoute,
   ReadyzRoute: ReadyzRoute,
+  ApiPublicFilesTokenRoute: ApiPublicFilesTokenRoute,
   ApiPublicJobsAutomationRoute: ApiPublicJobsAutomationRoute,
   ApiPublicJobsMediaRoute: ApiPublicJobsMediaRoute,
   ApiPublicJobsMessagesRoute: ApiPublicJobsMessagesRoute,
