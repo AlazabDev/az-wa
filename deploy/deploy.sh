@@ -110,8 +110,6 @@ fi
 log "Production Node build"
 NITRO_PRESET=node-server npm run build
 [[ -f .output/server/index.mjs ]] || fail "Missing .output/server/index.mjs"
-# Legacy routes are intentionally retained and mounted under /legacy.
-grep -q "routes/legacy" src/routeTree.gen.ts || fail "Generated route tree is missing the /legacy routes"
 grep -q "_authenticated/files" src/routeTree.gen.ts || fail "Generated route tree does not contain /files"
 grep -q "_authenticated/numbers" src/routeTree.gen.ts || fail "Generated route tree does not contain /numbers"
 

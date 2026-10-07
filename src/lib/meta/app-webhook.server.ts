@@ -213,16 +213,22 @@ export async function linkAllWabasToWebhook(organizationId: string) {
       continue;
     }
     const client = new MetaGraphClient(cred.token, { organizationId, wabaId: waba.id });
-    const res = await client.request<{ success?: boolean }>(`${waba.meta_waba_id}/subscribed_apps`, {
-      method: "POST",
-      query: { override_callback_uri: runtime.callbackUrl, verify_token: runtime.verifyToken },
-    });
+    const res = await client.request<{ success?: boolean }>(
+      `${waba.meta_waba_id}/subscribed_apps`,
+      {
+        method: "POST",
+        query: { override_callback_uri: runtime.callbackUrl, verify_token: runtime.verifyToken },
+      },
+    );
     let finalRes = res;
     if (!res.ok) {
       // Fallback: plain subscription of the token's app.
-      finalRes = await client.request<{ success?: boolean }>(`${waba.meta_waba_id}/subscribed_apps`, {
-        method: "POST",
-      });
+      finalRes = await client.request<{ success?: boolean }>(
+        `${waba.meta_waba_id}/subscribed_apps`,
+        {
+          method: "POST",
+        },
+      );
     }
     results.push({
       waba: waba.meta_waba_id,

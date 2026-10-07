@@ -66,6 +66,7 @@ test("active migration inventory is forward-only and expected", () => {
     "20260904000400_azwa_complete_messaging_runtime.sql",
     "20260906000100_media_manage_permission.sql",
     "20260906000200_automation_rule_management.sql",
+    "20260922000100_webhook_audit_and_minio_config.sql",
   ]);
 });
 

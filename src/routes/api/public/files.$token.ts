@@ -23,7 +23,10 @@ export const Route = createFileRoute("/api/public/files/$token")({
         try {
           const bytes = await readLocalObject(media.storage_path);
           const download = new URL(request.url).searchParams.has("download");
-          const name = (media.filename ?? media.storage_path.split("/").pop() ?? "file").replace(/"/g, "");
+          const name = (media.filename ?? media.storage_path.split("/").pop() ?? "file").replace(
+            /"/g,
+            "",
+          );
           return new Response(bytes as unknown as BodyInit, {
             headers: {
               "Content-Type": media.mime_type ?? "application/octet-stream",
