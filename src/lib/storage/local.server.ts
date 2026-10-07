@@ -8,7 +8,7 @@ import { createWriteStream } from "node:fs";
 export const LOCAL_PROVIDER = "local";
 
 // المجلد الأساسي لتخزين الوسائط
-const STORAGE_ROOT = path.resolve(process.env.LOCAL_STORAGE_DIR || "./storage/media");
+const STORAGE_ROOT = path.resolve(process.env["LOCAL_STORAGE_DIR"] || "./storage/media");
 
 /**
  * توليد رمز عام عشوائي فريد وغير قابل للتخمين بطول 48 حرفاً ست عشرياً
@@ -21,7 +21,7 @@ export function newPublicToken(): string {
  * بناء الرابط العام الدائم للملف
  */
 export function publicFileUrl(token: string): string {
-  const baseUrl = process.env.PUBLIC_APP_URL || "https://wa.alazab.com";
+  const baseUrl = process.env["PUBLIC_APP_URL"] || "https://wa.alazab.com";
   return `${baseUrl.replace(/\/$/, "")}/api/public/files/${token}`;
 }
 
