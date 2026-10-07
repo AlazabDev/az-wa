@@ -118,7 +118,9 @@ function MonitorPage() {
     try {
       const r = await runLink({ data: {} });
       const failed = r.results.filter((x) => !x.ok).map((x) => `${x.name ?? x.waba}: ${x.error}`);
-      setLinkMsg(`Linked ${r.linked}/${r.total} accounts.${failed.length ? " Failed: " + failed.join(" | ") : ""}`);
+      setLinkMsg(
+        `Linked ${r.linked}/${r.total} accounts.${failed.length ? " Failed: " + failed.join(" | ") : ""}`,
+      );
     } catch (cause) {
       setLinkMsg(cause instanceof Error ? cause.message : "Linking failed");
     } finally {
@@ -145,13 +147,18 @@ function MonitorPage() {
         description="Production Meta status and per-number health from authenticated server contracts."
         actions={
           <div className="flex gap-2">
-          <Button type="button" onClick={() => void linkAll()} disabled={linking}>
-            {linking ? "Linking…" : "Link all numbers to webhook"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => void refresh()} disabled={syncing}>
-            <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing…" : "Sync live with Meta"}
-          </Button>
+            <Button type="button" onClick={() => void linkAll()} disabled={linking}>
+              {linking ? "Linking…" : "Link all numbers to webhook"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void refresh()}
+              disabled={syncing}
+            >
+              <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "Sync live with Meta"}
+            </Button>
           </div>
         }
       />

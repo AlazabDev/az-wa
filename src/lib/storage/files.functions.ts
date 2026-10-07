@@ -206,7 +206,9 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
 
     const { data: media, error } = await supabaseAdmin
       .from("media")
-      .select("id, storage_provider, storage_bucket, storage_path, filename, download_status, metadata")
+      .select(
+        "id, storage_provider, storage_bucket, storage_path, filename, download_status, metadata",
+      )
       .eq("id", data.mediaId)
       .eq("organization_id", organizationId)
       .maybeSingle();
