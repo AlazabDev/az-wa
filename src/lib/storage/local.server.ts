@@ -29,7 +29,7 @@ export function publicFileUrl(token: string): string {
  * حماية المسار من هجمات Path Traversal والتأكد من بقائه داخل مجلد التخزين
  */
 function resolveSafePath(key: string): string {
-  const normalized = path.normalize(key).replace(/^(\.\.[\/\\])+/, "");
+  const normalized = path.normalize(key).replace(/^(\.\.[/\\])+/, "");
   const fullPath = path.resolve(STORAGE_ROOT, normalized);
   if (!fullPath.startsWith(STORAGE_ROOT)) {
     throw new Error("Invalid storage path traversal");
