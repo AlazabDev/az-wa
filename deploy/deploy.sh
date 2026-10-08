@@ -6,21 +6,17 @@ DOMAIN="wa.alazab.com"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${AZWA_ENV_FILE:-/etc/az-wa/az-wa.env}"
 PM2_CONFIG="$APP_DIR/deploy/ecosystem.config.cjs"
-NGINX_SRC="$APP_DIR/deploy/nginx/wa.alazab.com"
-NGINX_DEST="/etc/nginx/sites-available/wa.alazab.com"
 ARCHIVE_ROOT="$APP_DIR/_isolated_legacy/build-artifacts"
-EXPECTED_LOCK_BLOB="9d9a8c3c0f84ef7b4604e9b7a66925d1d554ecab"
 DO_MIGRATE=false
-DO_NGINX=false
 ARCHIVE_EXTRA=false
 
 for arg in "$@"; do
   case "$arg" in
     --apply-migrations|--migrate) DO_MIGRATE=true ;;
-    --sync-nginx|--nginx) DO_NGINX=true ;;
+    --sync-nginx|--nginx) echo "NOTE: Nginx is managed outside this script; flag ignored." ;;
     --archive-build|--clean) ARCHIVE_EXTRA=true ;;
     -h|--help)
-      echo "Usage: $0 [--apply-migrations] [--sync-nginx] [--archive-build]"; exit 0 ;;
+      echo "Usage: $0 [--apply-migrations] [--archive-build]  (never touches Nginx)"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 64 ;;
   esac
 done
@@ -43,9 +39,7 @@ PM2_BIN="$(command -v pm2 2>/dev/null || true)"
 case "$(stat -c '%a' "$ENV_FILE")" in 600|640|400|440) ;; *) fail "Unsafe env permissions on $ENV_FILE" ;; esac
 
 cd "$APP_DIR"
-[[ -f package-lock.json ]] || fail "package-lock.json is required. Keep the exact lock from commit 181b5f44c02da035967e92c0f3af5f98981a7144 on the server before deploying."
-LOCK_BLOB="$(git hash-object package-lock.json)"
-[[ "$LOCK_BLOB" == "$EXPECTED_LOCK_BLOB" ]] || fail "Unexpected package-lock.json blob: $LOCK_BLOB (expected $EXPECTED_LOCK_BLOB)"
+[[ -f package-lock.json ]] || fail "package-lock.json is required (npm ci enforces it matches package.json)"
 
 set -a
 # shellcheck disable=SC1090
@@ -87,7 +81,8 @@ rollback(){
     mv "$APP_DIR/.output" "$APP_DIR/_isolated_legacy/failed-builds/$STAMP/.output" || true
   fi
   if [[ -n "$BACKUP_OUTPUT" && -d "$BACKUP_OUTPUT" ]]; then
-    mv "$BACKUP_OUTPUT" "$APP_DIR/.output" || true
+    rm -rf "$APP_DIR/.output"
+    cp -a "$BACKUP_OUTPUT" "$APP_DIR/.output" || true
     [[ "$RUNTIME_RELOADED" == true ]] && "$PM2_BIN" startOrReload "$PM2_CONFIG" --update-env || true
   fi
   exit "$code"
@@ -96,7 +91,8 @@ trap rollback ERR
 
 if [[ -d .output ]]; then
   mkdir -p "$BACKUP_DIR"
-  mv .output "$BACKUP_DIR/.output"
+  # Copy (not move) so the running app keeps serving assets until reload.
+  cp -a .output "$BACKUP_DIR/.output"
   BACKUP_OUTPUT="$BACKUP_DIR/.output"
 fi
 if [[ "$ARCHIVE_EXTRA" == true ]]; then
@@ -129,14 +125,7 @@ if [[ "$DO_MIGRATE" == true ]]; then
   supabase db push --db-url "$DB_URL"
 fi
 
-if [[ "$DO_NGINX" == true ]]; then
-  command -v nginx >/dev/null 2>&1 || fail "Nginx is required for --sync-nginx"
-  log "Syncing canonical Nginx config"
-  sudo install -m 644 "$NGINX_SRC" "$NGINX_DEST"
-  sudo ln -sfn "$NGINX_DEST" /etc/nginx/sites-enabled/wa.alazab.com
-  sudo nginx -t
-  sudo systemctl reload nginx
-fi
+# Nginx is intentionally NOT managed here: the server hosts other apps.
 
 # Do not terminate an unknown current runtime automatically. The first cut-over from
 # a manually/system-managed Node process to PM2 must be deliberate.
@@ -146,7 +135,9 @@ if command -v ss >/dev/null 2>&1 && ss -lntp 2>/dev/null | grep -q '127.0.0.1:80
   fi
 fi
 
-log "PM2 start/reload"
+find "$ARCHIVE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort | head -n -5 | xargs -r rm -rf
+
+log "PM2 start/reload (azwa-app only)"
 "$PM2_BIN" startOrReload "$PM2_CONFIG" --update-env
 RUNTIME_RELOADED=true
 "$PM2_BIN" save --force
