@@ -188,6 +188,8 @@ function MonitorPage() {
           )}
         </Panel>
 
+        <WebhookSetupBoard numbers={numbers} report={report} />
+
         <Panel title="Phone numbers — live status">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -261,5 +263,79 @@ function MonitorPage() {
         </Panel>
       </div>
     </>
+  );
+}
+
+function timeAgo(value: string | null) {
+  if (!value) return "لم تصل أي رسالة";
+  const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60_000);
+  if (minutes < 1) return "الآن";
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `منذ ${hours} ساعة`;
+  return `منذ ${Math.round(hours / 24)} يوم`;
+}
+
+function WebhookSetupBoard({
+  numbers,
+  report,
+}: {
+  numbers: WhatsappNumber[];
+  report: LiveReport | null;
+}) {
+  const rows = numbers.map((n) => {
+    const liveWaba = report?.wabas.find((w) => w.wabaId === n.waba_id);
+    const linked = liveWaba ? liveWaba.subscribed : n.webhook_status === "active";
+    return { n, linked, verifiedLive: Boolean(liveWaba) };
+  });
+  const unlinked = rows.filter((r) => !r.linked);
+
+  return (
+    <Panel title="حالة ربط Webhook لكل رقم">
+      <div dir="rtl" className="space-y-4">
+        {unlinked.length > 0 ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <strong>تنبيه:</strong> {unlinked.length} من {rows.length} رقم غير مربوط بالـ Webhook في
+            Meta — لن تصل رسائلهم أو ملفاتهم:{" "}
+            {unlinked.map((r) => r.n.display_phone_number).join("، ")}. اضغط "Link all numbers to
+            webhook" بالأعلى.
+          </div>
+        ) : rows.length > 0 ? (
+          <div className="rounded-md border border-success/40 bg-success/10 p-3 text-sm text-success">
+            كل الأرقام مربوطة بالـ Webhook.
+          </div>
+        ) : null}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map(({ n, linked, verifiedLive }) => (
+            <div
+              key={n.id}
+              className={`rounded-lg border p-3 ${linked ? "border-border bg-card" : "border-destructive/50 bg-destructive/5"}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium" dir="ltr">
+                  {n.display_phone_number}
+                </span>
+                <StatusBadge value={linked ? "active" : "disconnected"} />
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {n.verified_name ?? n.internal_name ?? "—"}
+              </div>
+              <div className="mt-2 text-xs">
+                Webhook: {linked ? "مربوط" : "غير مربوط"}
+                <span className="text-muted-foreground">
+                  {verifiedLive ? " (تم التحقق من Meta)" : " (من آخر حالة محفوظة)"}
+                </span>
+              </div>
+              <div className="mt-1 text-xs">
+                آخر رسالة واردة:{" "}
+                <span className={n.last_incoming_at ? "" : "text-warning-foreground"}>
+                  {timeAgo(n.last_incoming_at)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Panel>
   );
 }
