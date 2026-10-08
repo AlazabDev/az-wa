@@ -188,6 +188,8 @@ function MonitorPage() {
           )}
         </Panel>
 
+        <WebhookSetupBoard numbers={numbers} report={report} />
+
         <Panel title="Phone numbers — live status">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
