@@ -1,18 +1,10 @@
-# AzWA Deployment Documentation
+# AzWA Deployment
 
-Clean production deployment setup for **AzWA** (`wa.alazab.com`) using **PM2**, **Nginx**, and **Certbot**.
-
-## Structure
-
-- [`ecosystem.config.cjs`](file:///f:/Dev/wa/az-wa/deploy/ecosystem.config.cjs): PM2 cluster mode process management.
-- [`nginx/wa.alazab.com`](file:///f:/Dev/wa/az-wa/deploy/nginx/wa.alazab.com): Clean HTTP Nginx reverse proxy configuration. (SSL cert paths omitted so Certbot automatically injects them).
-- [`deploy.sh`](file:///f:/Dev/wa/az-wa/deploy/deploy.sh): Automated deploy script.
-
-## Quick Start
-
-Run on your production server:
+`deploy.sh` deploys **only the AzWA app** (PM2 process `azwa-app` on 127.0.0.1:8085).
+It never reads, writes or reloads Nginx — the server hosts other apps.
+`nginx/wa.alazab.com` is a reference file only; apply it manually if ever needed.
 
 ```bash
-chmod +x deploy/deploy.sh
-./deploy/deploy.sh
+./deploy/deploy.sh                      # build + reload azwa-app
+./deploy/deploy.sh --apply-migrations   # also push DB migrations
 ```
