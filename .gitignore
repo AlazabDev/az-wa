@@ -18,7 +18,7 @@ meta-complete.env
 
 # Meta local artifacts
 /meta/
-meta/
+/meta/
 
 # Supabase local artifacts
 supabase/.temp/
@@ -50,4 +50,4 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
-storage/
+/storage/
