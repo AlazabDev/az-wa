@@ -39,6 +39,7 @@ import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSyncDoctorRouteImport } from './routes/_authenticated/sync-doctor'
 import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedWabasRouteImport } from './routes/_authenticated/wabas'
@@ -205,6 +206,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSyncDoctorRoute = AuthenticatedSyncDoctorRouteImport.update({
+  id: '/sync-doctor',
+  path: '/sync-doctor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTemplatesRoute = AuthenticatedTemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/sync-doctor': typeof AuthenticatedSyncDoctorRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
@@ -346,6 +353,7 @@ export interface FileRoutesByTo {
   '/queues': typeof AuthenticatedQueuesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/sync-doctor': typeof AuthenticatedSyncDoctorRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/users': typeof AuthenticatedUsersRoute
   '/wabas': typeof AuthenticatedWabasRoute
@@ -392,6 +400,7 @@ export interface FileRoutesById {
   '/_authenticated/queues': typeof AuthenticatedQueuesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/sync-doctor': typeof AuthenticatedSyncDoctorRoute
   '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/wabas': typeof AuthenticatedWabasRoute
@@ -438,6 +447,7 @@ export interface FileRouteTypes {
     | '/queues'
     | '/reports'
     | '/settings'
+    | '/sync-doctor'
     | '/templates'
     | '/users'
     | '/wabas'
@@ -482,6 +492,7 @@ export interface FileRouteTypes {
     | '/queues'
     | '/reports'
     | '/settings'
+    | '/sync-doctor'
     | '/templates'
     | '/users'
     | '/wabas'
@@ -527,6 +538,7 @@ export interface FileRouteTypes {
     | '/_authenticated/queues'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/sync-doctor'
     | '/_authenticated/templates'
     | '/_authenticated/users'
     | '/_authenticated/wabas'
@@ -771,6 +783,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/sync-doctor': {
+      id: '/_authenticated/sync-doctor'
+      path: '/sync-doctor'
+      fullPath: '/sync-doctor'
+      preLoaderRoute: typeof AuthenticatedSyncDoctorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/templates': {
       id: '/_authenticated/templates'
       path: '/templates'
@@ -891,6 +910,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSyncDoctorRoute: typeof AuthenticatedSyncDoctorRoute
   AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedWabasRoute: typeof AuthenticatedWabasRoute
@@ -923,6 +943,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSyncDoctorRoute: AuthenticatedSyncDoctorRoute,
   AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedWabasRoute: AuthenticatedWabasRoute,
