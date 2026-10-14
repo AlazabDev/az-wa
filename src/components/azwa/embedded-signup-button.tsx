@@ -61,6 +61,7 @@ export function EmbeddedSignupButton() {
         code: code.current,
         wabaId: event.wabaId,
         phoneNumberId: event.phoneNumberId,
+        businessId: event.businessId,
       } });
       setStatus(result.detail);
     } catch (error) {
