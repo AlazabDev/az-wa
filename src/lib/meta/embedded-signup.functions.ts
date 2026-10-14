@@ -8,7 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const completeEmbeddedSignup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { code: string; wabaId: string; phoneNumberId: string }) => {
+  .validator((input: { code: string; wabaId: string; phoneNumberId: string; businessId?: string | null }) => {
     if (!input || !/^[\w-]{5,4096}$/.test(input.code ?? "")) {
       throw new Error("Invalid signup authorization code");
     }
@@ -66,13 +66,38 @@ export const completeEmbeddedSignup = createServerFn({ method: "POST" })
       throw new Error("The signup code does not authorize the selected WABA and phone");
     }
 
-    // Deliberately do not persist the ephemeral token in plaintext or claim onboarding.
-    // Existing credential provisioning must be wired into the application's Vault first.
-    return {
-      verified: true,
-      connected: false,
-      wabaId: data.wabaId,
+    // Never attach a customer's Meta token to an unrelated business.
+    const { data: portfolios } = await supabaseAdmin.from("business_portfolios")
+      .select("id,meta_business_id").eq("organization_id", orgId);
+    const portfolio = portfolios?.find((item) => item.meta_business_id === data.businessId);
+    if (!portfolio) return {
+      verified: true, connected: false, wabaId: data.wabaId,
       phoneNumberId: data.phoneNumberId,
-      detail: "Meta identity verified. Credential Vault provisioning remains required before activation.",
+      detail: "Meta verified. Register this Business Portfolio in AzWA before attaching credentials.",
+    };
+
+    const { data: internalApp } = await supabaseAdmin.from("meta_apps")
+      .select("id").eq("organization_id", orgId).eq("meta_app_id", appId)
+      .eq("status", "active").maybeSingle();
+    if (!internalApp) throw new Error("Active AzWA app mapping missing");
+
+    const { data: credentialId, error: storeError } = await supabaseAdmin.rpc(
+      "backend_store_meta_credential", {
+        p_organization_id: orgId,
+        p_business_portfolio_id: portfolio.id,
+        p_meta_app_id: internalApp.id,
+        p_credential_type: "access_token",
+        p_name: "Embedded Signup WABA " + data.wabaId,
+        p_secret: token,
+        p_scopes: ["whatsapp_business_management", "whatsapp_business_messaging"],
+      },
+    );
+    if (storeError || !credentialId) {
+      throw new Error(storeError?.message ?? "Credential Vault storage failed");
+    }
+    return {
+      verified: true, connected: true, wabaId: data.wabaId,
+      phoneNumberId: data.phoneNumberId,
+      detail: "Account verified and credential stored in Vault. Run portfolio sync to import the phone and verify webhooks.",
     };
   });
