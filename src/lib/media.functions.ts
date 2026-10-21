@@ -89,14 +89,10 @@ export const getMediaItems = createServerFn({ method: "POST" })
 
           if (publicUrl) {
             signedUrl = publicUrl;
-          } else if (publicToken) {
-            const baseUrl = (
-              process.env["PUBLIC_APP_URL"] || "https://wa.alazab.com"
-            ).replace(/\/+$/, "");
+          } } else if (publicToken) {
+          signedUrl = `/api/public/files/${encodeURIComponent(publicToken)}`;
+}
 
-            signedUrl =
-              `${baseUrl}/api/public/files/${encodeURIComponent(publicToken)}`;
-          }
         } else if (
           item.storage_provider === "minio" &&
           item.storage_path
