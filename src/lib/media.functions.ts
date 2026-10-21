@@ -53,11 +53,14 @@ export const getMediaItems = createServerFn({ method: "POST" })
     }
 
     if (filter?.days && filter.days !== "all") {
-      const d = new Date();
-      d.setDate(d.getDate() - (filter.days as number));
-      query = query.gte("created_at", d.toISOString());
+      const date = new Date();
+      date.setDate(date.getDate() - filter.days);
+
+      query = query.gte("created_at", date.toISOString());
     } else if (filter?.startDate && filter?.endDate) {
-      query = query.gte("created_at", filter.startDate).lte("created_at", filter.endDate);
+      query = query
+        .gte("created_at", filter.startDate)
+        .lte("created_at", filter.endDate);
     }
 
     const { data, count, error } = await query;
@@ -67,43 +70,85 @@ export const getMediaItems = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
-    const items = (data || []).map((item) => {
-      let signedUrl = null;
-      if (item.storage_provider === "minio" && item.storage_path) {
-        const minioOptions: {
-          key: string;
-          expiresIn: number;
-          bucket?: string;
-          downloadName?: string;
-        } = {
-          key: item.storage_path,
-          expiresIn: 60 * 60,
-        };
-        if (item.storage_bucket) minioOptions.bucket = item.storage_bucket;
-        if (item.filename) minioOptions.downloadName = item.filename;
-        signedUrl = presignMinioGetUrl(minioOptions);
-      }
+    const items: MediaItemWithUrl[] = await Promise.all(
+      (data ?? []).map(async (item) => {
+        let signedUrl: string | null = null;
 
-      const conversation =
-        item.messages && Array.isArray(item.messages) && item.messages.length > 0
-          ? { id: item.messages[0].conversation_id }
-          : null;
+        if (item.storage_provider === "local" && item.storage_path) {
+          const meta = (item.metadata ?? {}) as Record<string, unknown>;
 
-      return {
-        ...item,
-        signedUrl,
-        conversation,
-      } as MediaItemWithUrl;
-    });
+          const publicUrl =
+            typeof meta["public_url"] === "string"
+              ? meta["public_url"]
+              : null;
 
-    return { items, totalCount: count ?? 0 };
+          const publicToken =
+            typeof meta["public_token"] === "string"
+              ? meta["public_token"]
+              : null;
+
+          if (publicUrl) {
+            signedUrl = publicUrl;
+          } else if (publicToken) {
+            const baseUrl = (
+              process.env["PUBLIC_APP_URL"] || "https://wa.alazab.com"
+            ).replace(/\/+$/, "");
+
+            signedUrl =
+              `${baseUrl}/api/public/files/${encodeURIComponent(publicToken)}`;
+          }
+        } else if (
+          item.storage_provider === "minio" &&
+          item.storage_path
+        ) {
+          const minioOptions: {
+            key: string;
+            expiresIn: number;
+            bucket?: string;
+            downloadName?: string;
+          } = {
+            key: item.storage_path,
+            expiresIn: 60 * 60,
+          };
+
+          if (item.storage_bucket) {
+            minioOptions.bucket = item.storage_bucket;
+          }
+
+          if (item.filename) {
+            minioOptions.downloadName = item.filename;
+          }
+
+          signedUrl = await presignMinioGetUrl(minioOptions);
+        }
+
+        const conversation =
+          Array.isArray(item.messages) && item.messages.length > 0
+            ? { id: item.messages[0].conversation_id }
+            : null;
+
+        return {
+          ...item,
+          signedUrl,
+          conversation,
+        } as MediaItemWithUrl;
+      }),
+    );
+
+    return {
+      items,
+      totalCount: count ?? 0,
+    };
   });
 
 export const deleteMediaItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: string) => data)
   .handler(async ({ data: mediaId }) => {
-    const { error } = await supabaseAdmin.from("media").delete().eq("id", mediaId);
+    const { error } = await supabaseAdmin
+      .from("media")
+      .delete()
+      .eq("id", mediaId);
 
     if (error) {
       console.error("Failed to delete media:", error);
