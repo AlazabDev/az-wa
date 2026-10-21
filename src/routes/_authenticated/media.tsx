@@ -518,10 +518,8 @@ function MediaPage() {
                   autoPlay
                   className="max-h-[70vh] max-w-full rounded-md"
                 />
-              ) : selectedMedia.mime_type
-                  ?.split(";")[0]
-                  .trim()
-                  .toLowerCase() === "application/pdf" ? (
+              ) : selectedMedia.mime_type?.startsWith("application/pdf") ? (
+
                 <iframe
                   key={selectedMedia.id}
                   src={selectedMedia.signedUrl}
