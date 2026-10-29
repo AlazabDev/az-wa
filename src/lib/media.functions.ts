@@ -87,9 +87,9 @@ export const getMediaItems = createServerFn({ method: "POST" })
               ? meta["public_token"]
               : null;
 
-          if (publicUrl) {
-            signedUrl = publicUrl;
-          } } else if (publicToken) {
+        if (publicUrl) {
+          signedUrl = publicUrl;
+           } else if (publicToken) {
           signedUrl = `/api/public/files/${encodeURIComponent(publicToken)}`;
 }
 
