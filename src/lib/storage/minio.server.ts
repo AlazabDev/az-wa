@@ -214,9 +214,9 @@ export function publicMinioObjectUrl(input: { key: string; bucket?: string }): s
     throw new Error("MINIO_PUBLIC_BASE_URL must use http or https");
   }
   const bucket = input.bucket?.trim() || minioBucketName();
-  const basePath = base.pathname.replace(/\\/+$/, "");
+  const basePath = base.pathname.replace(/\/+$/, "");
   const objectPath = encodeObjectKey(input.key);
-  base.pathname = `${basePath}/${encodePathPart(bucket)}/${objectPath}`.replace(/\\/{2,}/g, "/");
+  base.pathname = `${basePath}/${encodePathPart(bucket)}/${objectPath}`.replace(/\/{2,}/g, "/");
   base.search = "";
   base.hash = "";
   return base.toString();
