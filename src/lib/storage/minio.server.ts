@@ -216,10 +216,8 @@ export function publicMinioObjectUrl(input: { key: string; bucket?: string }): s
   const bucket = input.bucket?.trim() || minioBucketName();
   const basePath = base.pathname.replace(/\/+$/, "");
   const objectPath = encodeObjectKey(input.key);
-  base.pathname = `${basePath}/${encodePathPart(bucket)}/${objectPath}`.replace(/\/{2,}/g, "/");
-  base.search = "";
-  base.hash = "";
-  return base.toString();
+  // Preserve encoded key segments instead of passing them through URL.pathname again.
+  return `${base.origin}${basePath}/${encodePathPart(bucket)}/${objectPath}`;
 }
 
 export function minioBucketName(): string {
