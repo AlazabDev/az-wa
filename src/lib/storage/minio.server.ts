@@ -200,6 +200,26 @@ export function presignMinioGetUrl(input: {
   return `${config.endpoint.origin}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
+/**
+ * Builds a stable object URL when the operator has explicitly configured a
+ * public MinIO base URL and made the target bucket readable publicly.
+ * MINIO_PUBLIC_BASE_URL should be the public S3 endpoint root, not a bucket URL.
+ */
+export function publicMinioObjectUrl(input: { key: string; bucket?: string }): string | null {
+  const publicBase = optionalEnv("MINIO_PUBLIC_BASE_URL");
+  if (!publicBase) return null;
+
+  const base = new URL(publicBase);
+  if (base.protocol !== "https:" && base.protocol !== "http:") {
+    throw new Error("MINIO_PUBLIC_BASE_URL must use http or https");
+  }
+  const bucket = input.bucket?.trim() || minioBucketName();
+  const basePath = base.pathname.replace(/\/+$/, "");
+  const objectPath = encodeObjectKey(input.key);
+  // Preserve encoded key segments instead of passing them through URL.pathname again.
+  return `${base.origin}${basePath}/${encodePathPart(bucket)}/${objectPath}`;
+}
+
 export function minioBucketName(): string {
   return readConfig().bucket;
 }

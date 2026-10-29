@@ -9,6 +9,8 @@ import {
   Files,
   HardDrive,
   Loader2,
+  Link2,
+  Copy,
   RefreshCw,
   Search,
   TriangleAlert,
@@ -136,6 +138,8 @@ function FilesPage() {
   const [page, setPage] = useState(1);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
+  const [fileLinks, setFileLinks] = useState<Record<string, { url: string; isPublic: boolean }>>({});
 
   const input = useMemo(
     () => ({
@@ -197,6 +201,33 @@ function FilesPage() {
       toast.error(error instanceof Error ? error.message : "تعذر إعادة المحاولة");
     } finally {
       setRetryingId(null);
+    }
+  }
+
+  async function showFileLink(file: StoredFile) {
+    setLinkingId(file.id);
+    try {
+      const result = await loadFileUrl({ data: { mediaId: file.id } });
+      setFileLinks((current) => ({
+        ...current,
+        [file.id]: { url: result.url, isPublic: result.isPublic },
+      }));
+      toast.success(result.isPublic ? "الرابط العام جاهز" : "الرابط مؤقت وصالح لمدة 15 دقيقة");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر إنشاء رابط الملف");
+    } finally {
+      setLinkingId(null);
+    }
+  }
+
+  async function copyFileLink(file: StoredFile) {
+    const existing = fileLinks[file.id];
+    if (!existing) return;
+    try {
+      await navigator.clipboard.writeText(existing.url);
+      toast.success(existing.isPublic ? "تم نسخ الرابط العام" : "تم نسخ الرابط المؤقت");
+    } catch {
+      toast.error("تعذر نسخ الرابط");
     }
   }
 
@@ -412,9 +443,49 @@ function FilesPage() {
                           >
                             {file.storagePath ?? "غير محفوظ بعد"}
                           </div>
+                          {fileLinks[file.id] ? (
+                            <div className="mt-2 max-w-[260px]">
+                              <a
+                                href={fileLinks[file.id].url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block truncate text-xs text-primary underline underline-offset-2"
+                                title={fileLinks[file.id].url}
+                                dir="ltr"
+                              >
+                                {fileLinks[file.id].url}
+                              </a>
+                              <span className="text-[10px] text-muted-foreground">
+                                {fileLinks[file.id].isPublic ? "رابط عام" : "رابط مؤقت · 15 دقيقة"}
+                              </span>
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!canDownload || linkingId === file.id}
+                              onClick={() => void showFileLink(file)}
+                            >
+                              {linkingId === file.id ? (
+                                <Loader2 className="ml-1.5 size-3.5 animate-spin" />
+                              ) : (
+                                <Link2 className="ml-1.5 size-3.5" />
+                              )}
+                              {fileLinks[file.id] ? "تحديث الرابط" : "إظهار الرابط"}
+                            </Button>
+                            {fileLinks[file.id] ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => void copyFileLink(file)}
+                              >
+                                <Copy className="ml-1.5 size-3.5" />
+                                نسخ الرابط
+                              </Button>
+                            ) : null}
                             <Button
                               size="sm"
                               variant="outline"
