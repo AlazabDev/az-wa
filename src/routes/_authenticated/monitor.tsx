@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react";
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
 import { Button } from "@/components/ui/button";
+import { InboundDiagnosticModal } from "@/components/azwa/inbound-diagnostic-modal";
 import { useNumbers, type WhatsappNumber } from "@/lib/azwa-data";
 import { syncMetaLiveStatus } from "@/lib/meta/live-status.functions";
 import { linkAllWabasWebhook } from "@/lib/meta/app-webhook.functions";
@@ -142,22 +143,22 @@ function MonitorPage() {
 
   return (
     <>
+      
       <PageHeader
         title="Live Monitor"
-        description="Production Meta status and per-number health from authenticated server contracts."
+        subtitle="End-to-end verification of Meta tokens, WABA webhook subscriptions, and per-number health."
         actions={
-          <div className="flex gap-2">
-            <Button type="button" onClick={() => void linkAll()} disabled={linking}>
-              {linking ? "Linking…" : "Link all numbers to webhook"}
-            </Button>
+          <div className="flex items-center gap-2">
+            <InboundDiagnosticModal />
             <Button
-              type="button"
               variant="outline"
-              onClick={() => void refresh()}
+              size="sm"
+              onClick={handleSyncLive}
               disabled={syncing}
+              className="gap-2"
             >
-              <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing…" : "Sync live with Meta"}
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              <span>Sync live with Meta</span>
             </Button>
           </div>
         }
