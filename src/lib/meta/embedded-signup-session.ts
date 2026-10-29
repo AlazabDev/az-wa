@@ -27,25 +27,25 @@ export function parseEmbeddedSignupEvent(
       return null;
     }
   }
-  if (!isRecord(payload) || payload.type !== "WA_EMBEDDED_SIGNUP") return null;
-  const data = isRecord(payload.data) ? payload.data : {};
+  if (!isRecord(payload) || payload["type"] !== "WA_EMBEDDED_SIGNUP") return null;
+  const data = isRecord(payload["data"]) ? payload["data"] : {};
 
-  if (payload.event === "FINISH") {
-    const wabaId = optionalString(data.waba_id);
-    const phoneNumberId = optionalString(data.phone_number_id);
+  if (payload["event"] === "FINISH") {
+    const wabaId = optionalString(data["waba_id"]);
+    const phoneNumberId = optionalString(data["phone_number_id"]);
     if (!wabaId || !phoneNumberId) return null;
     return {
       kind: "finished",
       wabaId,
       phoneNumberId,
-      businessId: optionalString(data.business_id),
+      businessId: optionalString(data["business_id"]),
     };
   }
-  if (payload.event === "CANCEL") {
-    return { kind: "cancelled", currentStep: optionalString(data.current_step) };
+  if (payload["event"] === "CANCEL") {
+    return { kind: "cancelled", currentStep: optionalString(data["current_step"]) };
   }
-  if (payload.event === "ERROR") {
-    return { kind: "error", message: optionalString(data.error_message) };
+  if (payload["event"] === "ERROR") {
+    return { kind: "error", message: optionalString(data["error_message"]) };
   }
   return null;
 }
