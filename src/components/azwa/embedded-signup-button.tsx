@@ -37,7 +37,7 @@ async function ensureFacebookSdk(): Promise<FbApi> {
       script.src = "https://connect.facebook.net/en_US/sdk.js";
       script.async = true;
       script.defer = true;
-      script.dataset.azwaMetaSdk = "true";
+      script.dataset["azwaMetaSdk"] = "true";
       script.onerror = () => { window.clearTimeout(timeout); reject(new Error("Meta SDK failed to load")); };
       document.head.appendChild(script);
     }
