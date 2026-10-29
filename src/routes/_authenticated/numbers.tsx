@@ -14,6 +14,7 @@ import { numbersInScope, useScope } from "@/lib/scope";
 import { testWhatsappNumber } from "@/lib/meta/meta.functions";
 import { refreshNumberMetaData, setNumberEnabled } from "@/lib/meta/number-admin.functions";
 import { Switch } from "@/components/ui/switch";
+import { EmbeddedSignupButton } from "@/components/azwa/embedded-signup-button";
 
 export const Route = createFileRoute("/_authenticated/numbers")({
   head: () => ({
@@ -128,6 +129,7 @@ function NumbersPage() {
           />
         }
       />
+      <div className="mb-4"><EmbeddedSignupButton /></div>
       <Panel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
