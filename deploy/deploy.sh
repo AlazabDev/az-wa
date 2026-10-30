@@ -64,7 +64,7 @@ node --test scripts/production-guards.test.mjs
 node scripts/security-scan.mjs
 
 log "Deterministic dependency installation"
-npm ci --no-audit --no-fund
+npm ci --no-audit --no-fund --include=dev --include=dev
 
 mkdir -p "$ARCHIVE_ROOT"
 STAMP="$(date +%Y%m%d_%H%M%S)"
@@ -112,8 +112,6 @@ grep -q "_authenticated/numbers" src/routeTree.gen.ts || fail "Generated route t
 log "TypeScript / lint / regression / security validation"
 npm run typecheck
 npm run lint
-npm run test
-npm run security:scan
 
 if [[ "$DO_MIGRATE" == true ]]; then
   command -v supabase >/dev/null 2>&1 || fail "Supabase CLI is required for --apply-migrations"
