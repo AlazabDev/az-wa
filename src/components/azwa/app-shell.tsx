@@ -72,6 +72,7 @@ const NAV: NavGroup[] = [
       { label: "Health & Diagnostics", to: "/health", icon: Activity },
       { label: "Alerts", to: "/alerts", icon: Bell },
       { label: "Errors", to: "/errors", icon: AlertTriangle },
+      { label: "Sync Doctor (AI)", to: "/sync-doctor", icon: AlertTriangle },
       { label: "Queues", to: "/queues", icon: ListChecks },
       { label: "Dead Letter Queue", to: "/dead-letter", icon: Boxes },
       { label: "API Logs", to: "/api-logs", icon: ScrollText },

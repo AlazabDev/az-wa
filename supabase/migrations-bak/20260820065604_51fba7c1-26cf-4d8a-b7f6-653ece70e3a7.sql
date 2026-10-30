@@ -1,1 +1,0 @@
-REVOKE ALL ON FUNCTION public.prevent_user_profile_privilege_escalation() FROM public, anon, authenticated;

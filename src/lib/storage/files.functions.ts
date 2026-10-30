@@ -200,9 +200,9 @@ export const listStoredFiles = createServerFn({ method: "POST" })
 export const getStoredFileUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { mediaId: string }) => input)
-  .handler(async ({ data, context }): Promise<{ url: string; expiresIn: number }> => {
+  .handler(async ({ data, context }): Promise<{ url: string; expiresIn: number; isPublic: boolean }> => {
     const { organizationId, supabaseAdmin } = await authorize(context);
-    const { presignMinioGetUrl } = await import("@/lib/storage/minio.server");
+    const { presignMinioGetUrl, publicMinioObjectUrl } = await import("@/lib/storage/minio.server");
 
     const { data: media, error } = await supabaseAdmin
       .from("media")
@@ -224,12 +224,19 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
           .update({ metadata: { ...meta, public_token: token, public_url: publicFileUrl(token) } })
           .eq("id", media.id);
       }
-      return { url: publicFileUrl(token), expiresIn: 0 };
+      return { url: publicFileUrl(token), expiresIn: 0, isPublic: true };
     }
     if (!media?.storage_path || media.storage_provider !== "minio") {
       throw new Error("This file is not stored yet");
     }
 
+    const publicUrl = publicMinioObjectUrl({
+      key: media.storage_path,
+      ...(media.storage_bucket ? { bucket: media.storage_bucket } : {}),
+    });
+    if (publicUrl) return { url: publicUrl, expiresIn: 0, isPublic: true };
+
+    // Keep private buckets usable without changing their access policy.
     const expiresIn = 900;
     const url = presignMinioGetUrl({
       key: media.storage_path,
@@ -237,7 +244,7 @@ export const getStoredFileUrl = createServerFn({ method: "POST" })
       ...(media.storage_bucket ? { bucket: media.storage_bucket } : {}),
       ...(media.filename ? { downloadName: media.filename } : {}),
     });
-    return { url, expiresIn };
+    return { url, expiresIn, isPublic: false };
   });
 
 /** Retries Meta -> Milano archival for one failed or pending media row. */

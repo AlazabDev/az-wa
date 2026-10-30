@@ -161,8 +161,8 @@ Audited snapshot:
 ```text
 Business Portfolio: 314437023701205
 AzWA App:            1061494059972503
-WABAs:               6
-Phone Numbers:       8
+WABAs:               7
+Phone Numbers:       9
 Templates:           94
 WhatsApp Flows:      21
 Subscribed Apps:     17

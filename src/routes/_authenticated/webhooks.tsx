@@ -18,7 +18,6 @@ import {
   Power,
   RefreshCw,
   RotateCw,
-  Search,
   ShieldAlert,
   ShieldCheck,
   Trash2,
@@ -31,7 +30,7 @@ import { toast } from "sonner";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { StatusBadge } from "@/components/azwa/status-badge";
-import { RecordTable } from "@/components/azwa/record-table";
+import { WebhookTrafficMonitor } from "@/components/azwa/webhook-traffic-monitor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMetaApps } from "@/lib/meta/inventory-data";
@@ -746,8 +745,6 @@ function WebhooksPage() {
   const [reconciling, setReconciling] = useState(false);
   const [testingMinio, setTestingMinio] = useState(false);
   const [search, setSearch] = useState("");
-  const [eventTypeFilter, setEventTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
 
   const {
     data: ctx,
@@ -950,104 +947,8 @@ function WebhooksPage() {
         )}
       </section>
 
-      {/* Webhook event audit log */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <h2 className="text-sm font-semibold self-center">Webhook event audit log</h2>
-          <div className="flex flex-wrap gap-2 ml-auto">
-            <div className="relative">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="WABA, Phone ID, request ID…"
-                className="pr-9 h-9 w-52 text-sm"
-                dir="rtl"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All statuses</option>
-              <option value="200">200 — OK</option>
-              <option value="401">401 — Unauthorized</option>
-              <option value="400">400 — Bad request</option>
-              <option value="403">403 — Forbidden</option>
-            </select>
-            <select
-              value={eventTypeFilter}
-              onChange={(e) => setEventTypeFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">All event types</option>
-              <option value="messages">messages</option>
-              <option value="account_update">account_update</option>
-              <option value="message_template_status_update">template status</option>
-              <option value="phone_number_quality_update">quality update</option>
-              <option value="flows">flows</option>
-              <option value="security">security</option>
-            </select>
-          </div>
-        </div>
-
-        <RecordTable
-          table="meta_webhook_request_audit"
-          title="Incoming Meta requests"
-          orderBy="received_at"
-          limit={100}
-          searchText={search}
-          searchKeys={["meta_waba_id", "meta_phone_number_id", "request_id", "event_type"]}
-          filters={{
-            http_status: statusFilter || undefined,
-            event_type: eventTypeFilter || undefined,
-          }}
-          columns={[
-            { key: "received_at", label: "Time", kind: "date" },
-            { key: "method", label: "Method", kind: "status" },
-            { key: "event_type", label: "Event" },
-            { key: "verification_type", label: "Auth type" },
-            { key: "verification_valid", label: "Valid", kind: "bool" },
-            { key: "http_status", label: "HTTP" },
-            { key: "meta_phone_number_id", label: "Phone ID", kind: "mono" },
-            { key: "meta_waba_id", label: "WABA ID", kind: "mono" },
-            { key: "request_id", label: "Request ID", kind: "mono" },
-          ]}
-          emptyLabel="No Meta webhook requests recorded yet."
-        />
-
-        <RecordTable
-          table="webhook_events"
-          title="Processed webhook events"
-          orderBy="received_at"
-          limit={100}
-          columns={[
-            { key: "received_at", label: "Received", kind: "date" },
-            { key: "event_type", label: "Type" },
-            { key: "field", label: "Field" },
-            { key: "meta_phone_number_id", label: "Phone ID", kind: "mono" },
-            { key: "meta_waba_id", label: "WABA ID", kind: "mono" },
-            { key: "signature_valid", label: "Signature", kind: "bool" },
-            { key: "status", label: "Status", kind: "status" },
-            { key: "error_message", label: "Error" },
-          ]}
-        />
-
-        <RecordTable
-          table="unmapped_number_events"
-          title="Unmapped number events"
-          orderBy="received_at"
-          emptyLabel="No events from unknown numbers."
-          columns={[
-            { key: "received_at", label: "Received", kind: "date" },
-            { key: "meta_phone_number_id", label: "Phone ID", kind: "mono" },
-            { key: "display_phone_number", label: "Number" },
-            { key: "meta_waba_id", label: "WABA ID", kind: "mono" },
-            { key: "resolved", label: "Resolved", kind: "bool" },
-          ]}
-        />
-      </div>
+      {/* Live webhook monitoring */}
+      <WebhookTrafficMonitor />
 
       {/* Dialogs */}
       {creating && (
