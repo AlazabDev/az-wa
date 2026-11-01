@@ -130,6 +130,19 @@ function NumbersPage() {
         }
       />
       <div className="mb-4"><EmbeddedSignupButton /></div>
+      <div className="mb-4 rounded-lg border border-border bg-card p-4" role="status">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="font-semibold">Meta phone inventory: {allNumbers.length} / 12 target</span>
+          <span>Enabled: {allNumbers.filter((n) => n.enabled).length}</span>
+          <span>Webhook healthy: {allNumbers.filter((n) => n.webhook_status === "active" || n.webhook_status === "connected").length}</span>
+          <span>API healthy: {allNumbers.filter((n) => n.api_health === "healthy" || n.api_health === "ok").length}</span>
+        </div>
+        {allNumbers.length !== 12 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Inventory differs from the 12-number deployment target. Verify WABA discovery and number mappings before production sign-off.
+          </p>
+        )}
+      </div>
       <Panel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
