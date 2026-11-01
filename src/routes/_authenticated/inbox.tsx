@@ -100,13 +100,13 @@ function ConversationThread({
   } = useQuery({
     queryKey: ["conversation-messages", conversationId],
     queryFn: () =>
-      readRecords({ data: { table: "messages", orderBy: "created_at", limit: 200, page: 1 } }),
+      readRecords({ data: { table: "messages", conversationId, orderBy: "created_at", limit: 200, page: 1 } }),
     refetchInterval: 10_000,
   });
 
   const messages: MessageRow[] = useMemo(
     () =>
-      ((msgData?.rows ?? []) as MessageRow[]).filter((m) => m.conversation_id === conversationId),
+      [...((msgData?.rows ?? []) as MessageRow[])].reverse(),
     [msgData, conversationId],
   );
 

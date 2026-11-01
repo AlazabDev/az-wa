@@ -10,6 +10,7 @@ type ReadInput = {
   orderBy?: string;
   limit?: number;
   page?: number;
+  conversationId?: string;
 };
 
 type TableRule = {
@@ -147,8 +148,13 @@ export const readRecordTable = createServerFn({ method: "POST" })
     const runtime = supabaseRuntimeAdmin as any;
     const globalCatalog = ["roles", "permissions", "role_permissions"].includes(data.table);
 
+    if (data.conversationId && (data.table !== "messages" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.conversationId))) {
+      throw new Error("Invalid conversation filter");
+    }
+
     let query = runtime.from(data.table).select(rule.safeColumns ?? "*", { count: "exact" });
     if (!globalCatalog) query = query.eq("organization_id", organization.id);
+    if (data.conversationId) query = query.eq("conversation_id", data.conversationId);
     query = query.order(orderBy, { ascending: false }).range(from, to);
 
     const { data: rows, count, error } = await query;

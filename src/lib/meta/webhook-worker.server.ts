@@ -168,6 +168,10 @@ async function processPersistedEvent(eventId: string) {
     await ensureOperationalAlert(event.organization_id, metaWabaId, field, value);
   }
 
+  if ((value.messages?.length ?? 0) > 0 && !metaPhoneId) {
+    throw new Error(`Inbound WhatsApp event ${event.id} is missing metadata.phone_number_id`);
+  }
+
   if (metaPhoneId) {
     for (const message of value.messages ?? []) {
       const sender = typeof message.from === "string" ? message.from : null;
