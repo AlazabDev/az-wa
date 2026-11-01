@@ -446,17 +446,17 @@ function FilesPage() {
                           {fileLinks[file.id] ? (
                             <div className="mt-2 max-w-[260px]">
                               <a
-                                href={fileLinks[file.id].url}
+                                href={fileLinks[file.id]?.url ?? ""}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="block truncate text-xs text-primary underline underline-offset-2"
-                                title={fileLinks[file.id].url}
+                                title={fileLinks[file.id]?.url ?? ""}
                                 dir="ltr"
                               >
-                                {fileLinks[file.id].url}
+                                {fileLinks[file.id]?.url ?? ""}
                               </a>
                               <span className="text-[10px] text-muted-foreground">
-                                {fileLinks[file.id].isPublic ? "رابط عام" : "رابط مؤقت · 15 دقيقة"}
+                                {fileLinks[file.id]?.isPublic ? "رابط عام" : "رابط مؤقت · 15 دقيقة"}
                               </span>
                             </div>
                           ) : null}
