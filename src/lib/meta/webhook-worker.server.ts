@@ -168,8 +168,10 @@ async function processPersistedEvent(eventId: string) {
     await ensureOperationalAlert(event.organization_id, metaWabaId, field, value);
   }
 
-  if ((value.messages?.length ?? 0) > 0 && !metaPhoneId) {
-    throw new Error(`Inbound WhatsApp event ${event.id} is missing metadata.phone_number_id`);
+  // Message receipts also require a phone mapping. Never acknowledge an event
+  // containing statuses or messages if we cannot route it to the correct number.
+  if (!metaPhoneId && ((value.messages?.length ?? 0) > 0 || (value.statuses?.length ?? 0) > 0)) {
+    throw new Error(`WhatsApp message/status event ${event.id} is missing metadata.phone_number_id`);
   }
 
   if (metaPhoneId) {
