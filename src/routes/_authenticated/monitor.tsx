@@ -146,14 +146,14 @@ function MonitorPage() {
       
       <PageHeader
         title="Live Monitor"
-        subtitle="End-to-end verification of Meta tokens, WABA webhook subscriptions, and per-number health."
+        description="End-to-end verification of Meta tokens, WABA webhook subscriptions, and per-number health."
         actions={
           <div className="flex items-center gap-2">
             <InboundDiagnosticModal />
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSyncLive}
+              onClick={() => void refresh()}
               disabled={syncing}
               className="gap-2"
             >

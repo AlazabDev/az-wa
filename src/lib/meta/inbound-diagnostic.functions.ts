@@ -143,13 +143,13 @@ export const runInboundDiagnostic = createServerFn({ method: "POST" })
         }
 
         const res = ingestResult as Record<string, any>;
-        if (res?.status === "unmapped_number") {
+        if (res?.["status"] === "unmapped_number") {
           throw new Error(`Phone number ${num.meta_phone_number_id} is not mapped in database`);
         }
 
-        createdMessageId = res?.message_id;
-        createdConversationId = res?.conversation_id;
-        createdMediaId = res?.media_id;
+        createdMessageId = res?.["message_id"];
+        createdConversationId = res?.["conversation_id"];
+        createdMediaId = res?.["media_id"];
 
         steps.push({
           name: "Inbound Webhook & Inbox Pipeline",
@@ -292,11 +292,11 @@ export const runInboundDiagnostic = createServerFn({ method: "POST" })
         metaPhoneNumberId: num.meta_phone_number_id,
         ok: allOk,
         steps,
-        messageId: createdMessageId,
-        conversationId: createdConversationId,
-        mediaId: createdMediaId,
-        publicUrl: generatedPublicUrl,
-        error: allOk ? undefined : "One or more diagnostic steps failed",
+        ...(createdMessageId !== undefined ? { messageId: createdMessageId } : {}),
+        ...(createdConversationId !== undefined ? { conversationId: createdConversationId } : {}),
+        ...(createdMediaId !== undefined ? { mediaId: createdMediaId } : {}),
+        ...(generatedPublicUrl !== undefined ? { publicUrl: generatedPublicUrl } : {}),
+        ...(!allOk ? { error: "One or more diagnostic steps failed" } : {}),
       });
     }
 
