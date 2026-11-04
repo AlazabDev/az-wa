@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import authSideImage from "@/assets/auth-side.jpg";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -112,105 +113,109 @@ function AuthPage() {
   }
 
   return (
-    <main
-      dir="rtl"
-      className="flex min-h-screen items-center justify-center bg-[#f4f5f7] px-4 py-10 text-[#030957]"
-    >
-      <section className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-6 shadow-[0_18px_55px_rgba(3,9,87,0.08)] sm:p-8">
-        <header className="mb-7 text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl border border-[#FFB900]/50 bg-[#FFB900]/10">
-            <ShieldCheck className="size-7" aria-hidden="true" />
-          </div>
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#030957]/55">AzWA</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">تسجيل الدخول</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            بوابة تشغيل داخلية لمجموعة العزب. الدخول متاح للحسابات المعتمدة فقط.
+    <main dir="rtl" className="flex min-h-screen bg-background text-foreground">
+      <section className="relative hidden w-1/2 lg:block">
+        <img
+          src={authSideImage}
+          alt="مساحة عمل واتساب"
+          className="absolute inset-0 h-full w-full object-cover"
+          width={768}
+          height={1024}
+        />
+        <div className="absolute inset-x-6 bottom-8 rounded-2xl bg-white/95 p-6 shadow-[0_18px_55px_rgba(3,9,87,0.10)] backdrop-blur">
+          <h2 className="text-xl font-bold text-foreground">AzWA</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            المحادثات وخدمات الاتصال في مكان واحد
           </p>
-        </header>
+        </div>
+      </section>
 
-        <form className="space-y-4" onSubmit={submitCredentials}>
-          <label className="block text-sm font-semibold" htmlFor="auth-email">
-            البريد الإلكتروني
-          </label>
-          <div className="relative">
-            <Mail
-              className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
+      <section className="flex w-full items-center justify-center px-6 py-10 lg:w-1/2">
+        <div className="w-full max-w-sm">
+          <div className="mb-7 flex flex-col items-center text-center">
+            <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_rgba(34,197,94,0.35)]">
+              <MessageCircle className="size-7" aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              نظام إدارة واتساب
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">سجّل الدخول للمتابعة</p>
+          </div>
+
+          <form className="space-y-3" onSubmit={submitCredentials}>
             <input
               id="auth-email"
               type="email"
               inputMode="email"
               autoComplete="username"
               required
+              aria-label="البريد الإلكتروني"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-10 pl-3 text-left text-sm text-slate-900 outline-none transition focus:border-[#FFB900] focus:ring-2 focus:ring-[#FFB900]/20"
-              placeholder="name@alazab.com"
-            />
-          </div>
-
-          <label className="block text-sm font-semibold" htmlFor="auth-password">
-            كلمة المرور
-          </label>
-          <div className="relative">
-            <LockKeyhole
-              className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
+              className="h-11 w-full rounded-lg border border-input bg-white px-3 text-right text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+              placeholder="البريد الإلكتروني"
             />
             <input
               id="auth-password"
               type="password"
               autoComplete="current-password"
               required
+              aria-label="كلمة المرور"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-10 pl-3 text-left text-sm text-slate-900 outline-none transition focus:border-[#FFB900] focus:ring-2 focus:ring-[#FFB900]/20"
+              className="h-11 w-full rounded-lg border border-input bg-white px-3 text-right text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+              placeholder="كلمة المرور"
             />
+
+            {error ? (
+              <p
+                role="alert"
+                aria-live="polite"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm leading-6 text-destructive"
+              >
+                {error}
+              </p>
+            ) : null}
+
+            {notice ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm leading-6 text-primary"
+              >
+                {notice}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+              تسجيل الدخول
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            أو
+            <span className="h-px flex-1 bg-border" />
           </div>
 
-          {error ? (
-            <p
-              role="alert"
-              aria-live="polite"
-              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm leading-6 text-red-700"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          {notice ? (
-            <p
-              role="status"
-              aria-live="polite"
-              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm leading-6 text-emerald-700"
-            >
-              {notice}
-            </p>
-          ) : null}
-
           <button
-            type="submit"
-            disabled={busy}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#030957] px-4 text-sm font-bold text-white transition hover:bg-[#030957]/90 disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            disabled={resetBusy || busy}
+            onClick={() => void sendPasswordReset()}
+            className="w-full text-center text-sm font-semibold text-primary transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-            دخول آمن
+            {resetBusy ? "جارٍ إرسال طلب الاستعادة…" : "نسيت كلمة المرور؟"}
           </button>
-        </form>
 
-        <button
-          type="button"
-          disabled={resetBusy || busy}
-          onClick={() => void sendPasswordReset()}
-          className="mt-4 w-full text-center text-sm font-semibold text-[#030957]/70 transition hover:text-[#030957] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {resetBusy ? "جارٍ إرسال طلب الاستعادة…" : "نسيت كلمة المرور؟"}
-        </button>
-
-        <footer className="mt-7 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">
-          لا يوجد تسجيل حسابات عامة من هذه الصفحة. جميع محاولات الوصول تخضع للتحقق من Supabase.
-        </footer>
+          <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
+            لا يوجد تسجيل حسابات عامة من هذه الصفحة. جميع محاولات الوصول تخضع للتحقق من Supabase.
+          </p>
+        </div>
       </section>
     </main>
   );

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -9,8 +9,8 @@ import {
   Bot,
   Boxes,
   Building2,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
   Files,
   FileText,
   GitBranch,
@@ -21,6 +21,7 @@ import {
   ListChecks,
   LogOut,
   Megaphone,
+  MessageCircle,
   Network,
   Phone,
   ScrollText,
@@ -43,96 +44,112 @@ type NavGroup = { section?: string; items: NavItem[] };
 const NAV: NavGroup[] = [
   {
     items: [
-      { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
-      { label: "Inbox", to: "/inbox", icon: Inbox },
-      { label: "Contacts", to: "/contacts", icon: Users },
-      { label: "Media", to: "/media", icon: Image },
+      { label: "لوحة المعلومات", to: "/dashboard", icon: LayoutDashboard },
+      { label: "صندوق الوارد", to: "/inbox", icon: Inbox },
+      { label: "جهات الاتصال", to: "/contacts", icon: Users },
+      { label: "الوسائط", to: "/media", icon: Image },
       { label: "الملفات", to: "/files", icon: Files },
-      { label: "Templates", to: "/templates", icon: FileText },
-      { label: "WhatsApp Flows", to: "/flows", icon: GitBranch },
-      { label: "Campaigns", to: "/campaigns", icon: Megaphone },
-      { label: "Automation", to: "/automation", icon: Bot },
+      { label: "القوالب", to: "/templates", icon: FileText },
+      { label: "التدفقات", to: "/flows", icon: GitBranch },
+      { label: "الحملات", to: "/campaigns", icon: Megaphone },
+      { label: "الأتمتة", to: "/automation", icon: Bot },
     ],
   },
   {
-    section: "WhatsApp Infrastructure",
+    section: "التكامل",
     items: [
-      { label: "Business Portfolio", to: "/infrastructure", icon: Building2 },
-      { label: "WABAs", to: "/wabas", icon: Network },
-      { label: "Phone Numbers", to: "/numbers", icon: Phone },
-      { label: "Meta App", to: "/meta-app", icon: AppWindow },
-      { label: "Webhooks", to: "/webhooks", icon: Webhook },
-      { label: "Credentials", to: "/credentials", icon: KeyRound },
+      { label: "البنية التحتية", to: "/infrastructure", icon: Building2 },
+      { label: "حسابات WABA", to: "/wabas", icon: Network },
+      { label: "أرقام الواتساب", to: "/numbers", icon: Phone },
+      { label: "تطبيق Meta", to: "/meta-app", icon: AppWindow },
+      { label: "الويبهوك", to: "/webhooks", icon: Webhook },
+      { label: "مفاتيح API", to: "/credentials", icon: KeyRound },
     ],
   },
   {
-    section: "Operations",
+    section: "التشغيل",
     items: [
-      { label: "Live Monitor", to: "/monitor", icon: Activity },
-      { label: "Health & Diagnostics", to: "/health", icon: Activity },
-      { label: "Alerts", to: "/alerts", icon: Bell },
-      { label: "Errors", to: "/errors", icon: AlertTriangle },
-      { label: "Sync Doctor (AI)", to: "/sync-doctor", icon: AlertTriangle },
-      { label: "Queues", to: "/queues", icon: ListChecks },
-      { label: "Dead Letter Queue", to: "/dead-letter", icon: Boxes },
-      { label: "API Logs", to: "/api-logs", icon: ScrollText },
-      { label: "Webhook Events", to: "/webhooks", icon: Webhook },
+      { label: "المراقبة الحية", to: "/monitor", icon: Activity },
+      { label: "الصحة والتشخيص", to: "/health", icon: Activity },
+      { label: "التنبيهات", to: "/alerts", icon: Bell },
+      { label: "الأخطاء", to: "/errors", icon: AlertTriangle },
+      { label: "طبيب المزامنة (AI)", to: "/sync-doctor", icon: AlertTriangle },
+      { label: "الطوابير", to: "/queues", icon: ListChecks },
+      { label: "الرسائل المتعطلة", to: "/dead-letter", icon: Boxes },
+      { label: "سجلات API", to: "/api-logs", icon: ScrollText },
     ],
   },
   {
-    section: "Analytics",
+    section: "التحليلات",
     items: [
-      { label: "Analytics", to: "/analytics", icon: BarChart3 },
-      { label: "Reports", to: "/reports", icon: BarChart3 },
+      { label: "التحليلات", to: "/analytics", icon: BarChart3 },
+      { label: "التقارير", to: "/reports", icon: BarChart3 },
     ],
   },
   {
-    section: "Administration",
+    section: "الإدارة",
     items: [
-      { label: "Meta App Review Studio", to: "/app-review", icon: Video },
-      { label: "Users & Roles", to: "/users", icon: ShieldCheck },
-      { label: "Audit Logs", to: "/audit", icon: ScrollText },
-      { label: "Settings", to: "/settings", icon: Settings },
+      { label: "استوديو مراجعة Meta", to: "/app-review", icon: Video },
+      { label: "المستخدمون والأدوار", to: "/users", icon: ShieldCheck },
+      { label: "سجلات التدقيق", to: "/audit", icon: ScrollText },
+      { label: "الإعدادات", to: "/settings", icon: Settings },
     ],
   },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [email, setEmail] = useState("");
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { data: numbers = [] } = useNumbers();
+
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (active && data.user?.email) setEmail(data.user.email);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const critical = numbers.filter((number) => number.health === "critical").length;
   const warning = numbers.filter((number) => number.health === "warning").length;
   const systemHealth = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
+  const initial = email ? email.charAt(0).toUpperCase() : "A";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen min-h-0 bg-background">
       <aside
         className={cn(
-          "sticky top-0 flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
+          "flex h-screen shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
           collapsed ? "w-16" : "w-64",
         )}
       >
-        <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
-            A
+        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <MessageCircle className="size-5" />
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold tracking-tight">AzWA</div>
-              <div className="truncate text-[10px] uppercase tracking-widest opacity-70">
-                Operations OS
-              </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-bold text-foreground">AzWA</div>
+              <div className="truncate text-[11px] text-muted-foreground">نظام إدارة واتساب</div>
             </div>
           )}
+          <button
+            onClick={() => setCollapsed((value) => !value)}
+            title={collapsed ? "توسيع القائمة" : "طي القائمة"}
+            className="mr-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {collapsed ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+          </button>
         </div>
 
-        <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-4">
+        <nav className="flex-1 space-y-5 overflow-y-auto px-2.5 py-4">
           {NAV.map((group, groupIndex) => (
             <div key={groupIndex}>
               {group.section && !collapsed && (
-                <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest opacity-50">
+                <div className="px-3 pb-1.5 text-[11px] font-medium text-muted-foreground">
                   {group.section}
                 </div>
               )}
@@ -142,11 +159,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   const active = pathname === item.to;
                   return (
                     <Link
-                      key={item.label}
+                      key={item.to}
                       to={item.to}
+                      title={collapsed ? item.label : undefined}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted hover:text-foreground",
+                        active &&
+                          "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       <Icon className="size-4 shrink-0" />
@@ -159,36 +178,50 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <button
-          onClick={() => setCollapsed((value) => !value)}
-          className="flex items-center gap-2 border-t border-sidebar-border px-4 py-3 text-xs hover:bg-sidebar-accent"
-        >
-          {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
-          {!collapsed && <span>Collapse</span>}
-        </button>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b border-border bg-card px-6">
-          <ScopeSelector />
-          <div className="ml-auto flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">System health</span>
-              <StatusBadge value={systemHealth} />
+        <div className="shrink-0 border-t border-sidebar-border px-3 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              {initial}
             </div>
+            {!collapsed && (
+              <span
+                dir="ltr"
+                className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+                title={email}
+              >
+                {email || "—"}
+              </span>
+            )}
             <button
               onClick={() => {
                 void supabase.auth.signOut().finally(() => {
                   window.location.assign("/auth");
                 });
               }}
-              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-accent"
+              title="تسجيل الخروج"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <LogOut className="size-3.5" /> Sign out
+              <LogOut className="size-4" />
             </button>
           </div>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-5">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="size-5 text-primary" />
+            <span className="text-sm font-bold text-foreground">AzWA</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <ScopeSelector />
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">حالة النظام</span>
+              <StatusBadge value={systemHealth} />
+            </div>
+          </div>
         </header>
-        <main className="min-w-0 flex-1 p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );
