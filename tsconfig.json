@@ -1,11 +1,25 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "eslint.config.js"],
+  "include": [
+    "src/routes/**/*.ts",
+    "src/routes/**/*.tsx",
+    "src/router.tsx",
+    "src/start.ts",
+    "src/server.ts",
+    "src/vite-env.d.ts",
+    "vite.config.ts"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ],
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
@@ -21,17 +35,21 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "exclude": [
-    "src/test",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/test/**",
+    "src/pages/**",
     "src/App.tsx",
     "src/main.tsx",
-    "src/pages",
-    "src/components/ui/toast.tsx",
-    "src/components/ui/toaster.tsx",
-    "src/components/ui/use-toast.ts",
-    "src/hooks/use-toast.ts"
+    "_isolated_legacy/**",
+    "_archived_legacy/**"
   ]
 }
