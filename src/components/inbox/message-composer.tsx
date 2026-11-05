@@ -866,7 +866,7 @@ function MediaDraftPreview({
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {draft.kind === "image" && (
-            // eslint-disable-next-line @next/next/no-img-element
+            // Image elements here intentionally use native HTML for media preview
             <img
               src={draft.mediaUrl}
               alt={draft.filename}
