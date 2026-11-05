@@ -103,8 +103,19 @@ const NAV: NavGroup[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [email, setEmail] = useState("");
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { data: numbers = [] } = useNumbers();
+
+  useEffect(() => {
+    let mounted = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setEmail(data.user?.email ?? "");
+    }).catch(() => {
+      if (mounted) setEmail("");
+    });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -122,7 +133,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const critical = numbers.filter((number) => number.health === "critical").length;
   const warning = numbers.filter((number) => number.health === "warning").length;
   const systemHealth = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
-  const initial = email ? email.charAt(0).toUpperCase() : "A";
 
   return (
     <div dir="rtl" className="flex min-h-screen bg-background text-foreground">
@@ -197,7 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
           aria-expanded={!collapsed}
         >
-          {collapsed ? <ChevronsLeft className="size-4" /> : <ChevronsRight className="size-4" />}
+          {collapsed ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
           {!collapsed && <span>طي القائمة</span>}
         </button>
       </aside>
@@ -240,22 +250,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <LogOut className="size-4" /> <span className="hidden sm:inline">تسجيل الخروج</span>
             </button>
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-5">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="size-5 text-primary" />
-            <span className="text-sm font-bold text-foreground">AzWA</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <ScopeSelector />
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">حالة النظام</span>
-              <StatusBadge value={systemHealth} />
-            </div>
           </div>
         </header>
         <main id="main-content" className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
