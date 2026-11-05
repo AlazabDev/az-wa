@@ -39,7 +39,7 @@ function candidateFiles() {
     ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
     { cwd: root, maxBuffer: 32 * 1024 * 1024 },
   );
-  return output.toString("utf8").split("\\0").filter(Boolean);
+  return output.toString("utf8").split("\0").filter(Boolean);
 }
 const paths = candidateFiles().filter((file) => !(
   /(^|\/)(?:node_modules|\.git|\.workspace|dist|\.output|_isolated_legacy)\//.test(file)
