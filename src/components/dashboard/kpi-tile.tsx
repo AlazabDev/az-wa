@@ -59,7 +59,7 @@ export function KpiTile({
   footer: ReactNode
 }) {
   return (
-    <Card size="sm" className="gap-2 px-4">
+    <Card className="gap-2 px-4">
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <span className="truncate">{title}</span>
         <Tooltip>
@@ -87,7 +87,7 @@ export function KpiTile({
 
 export function KpiTileSkeleton() {
   return (
-    <Card size="sm" className="gap-3 px-4">
+    <Card className="gap-3 px-4">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="h-7 w-16" />
       <Skeleton className="h-4 w-28" />
