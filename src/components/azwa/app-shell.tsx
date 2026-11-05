@@ -9,8 +9,8 @@ import {
   Bot,
   Boxes,
   Building2,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Files,
   FileText,
   GitBranch,
@@ -79,7 +79,6 @@ const NAV: NavGroup[] = [
       { label: "قوائم الانتظار", to: "/queues", icon: ListChecks },
       { label: "الرسائل المتعثرة", to: "/dead-letter", icon: Boxes },
       { label: "سجل واجهات API", to: "/api-logs", icon: ScrollText },
-      { label: "أحداث Webhook", to: "/webhooks", icon: Webhook },
     ],
   },
   {
@@ -103,8 +102,19 @@ const NAV: NavGroup[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [email, setEmail] = useState("");
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { data: numbers = [] } = useNumbers();
+
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (active && data.user?.email) setEmail(data.user.email);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -122,7 +132,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const critical = numbers.filter((number) => number.health === "critical").length;
   const warning = numbers.filter((number) => number.health === "warning").length;
   const systemHealth = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
-  const initial = email ? email.charAt(0).toUpperCase() : "A";
 
   return (
     <div dir="rtl" className="flex min-h-screen bg-background text-foreground">
@@ -220,15 +229,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="text-muted-foreground">حالة النظام</span>
               <StatusBadge value={systemHealth} />
             </div>
-            {!collapsed && (
-              <span
-                dir="ltr"
-                className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
-                title={email}
-              >
-                {email || "—"}
-              </span>
-            )}
+            <span
+              dir="ltr"
+              className="hidden min-w-0 max-w-[220px] truncate text-xs text-muted-foreground md:block"
+              title={email}
+            >
+              {email || "—"}
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -240,22 +247,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <LogOut className="size-4" /> <span className="hidden sm:inline">تسجيل الخروج</span>
             </button>
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-5">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="size-5 text-primary" />
-            <span className="text-sm font-bold text-foreground">AzWA</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <ScopeSelector />
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">حالة النظام</span>
-              <StatusBadge value={systemHealth} />
-            </div>
           </div>
         </header>
         <main id="main-content" className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
