@@ -61,3 +61,35 @@ test('ignores untracked, gitignored local runtime secrets but catches tracked se
     rmSync(dir,{recursive:true,force:true});
   }
 });
+
+test('standalone scanner skips dependency trees without running find', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'azwa-scan-no-git-'));
+  try {
+    copyFileSync(new URL('./security-scan.mjs', import.meta.url), join(dir, 'scan.mjs'));
+    mkdirSync(join(dir, 'node_modules', 'library'), { recursive: true });
+    writeFileSync(join(dir, 'node_modules', 'library', '.env'), 'META_APP_SECRET=dependency-fixture\\n');
+    writeFileSync(join(dir, 'safe.ts'), 'export const enabled = true;\\n');
+    const result = spawnSync(process.execPath, ['scan.mjs'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /security scan PASS/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('scanner tolerates a tracked file removed between Git inventory and read', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'azwa-scan-missing-file-'));
+  try {
+    copyFileSync(new URL('./security-scan.mjs', import.meta.url), join(dir, 'scan.mjs'));
+    writeFileSync(join(dir, 'temporary.ts'), 'export const removed = true;\\n');
+    const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    assert.equal(git('init', '-q').status, 0);
+    assert.equal(git('add', 'scan.mjs', 'temporary.ts').status, 0);
+    rmSync(join(dir, 'temporary.ts'));
+    const result = spawnSync(process.execPath, ['scan.mjs'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /security scan PASS/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
