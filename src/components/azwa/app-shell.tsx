@@ -107,13 +107,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: numbers = [] } = useNumbers();
 
   useEffect(() => {
-    let active = true;
+    let mounted = true;
     void supabase.auth.getUser().then(({ data }) => {
-      if (active && data.user?.email) setEmail(data.user.email);
+      if (mounted) setEmail(data.user?.email ?? "");
+    }).catch(() => {
+      if (mounted) setEmail("");
     });
-    return () => {
-      active = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -206,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
           aria-expanded={!collapsed}
         >
-          {collapsed ? <ChevronsLeft className="size-4" /> : <ChevronsRight className="size-4" />}
+          {collapsed ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
           {!collapsed && <span>طي القائمة</span>}
         </button>
       </aside>

@@ -29,6 +29,8 @@ jobs:
         run: node --test scripts/design-contract.test.mjs
       - name: Integration contract regression
         run: node --test scripts/integration-contract.test.mjs
+      - name: Verify runtime vs staged integration import boundary
+        run: node scripts/integration-boundary.mjs
       - name: Verify generated TanStack routes against filesystem
         run: bun run test:routes
       - name: Security regression and secret scan

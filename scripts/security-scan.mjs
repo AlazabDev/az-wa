@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, basename } from "node:path";
 
@@ -6,20 +6,40 @@ const root = process.cwd();
 // Scan files that can enter the repository, including tracked files and
 // non-ignored untracked files. Local ignored secrets are runtime inputs,
 // not source files. A tracked secret remains scanned even if .gitignore changes.
+const excludedDirectories = new Set([
+  "node_modules", ".git", ".workspace", "dist", ".output", "_isolated_legacy",
+  ".vinxi", ".tanstack", ".nitro", "coverage", "playwright-report", "test-results",
+]);
+function walkSourceFiles(directory, prefix = "") {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (!excludedDirectories.has(entry.name)) {
+        files.push(...walkSourceFiles(resolve(directory, entry.name), relativePath));
+      }
+    } else if (entry.isFile()) {
+      files.push(relativePath);
+    }
+  }
+  return files;
+}
 function candidateFiles() {
+  let inGitRepository = false;
   try {
     execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: root, stdio: "pipe" });
-    const output = execFileSync(
-      "git",
-      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-      { cwd: root },
-    );
-    return output.toString("utf8").split("\0").filter(Boolean);
+    inGitRepository = true;
   } catch {
-    // Standalone scanner tests run outside Git; retain full scan there.
-    const output = execFileSync("find", [".", "-type", "f", "-print0"], { cwd: root });
-    return output.toString("utf8").split("\0").filter(Boolean);
+    // Standalone regression tests run outside a repository.
   }
+  if (!inGitRepository) return walkSourceFiles(root);
+  // Do not silently fall back to scanning build artifacts on a Git failure.
+  const output = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    { cwd: root, maxBuffer: 32 * 1024 * 1024 },
+  );
+  return output.toString("utf8").split("\0").filter(Boolean);
 }
 const paths = candidateFiles().filter((file) => !(
   /(^|\/)(?:node_modules|\.git|\.workspace|dist|\.output|_isolated_legacy)\//.test(file)
@@ -35,11 +55,12 @@ const sensitiveName =
 const hits = [];
 for (const rel of paths) {
   const abs = resolve(root, rel);
-  if (statSync(abs).size > 8_000_000) continue;
   let text;
   try {
+    if (statSync(abs).size > 8_000_000) continue;
     text = readFileSync(abs, "utf8");
   } catch {
+    // A file may have disappeared since the Git inventory was generated.
     continue;
   }
   for (const [label, pattern] of patterns) {

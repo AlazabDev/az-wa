@@ -144,7 +144,7 @@ export function MediaImageBubble({
   }
 
   const image = (
-    // eslint-disable-next-line @next/next/no-img-element
+    // Image elements here intentionally use native HTML for media preview
     <img
       src={src}
       alt={t("imageAlt")}
