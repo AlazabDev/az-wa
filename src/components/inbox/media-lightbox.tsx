@@ -256,7 +256,7 @@ function LightboxImage({
     // overflow). Auto margins on a block child collapse to 0 once it's
     // wider, so the whole image stays scrollable.
     <div className={cn("w-full", MEDIA_MAX_HEIGHT, zoomed && "overflow-auto")}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Image elements here intentionally use native HTML for media preview */}
       <img
         src={src}
         alt={item.caption || t("imageAlt")}
