@@ -80,52 +80,30 @@ supabase db push
 
 ---
 
-## الخطوة 4 — نشر Edge Functions
+## الخطوة 4 — نشر Edge Functions (مراجعة أمنية لازمة)
+
+**لا تستخدم أمر النشر الجماعي القديم.** كان يطبّق `--no-verify-jwt` على جميع الدوال، بما فيها دوال إدارية لا تستقبل Meta Webhooks. تعطيل JWT على Gateway لا يُسمح به إلا عندما توجد آلية تحقق أخرى داخل الدالة نفسها.
+
+### دوال استقبال Meta العامة
+
+انشر **فقط المستقبل الذي يشير إليه Meta Callback URL الفعلي**، بعد ضبط `WA_APP_SECRET` أو `META_APP_SECRET` و`WA_WEBHOOK_VERIFY_TOKEN` أو `WHATSAPP_VERIFY_TOKEN` واختبار التوقيع. الدوال القديمة `whatsapp_webhook` و`wa_webhook_inbound` تتضمن الآن تحقق HMAC إلزاميًا، لكن لا ينبغي تشغيل أكثر من مستقبل لنفس الحدث دون آلية Deduplication مركزية.
 
 ```bash
-# نشر جميع الدوال (بالترتيب المقترح)
-
-# أولاً: Webhook الرئيسي
+# مثال فقط بعد التحقق من مشروع Supabase المرتبط والـ Callback URL الفعلي:
 supabase functions deploy whatsapp_webhook --no-verify-jwt
-supabase functions deploy wa_webhook_inbound --no-verify-jwt
-
-# ثانياً: المعالجة الأساسية
-supabase functions deploy chatbot_engine --no-verify-jwt
-supabase functions deploy ai_auto_reply --no-verify-jwt
-supabase functions deploy ai_vision --no-verify-jwt
-supabase functions deploy ai_image_analyze --no-verify-jwt
-
-# ثالثاً: الرسائل والإرسال
-supabase functions deploy send_message --no-verify-jwt
-supabase functions deploy broadcast_send --no-verify-jwt
-supabase functions deploy worker_dispatch --no-verify-jwt
-
-# رابعاً: الميزات الأخرى
-supabase functions deploy templates_sync --no-verify-jwt
-supabase functions deploy meta_sync_all --no-verify-jwt
-supabase functions deploy media_signed_url --no-verify-jwt
-supabase functions deploy media_delete --no-verify-jwt
-supabase functions deploy media_sync_wa --no-verify-jwt
-supabase functions deploy api_keys_manage --no-verify-jwt
-supabase functions deploy webhooks_manage --no-verify-jwt
-supabase functions deploy cloudinary_ops --no-verify-jwt
-supabase functions deploy seafile_upload --no-verify-jwt
-supabase functions deploy diagnose_number --no-verify-jwt
-supabase functions deploy provision_tenant --no-verify-jwt
 ```
 
-### نشر جميع الدوال دفعة واحدة:
+### الدوال الإدارية والداخلية
+
+الدوال `api_keys_manage` و`webhooks_manage` و`provision_tenant` وعمليات الإرسال والوسائط والـ Workers **ليست معتمدة للنشر الجماعي**. راجع JWT والصلاحيات لكل دالة على حدة قبل نشرها. توجد حاليًا فجوة عقد بيانات بين `api_keys_manage` ومخطط `026_api_keys.sql`: الأول يستخدم `tenant_id` والثاني `account_id`؛ لا تنشر الدالة قبل حسم نموذج قاعدة البيانات وربطها بالخدمة الصحيحة.
+
+للتحقق من قائمة الدوال المنشورة دون تعديل:
 
 ```bash
-for fn in whatsapp_webhook wa_webhook_inbound chatbot_engine ai_auto_reply \
-          ai_vision ai_image_analyze send_message broadcast_send worker_dispatch \
-          templates_sync meta_sync_all media_signed_url media_delete media_sync_wa \
-          api_keys_manage webhooks_manage cloudinary_ops seafile_upload \
-          diagnose_number provision_tenant; do
-  echo "Deploying $fn..."
-  supabase functions deploy $fn --no-verify-jwt
-done
+supabase functions list
 ```
+
+انظر `docs/security/PHASE2_SECURITY.md` وخطة استعلامات SQL للقراءة فقط قبل أي ترحيل أو نشر.
 
 ---
 

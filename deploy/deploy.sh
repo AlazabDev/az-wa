@@ -7,17 +7,15 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${AZWA_ENV_FILE:-/etc/az-wa/az-wa.env}"
 PM2_CONFIG="$APP_DIR/deploy/ecosystem.config.cjs"
 ARCHIVE_ROOT="$APP_DIR/_isolated_legacy/build-artifacts"
-EXPECTED_LOCK_BLOB="af24791d67512a37e288e2324ac4ab5930bcd680"
-DO_MIGRATE=false
 ARCHIVE_EXTRA=false
 
 for arg in "$@"; do
   case "$arg" in
-    --apply-migrations|--migrate) DO_MIGRATE=true ;;
+    --apply-migrations|--migrate) echo "BLOCKED: historical supabase/migrations are NOT the clean production lineage. See supabase/MIGRATIONS.md" >&2; exit 78 ;;
     --sync-nginx|--nginx) echo "NOTE: Nginx is managed outside this script; flag ignored." ;;
     --archive-build|--clean) ARCHIVE_EXTRA=true ;;
     -h|--help)
-      echo "Usage: $0 [--apply-migrations] [--archive-build]  (never touches Nginx)"; exit 0 ;;
+      echo "Usage: $0 [--archive-build]  (migrations disabled; never touches Nginx)"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 64 ;;
   esac
 done
@@ -30,7 +28,7 @@ if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh"
   nvm use 24 >/dev/null 2>&1 || true
 fi
-for cmd in node npm git curl; do command -v "$cmd" >/dev/null 2>&1 || fail "$cmd is required"; done
+for cmd in node bun git curl; do command -v "$cmd" >/dev/null 2>&1 || fail "$cmd is required"; done
 NODE_MAJOR="$(node -p 'Number(process.versions.node.split(".")[0])')"
 [[ "$NODE_MAJOR" -ge 24 ]] || fail "Node.js 24+ required; found $(node -v)"
 
@@ -40,7 +38,7 @@ PM2_BIN="$(command -v pm2 2>/dev/null || true)"
 case "$(stat -c '%a' "$ENV_FILE")" in 600|640|400|440) ;; *) fail "Unsafe env permissions on $ENV_FILE" ;; esac
 
 cd "$APP_DIR"
-[[ -f package-lock.json ]] || fail "package-lock.json is required (npm ci enforces it matches package.json)"
+[[ -f bun.lock ]] || fail "bun.lock is required for a reproducible installation"
 
 set -a
 # shellcheck disable=SC1090
@@ -60,12 +58,13 @@ for name in "${required[@]}"; do [[ -n "${!name:-}" ]] || missing+=("$name"); do
 [[ "$META_WEBHOOK_PUBLIC_URL" == "https://wa.alazab.com/webhooks/meta/whatsapp" ]] || fail "Unexpected META_WEBHOOK_PUBLIC_URL"
 
 log "Static production gates"
+node scripts/verify-toolchain.mjs
 node scripts/production-preflight.mjs
-node --test scripts/production-guards.test.mjs
+node --test scripts/production-guards.test.mjs scripts/toolchain-contract.test.mjs
 node scripts/security-scan.mjs
 
 log "Deterministic dependency installation"
-npm ci --no-audit --no-fund --include=dev --include=dev
+bun install --frozen-lockfile
 
 mkdir -p "$ARCHIVE_ROOT"
 STAMP="$(date +%Y%m%d_%H%M%S)"
@@ -105,24 +104,14 @@ if [[ "$ARCHIVE_EXTRA" == true ]]; then
 fi
 
 log "Production Node build"
-NITRO_PRESET=node-server npm run build
+NITRO_PRESET=node-server bun run build
 [[ -f .output/server/index.mjs ]] || fail "Missing .output/server/index.mjs"
 grep -q "_authenticated/files" src/routeTree.gen.ts || fail "Generated route tree does not contain /files"
 grep -q "_authenticated/numbers" src/routeTree.gen.ts || fail "Generated route tree does not contain /numbers"
 
 log "TypeScript / lint / regression / security validation"
-npm run typecheck
-npm run lint
-
-if [[ "$DO_MIGRATE" == true ]]; then
-  command -v supabase >/dev/null 2>&1 || fail "Supabase CLI is required for --apply-migrations"
-  DB_URL="${SUPABASE_DB_URL:-${DATABASE_URL:-}}"
-  [[ -n "$DB_URL" ]] || fail "SUPABASE_DB_URL or DATABASE_URL is required to apply migrations"
-  log "Migration dry run"
-  supabase db push --db-url "$DB_URL" --dry-run
-  log "Applying forward-only migrations"
-  supabase db push --db-url "$DB_URL"
-fi
+bun run typecheck
+bun run lint
 
 # Nginx is intentionally NOT managed here: the server hosts other apps.
 

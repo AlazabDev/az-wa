@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getMetaAppSecret, getWebhookVerifyToken } from "../_shared/meta-env.ts";
+import { verifyMetaSignature } from "../_shared/meta-signature.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,28 +21,6 @@ function toIsoFromWaTimestamp(ts?: string): string {
   const asNumber = ts ? Number(ts) : NaN;
   if (!Number.isFinite(asNumber) || asNumber <= 0) return new Date().toISOString();
   return new Date(asNumber * 1000).toISOString();
-}
-
-async function verifySignature(body: string, signature: string | null): Promise<boolean> {
-  const appSecret = getMetaAppSecret();
-  if (!appSecret || !signature) return true; // skip if no secret configured
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(appSecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
-  const expected =
-    "sha256=" +
-    Array.from(new Uint8Array(sig))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-  return signature === expected;
 }
 
 async function pickWaNumberForSender(
@@ -125,7 +104,9 @@ Deno.serve(async (req) => {
     const challenge = url.searchParams.get("hub.challenge");
     const verifyToken = getWebhookVerifyToken();
 
-    if (mode === "subscribe" && token === verifyToken) {
+    if (!verifyToken) return new Response("Webhook verification not configured", { status: 503 });
+
+    if (mode === "subscribe" && token === verifyToken && challenge !== null) {
       console.log("Webhook verified");
       return new Response(challenge, { status: 200 });
     }
@@ -138,7 +119,7 @@ Deno.serve(async (req) => {
 
     // Verify signature
     const signature = req.headers.get("X-Hub-Signature-256");
-    const valid = await verifySignature(bodyText, signature);
+    const valid = await verifyMetaSignature(bodyText, signature, getMetaAppSecret());
     if (!valid) {
       console.warn("Invalid webhook signature for wa_webhook_inbound");
       return new Response("Invalid signature", { status: 403 });
@@ -211,6 +192,7 @@ Deno.serve(async (req) => {
               .from("messages")
               .update(statusPatch)
               .eq("provider_message_id", status.id)
+              .in("tenant_id", waNumbers.map((n: { tenant_id: string }) => n.tenant_id))
               .select("tenant_id");
 
             if (updateErr) {

@@ -63,19 +63,21 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DIN Next Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 :root {
+  --azwa-nav-active: #dcfce7;
+  --azwa-nav-active-text: #166534;
   --radius: 0.5rem;
-  --background: oklch(0.985 0.003 260);
-  --foreground: oklch(0.21 0.05 265);
+  --background: #f8fafc;
+  --foreground: #16213d;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0.05 265);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.05 265);
-  --primary: oklch(0.245 0.135 268);
+  --primary: #030957;
   --primary-foreground: oklch(0.99 0.005 95);
   --secondary: oklch(0.83 0.168 84);
   --secondary-foreground: oklch(0.235 0.13 268);
@@ -91,20 +93,20 @@
   --warning-foreground: oklch(0.25 0.06 78);
   --border: oklch(0.9 0.012 258);
   --input: oklch(0.9 0.012 258);
-  --ring: oklch(0.245 0.135 268);
+  --ring: #030957;
   --chart-1: oklch(0.245 0.135 268);
   --chart-2: oklch(0.83 0.168 84);
   --chart-3: oklch(0.62 0.16 149);
   --chart-4: oklch(0.577 0.245 27.325);
   --chart-5: oklch(0.55 0.09 250);
-  --sidebar: oklch(0.215 0.115 268);
-  --sidebar-foreground: oklch(0.93 0.02 265);
-  --sidebar-primary: oklch(0.83 0.168 84);
-  --sidebar-primary-foreground: oklch(0.22 0.12 268);
-  --sidebar-accent: oklch(0.28 0.11 268);
-  --sidebar-accent-foreground: oklch(0.98 0.005 95);
-  --sidebar-border: oklch(0.32 0.09 268);
-  --sidebar-ring: oklch(0.83 0.168 84);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #22304b;
+  --sidebar-primary: #030957;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0fdf4;
+  --sidebar-accent-foreground: #166534;
+  --sidebar-border: #e7eaf0;
+  --sidebar-ring: #030957;
 }
 
 .dark {
@@ -148,7 +150,20 @@
   }
 
   body {
+    font-family: var(--font-sans);
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
 }
+
+/* AzWA design foundation: direction-aware, accessible, responsive. */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+[dir="rtl"] { text-align: start; }
+[dir="ltr"], .ltr-data, code, pre, input[type="email"], input[type="url"], input[type="tel"] { direction: ltr; }
+.ltr-data, code, pre { unicode-bidi: isolate; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+.dark { --azwa-nav-active: #143c2a; --azwa-nav-active-text: #bbf7d0; }

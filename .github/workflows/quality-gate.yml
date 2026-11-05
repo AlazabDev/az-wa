@@ -1,0 +1,47 @@
+name: AzWA quality gate
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.3'
+      - name: Validate toolchain
+        run: node scripts/verify-toolchain.mjs
+      - name: Install without lockfile changes
+        run: bun install --frozen-lockfile
+      - name: Production preflight
+        run: node scripts/production-preflight.mjs
+      - name: Guard and toolchain tests
+        run: node --test scripts/production-guards.test.mjs scripts/toolchain-contract.test.mjs
+      - name: RTL design and navigation regression
+        run: node --test scripts/design-contract.test.mjs
+      - name: Integration contract regression
+        run: node --test scripts/integration-contract.test.mjs
+      - name: Verify generated TanStack routes against filesystem
+        run: bun run test:routes
+      - name: Security regression and secret scan
+        run: node --test scripts/meta-signature.test.mjs scripts/security-contract.test.mjs scripts/security-scan.test.mjs && node scripts/security-scan.mjs
+      - name: Build production server
+        run: bun run build
+        env:
+          NITRO_PRESET: node-server
+      - name: Verify deployable artifact
+        run: test -f .output/server/index.mjs
+      - name: Verify generated TanStack routes after build
+        run: bun run test:routes
+      - name: TypeScript
+        run: bun run typecheck
+      - name: ESLint
+        run: bun run lint

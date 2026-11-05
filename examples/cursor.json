@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "daftra": {
+      "url": "https://vlahgxkfpzappxtiwhvd.supabase.co/functions/v1/daftra-mcp",
+      "headers": {
+        "x-mcp-key": "<MCP_ACCESS_KEY>"
+      }
+    }
+  }
+}

@@ -3,41 +3,30 @@ import { execFileSync } from "node:child_process";
 import { resolve, basename } from "node:path";
 
 const root = process.cwd();
-const output = execFileSync(
-  "find",
-  [
-    ".",
-    "-type",
-    "f",
-    "-not",
-    "-path",
-    "./node_modules/*",
-    "-not",
-    "-path",
-    "./.git/*",
-    "-not",
-    "-path",
-    "./.workspace/*",
-    "-not",
-    "-path",
-    "./dist/*",
-    "-not",
-    "-path",
-    "./.output/*",
-    "-not",
-    "-path",
-    "./_isolated_legacy/*",
-    "-not",
-    "-name",
-    ".env",
-    "-print0",
-  ],
-  { cwd: root },
-);
-const paths = output.toString("utf8").split("\0").filter(Boolean);
+// Scan files that can enter the repository, including tracked files and
+// non-ignored untracked files. Local ignored secrets are runtime inputs,
+// not source files. A tracked secret remains scanned even if .gitignore changes.
+function candidateFiles() {
+  try {
+    execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: root, stdio: "pipe" });
+    const output = execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+      { cwd: root },
+    );
+    return output.toString("utf8").split("\0").filter(Boolean);
+  } catch {
+    // Standalone scanner tests run outside Git; retain full scan there.
+    const output = execFileSync("find", [".", "-type", "f", "-print0"], { cwd: root });
+    return output.toString("utf8").split("\0").filter(Boolean);
+  }
+}
+const paths = candidateFiles().filter((file) => !(
+  /(^|\/)(?:node_modules|\.git|\.workspace|dist|\.output|_isolated_legacy)\//.test(file)
+));
 const patterns = [
   ["JWT", /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g],
-  ["Meta token", /EAA[A-Za-z0-9_-]{20,}/g],
+  ["Meta token", /(?<![A-Za-z0-9_-])EAA[A-Za-z0-9_-]{20,}/g],
   ["Supabase secret key", /sb_secret_[A-Za-z0-9._-]{8,}/gi],
   ["private key", /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g],
 ];

@@ -55,11 +55,12 @@ test("production deploy is deterministic and external-secret based", () => {
   assert.match(s, /NODE_ENV:\s*"production"/);
 });
 
-test("active migration inventory is forward-only and expected", () => {
+test("migration inventory is forward-only with unique timestamp prefixes", () => {
   const names = readdirSync(resolve(root, "supabase/migrations"))
     .filter((n) => n.endsWith(".sql"))
     .sort();
-  assert.deepEqual(names, [
+  assert.ok(names.length >= 7, "Expected at least the seven core migrations");
+  const required = [
     "20260904000100_azwa_core_identity_meta.sql",
     "20260904000200_azwa_security_fk_indexes.sql",
     "20260904000300_azwa_meta_inventory_seed.sql",
@@ -67,7 +68,14 @@ test("active migration inventory is forward-only and expected", () => {
     "20260906000100_media_manage_permission.sql",
     "20260906000200_automation_rule_management.sql",
     "20260922000100_webhook_audit_and_minio_config.sql",
-  ]);
+  ];
+  for (const name of required) assert.ok(names.includes(name), `Missing required migration: ${name}`);
+  const stamps = names.map(name => {
+    assert.match(name, /^(?:\d{3}|\d{14})_[A-Za-z0-9_-]+\.sql$/, `Malformed migration: ${name}`);
+    assert.ok(readFileSync(resolve(root, "supabase/migrations", name), "utf8").trim().length > 0, `Empty migration: ${name}`);
+    return name.split("_")[0];
+  });
+  assert.equal(new Set(stamps).size, stamps.length, "Duplicate migration timestamp detected");
 });
 
 test("runtime secret files are not tracked in git", () => {

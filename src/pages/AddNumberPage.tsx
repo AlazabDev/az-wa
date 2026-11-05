@@ -1,0 +1,14 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Save, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useWorkspaceData } from "@/hooks/useWorkspaceData";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { PageHeading, fieldClass } from "@/components/WorkspaceUI";
+import { Button } from "@/components/ui/button";
+export default function AddNumberPage(){const {user}=useAuth(); const q=useWorkspaceData("whatsapp_accounts"); const [params]=useSearchParams();const id=params.get("id");const nav=useNavigate();const qc=useQueryClient();const [busy,setBusy]=useState(false);const [form,setForm]=useState({display_name:"",phone_number:"",phone_number_id:"",waba_id:""});useEffect(()=>{const a=q.data?.find(a=>a.id===id);if(a)setForm({display_name:a.display_name,phone_number:a.phone_number??"",phone_number_id:a.phone_number_id,waba_id:a.waba_id??""});},[q.data,id]);
+ async function submit(e:React.FormEvent){e.preventDefault();if(!user)return;setBusy(true);try{const payload={...form,user_id:user.id};const result=id?await supabase.from("whatsapp_accounts").update(payload).eq("id",id).eq("user_id",user.id):await supabase.from("whatsapp_accounts").insert({...payload,status:"pending"});if(result.error)throw result.error;await qc.invalidateQueries({queryKey:["whatsapp_accounts"]});toast.success("تم حفظ بيانات الرقم؛ اتصال Meta لم يتم تفعيله");nav("/phones");}catch{toast.error("تعذر حفظ الرقم. تحقق من البيانات وصلاحيات حسابك.");}finally{setBusy(false);}}
+ return <div className="max-w-2xl mx-auto"><PageHeading title={id?"تعديل الرقم":"إضافة رقم واتساب"} action={<Button variant="ghost" size="icon" aria-label="العودة" onClick={()=>nav("/phones")}><ArrowRight/></Button>}/><div className="border-r-2 border-warning bg-warning/10 p-4 text-sm mb-6">حفظ بيانات الرقم لا يفعّل اتصال Meta. استقبال الرسائل وإرسالها يحتاج استكمال الربط الآمن بالخدمة.</div><form onSubmit={submit} className="space-y-5">{[["display_name","اسم الرقم"],["phone_number","رقم الهاتف"],["phone_number_id","معرّف رقم الهاتف لدى Meta"],["waba_id","معرّف حساب واتساب أعمال"]].map(([key,label])=><label key={key} className="block text-sm space-y-2"><span>{label}</span><input required value={form[key as keyof typeof form]} onChange={e=>setForm({...form,[key]:e.target.value})} className={fieldClass} dir={key==="display_name"?"rtl":"ltr"}/></label>)}<Button disabled={busy} type="submit"><Save/>{busy?"جارٍ الحفظ…":"حفظ بيانات الرقم"}</Button></form></div>;
+}
