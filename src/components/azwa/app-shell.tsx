@@ -9,8 +9,8 @@ import {
   Bot,
   Boxes,
   Building2,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Files,
   FileText,
   GitBranch,
@@ -79,7 +79,6 @@ const NAV: NavGroup[] = [
       { label: "قوائم الانتظار", to: "/queues", icon: ListChecks },
       { label: "الرسائل المتعثرة", to: "/dead-letter", icon: Boxes },
       { label: "سجل واجهات API", to: "/api-logs", icon: ScrollText },
-      { label: "أحداث Webhook", to: "/webhooks", icon: Webhook },
     ],
   },
   {
@@ -230,15 +229,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="text-muted-foreground">حالة النظام</span>
               <StatusBadge value={systemHealth} />
             </div>
-            {!collapsed && (
-              <span
-                dir="ltr"
-                className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
-                title={email}
-              >
-                {email || "—"}
-              </span>
-            )}
+            <span
+              dir="ltr"
+              className="hidden min-w-0 max-w-[220px] truncate text-xs text-muted-foreground md:block"
+              title={email}
+            >
+              {email || "—"}
+            </span>
             <button
               type="button"
               onClick={() => {
