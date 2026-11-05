@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
+import { OperationalHelp } from "@/components/azwa/integration-directory";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -44,6 +45,9 @@ function SettingsPage() {
           </li>
         </ul>
       </Panel>
+      <div className="mt-6">
+        <OperationalHelp />
+      </div>
       <div className="mt-6">
         <RecordTable
           title="System settings"

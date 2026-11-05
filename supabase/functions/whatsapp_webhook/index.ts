@@ -1,13 +1,14 @@
 /**
  * whatsapp_webhook — Edge Function (Production-Ready)
  * ════════════════════════════════════════════════════
- * ✅ مُحسَّن للإنتاج وفق متطلبات Meta Webhook:
+ * معالجة Meta Webhook — التحقق إلزامي؛ يلزم اختبار الاستمرارية قبل اعتماد الإنتاج:
  *   GET:  مطابقة VERIFY_TOKEN + إعادة challenge نصاً عادياً فقط + 200 OK فورًا
- *   POST: 200 OK فوراً → تحقق التوقيع HMAC-SHA256 → معالجة خلفية + Deduplication
+ *   POST: تحقق HMAC-SHA256 ثم جدولة معالجة الخلفية؛ الإقرار لا يضمن التخزين الدائم
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getWebhookVerifyToken, getMetaAppSecret } from "../_shared/meta-env.ts";
+import { verifyMetaSignature } from "../_shared/meta-signature.mjs";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -84,41 +85,6 @@ function makeSupabase() {
 }
 
 // ─── HMAC-SHA256 Signature Verification ──────────────────────────────────────
-
-async function verifySignature(req: Request, rawBody: ArrayBuffer): Promise<boolean> {
-  const secret = getMetaAppSecret();
-  if (!secret) {
-    console.warn("⚠️  META_APP_SECRET not set — signature verification skipped");
-    return true;
-  }
-  const sig = req.headers.get("X-Hub-Signature-256");
-  if (!sig) {
-    console.error("❌ Missing X-Hub-Signature-256");
-    return false;
-  }
-  try {
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(secret),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
-    const mac = await crypto.subtle.sign("HMAC", key, rawBody);
-    const hex =
-      "sha256=" +
-      Array.from(new Uint8Array(mac))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    if (hex.length !== sig.length) return false;
-    let diff = 0;
-    for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ sig.charCodeAt(i);
-    return diff === 0;
-  } catch (e) {
-    console.error("❌ Signature error:", e);
-    return false;
-  }
-}
 
 // ─── Deduplication ────────────────────────────────────────────────────────────
 
@@ -202,9 +168,20 @@ async function processEvent(event: MetaWebhookEvent): Promise<void> {
       const phoneNumberId = val.metadata?.phone_number_id;
       if (!phoneNumberId) continue;
 
+      // Resolve receiving-number ownership before modifying any message status.
+      const { data: candidateNumbers, error: ownershipError } = await supabase
+        .from("wa_numbers")
+        .select("tenant_id")
+        .eq("phone_number_id", phoneNumberId);
+      if (ownershipError || !candidateNumbers?.length) {
+        console.warn("Webhook ignored: unknown or inaccessible phone_number_id", phoneNumberId);
+        continue;
+      }
+      const tenantIds = [...new Set(candidateNumbers.map((n) => n.tenant_id))];
+
       for (const status of val.statuses ?? []) {
         try {
-          await handleStatus(supabase, status);
+          await handleStatus(supabase, status, tenantIds);
         } catch (e) {
           console.error("❌ handleStatus:", e);
         }
@@ -270,7 +247,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // التحقق من التوقيع قبل أي معالجة
-  const valid = await verifySignature(req, rawBody);
+  const valid = await verifyMetaSignature(rawBody, req.headers.get("X-Hub-Signature-256"), getMetaAppSecret());
   if (!valid) {
     console.error("❌ Invalid Meta signature — rejected");
     return new Response("Forbidden: Invalid signature", { status: 403 });
@@ -289,7 +266,12 @@ Deno.serve(async (req: Request) => {
 
 // ─── handleStatus ─────────────────────────────────────────────────────────────
 
-async function handleStatus(supabase: ReturnType<typeof makeSupabase>, status: MetaStatus) {
+async function handleStatus(
+  supabase: ReturnType<typeof makeSupabase>,
+  status: MetaStatus,
+  tenantIds: string[],
+) {
+  if (tenantIds.length === 0) return;
   const validStatuses = ["sent", "delivered", "read", "failed"];
   if (!validStatuses.includes(status.status)) return;
 
@@ -300,7 +282,8 @@ async function handleStatus(supabase: ReturnType<typeof makeSupabase>, status: M
   const { error } = await supabase
     .from("messages")
     .update(update)
-    .eq("provider_message_id", status.id);
+    .eq("provider_message_id", status.id)
+    .in("tenant_id", tenantIds);
 
   if (error) console.error("❌ Status update:", error.message);
   else console.log(`📬 ${status.id} → ${status.status}`);

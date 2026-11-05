@@ -135,7 +135,7 @@ function NumbersPage() {
           <span className="font-semibold">Meta phone inventory: {allNumbers.length} / 12 target</span>
           <span>Enabled: {allNumbers.filter((n) => n.enabled).length}</span>
           <span>Webhook healthy: {allNumbers.filter((n) => n.webhook_status === "active" || n.webhook_status === "connected").length}</span>
-          <span>API healthy: {allNumbers.filter((n) => n.api_health === "healthy" || n.api_health === "ok").length}</span>
+          <span>API healthy: {allNumbers.filter((n) => n.api_health === "healthy").length}</span>
         </div>
         {allNumbers.length !== 12 && (
           <p className="mt-2 text-xs text-muted-foreground">

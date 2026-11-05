@@ -65,48 +65,50 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DIN Next Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-70: :root {
-  --radius: 0.625rem;
-  --background: oklch(0.984 0.004 150);
-  --foreground: oklch(0.25 0.025 245);
+:root {
+  --azwa-nav-active: #dcfce7;
+  --azwa-nav-active-text: #166534;
+  --radius: 0.5rem;
+  --background: #f8fafc;
+  --foreground: #16213d;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.25 0.025 245);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.025 245);
-  --primary: oklch(0.63 0.155 152);
-  --primary-foreground: oklch(0.99 0.005 152);
-80:   --secondary: oklch(0.951 0.02 152);
-  --secondary-foreground: oklch(0.4 0.09 152);
-  --muted: oklch(0.962 0.005 150);
-  --muted-foreground: oklch(0.53 0.02 245);
-  --accent: oklch(0.955 0.035 152);
-  --accent-foreground: oklch(0.47 0.12 152);
+  --popover-foreground: oklch(0.21 0.05 265);
+  --primary: #030957;
+  --primary-foreground: oklch(0.99 0.005 95);
+  --secondary: oklch(0.83 0.168 84);
+  --secondary-foreground: oklch(0.235 0.13 268);
+  --muted: oklch(0.955 0.006 262);
+  --muted-foreground: oklch(0.52 0.03 263);
+  --accent: oklch(0.94 0.02 264);
+  --accent-foreground: oklch(0.245 0.135 268);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0.003 248);
   --success: oklch(0.63 0.155 152);
   --success-foreground: oklch(0.99 0.005 152);
 90:   --warning: oklch(0.79 0.16 78);
   --warning-foreground: oklch(0.25 0.06 78);
-  --border: oklch(0.92 0.008 150);
-  --input: oklch(0.92 0.008 150);
-  --ring: oklch(0.63 0.155 152);
-  --chart-1: oklch(0.63 0.155 152);
-  --chart-2: oklch(0.79 0.16 78);
-  --chart-3: oklch(0.6 0.09 200);
+  --border: oklch(0.9 0.012 258);
+  --input: oklch(0.9 0.012 258);
+  --ring: #030957;
+  --chart-1: oklch(0.245 0.135 268);
+  --chart-2: oklch(0.83 0.168 84);
+  --chart-3: oklch(0.62 0.16 149);
   --chart-4: oklch(0.577 0.245 27.325);
   --chart-5: oklch(0.55 0.09 250);
-100:   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.45 0.02 245);
-  --sidebar-primary: oklch(0.63 0.155 152);
-  --sidebar-primary-foreground: oklch(0.99 0.005 152);
-  --sidebar-accent: oklch(0.955 0.045 152);
-  --sidebar-accent-foreground: oklch(0.47 0.13 152);
-  --sidebar-border: oklch(0.93 0.006 150);
-  --sidebar-ring: oklch(0.63 0.155 152);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #22304b;
+  --sidebar-primary: #030957;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0fdf4;
+  --sidebar-accent-foreground: #166534;
+  --sidebar-border: #e7eaf0;
+  --sidebar-ring: #030957;
 }
 
 110: .dark {
@@ -149,8 +151,21 @@
     border-color: var(--color-border);
   }
 
-150:   body {
+  body {
+    font-family: var(--font-sans);
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
 }
+
+/* AzWA design foundation: direction-aware, accessible, responsive. */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+[dir="rtl"] { text-align: start; }
+[dir="ltr"], .ltr-data, code, pre, input[type="email"], input[type="url"], input[type="tel"] { direction: ltr; }
+.ltr-data, code, pre { unicode-bidi: isolate; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+.dark { --azwa-nav-active: #143c2a; --azwa-nav-active-text: #bbf7d0; }
