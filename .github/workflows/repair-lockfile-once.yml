@@ -1,0 +1,35 @@
+name: Repair canonical Bun lockfile (one-shot)
+on:
+  push:
+    paths:
+      - '.github/workflows/repair-lockfile-once.yml'
+permissions:
+  contents: write
+jobs:
+  repair-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.3'
+      - name: Regenerate lockfile with the pinned runtime
+        run: bun install --lockfile-only
+      - name: Check deterministic install
+        run: bun install --frozen-lockfile
+      - name: Commit lockfile if changed
+        run: |
+          if ! git diff --quiet -- bun.lock; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add bun.lock
+            git commit -m 'fix(ci): regenerate Bun lockfile with pinned Bun 1.3.3'
+            git push origin HEAD:develop
+          fi
