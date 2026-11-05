@@ -77,6 +77,8 @@ export function extensionForMime(mimeType?: string | null): string {
 export function sanitizeFilename(raw: string): string {
   const basename = raw.split(/[\\/]/).pop() ?? "";
   const cleaned = basename
+    // Strip ASCII control characters from untrusted filenames.
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u001f\u007f]/g, "")
     .replace(/[<>:"|?*]/g, "_")
     .trim()
