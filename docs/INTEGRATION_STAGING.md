@@ -13,6 +13,19 @@ Only `src/routes/**` and their actual imports form the active TanStack Start app
 - `src/components/agents/**` (2 files)
 
 Their full source is preserved at `_isolated_legacy/pending-tanstack-merge/src/components/**`.
+
+A second atomic relocation preserved **142 more files** under
+`_isolated_legacy/pending-tanstack-merge/src/lib/**`, without changing their
+source code or Git history:
+- `src/lib/whatsapp/**`: 67 files (including tests)
+- `src/lib/flows/**`: 19 files
+- `src/lib/automations/**`: 15 files
+- `src/lib/ai/**`: 35 files
+- `src/lib/dashboard/**`: 6 files
+
+**Total staged for controlled port: 174 files.** No active TanStack import
+reached these old modules in the pre-move graph. This does not mean the
+legacy source is already compatible or ready to activate.
 The previous paths remain available in Git history. This is a source relocation, not a functional merge.
 
 The runtime import-graph audit on 2026-11-05 showed zero reachable runtime
@@ -22,10 +35,10 @@ WhatsApp Flows pages already use independent routes and services.
 
 ## Retained for a governed future merge
 
-Do not delete or bulk-move `src/lib/whatsapp/**`, `src/lib/flows/**`,
-`src/lib/automations/**`, `src/lib/ai/**`, or shared integrations just
-because their modules are not yet imported by active routes. They include
-business logic, tests, and data contracts that require a deliberate port.
+Do not delete the staged implementations of WhatsApp, flows, automations,
+AI, or their tests. They include business logic and data contracts that
+require deliberate migration. Do not bulk-move additional shared integrations
+solely because they are not imported by active routes.
 
 Before promoting a staged module into `src/**`:
 1. Replace `next/link` and Next.js routing with TanStack Router.
