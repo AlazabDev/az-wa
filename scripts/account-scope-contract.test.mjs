@@ -77,3 +77,15 @@ test("monitor action links existing protected webhook reconciliation to a visibl
   assert.match(server, /linkAllWabasWebhook/);
   assert.match(server, /credentials\.manage/);
 });
+
+test("notification integrations have a live navigation entry, scoped results and privileged secret reads", () => {
+  const nav = read("src/components/azwa/app-shell.tsx");
+  const notifications = read("src/routes/_authenticated/notifications.tsx");
+  const api = read("src/lib/notifications.functions.ts");
+  assert.match(nav, /to: "\/notifications"/);
+  assert.match(notifications, /visibleIntegrations/);
+  assert.match(notifications, /scopedNumbers/);
+  const getter = api.split("export const createNotificationIntegration")[0];
+  assert.match(getter, /integrations\.manage/);
+  assert.match(getter, /webhook_secret/);
+});
