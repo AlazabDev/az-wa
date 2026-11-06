@@ -49,6 +49,8 @@ jobs:
           NITRO_PRESET: node-server
       - name: Verify deployable artifact
         run: test -f .output/server/index.mjs
+      - name: Start built Nitro server and smoke test essential routes
+        run: node scripts/http-route-smoke.mjs
       - name: Verify generated TanStack routes after build
         run: bun run test:routes
       - name: TypeScript
