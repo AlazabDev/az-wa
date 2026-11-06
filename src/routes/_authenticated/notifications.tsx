@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,7 +30,8 @@ import {
   deleteNotificationIntegration,
 } from "@/lib/notifications.functions";
 import { useNumbers } from "@/lib/azwa-data";
-import { useScope } from "@/lib/scope";
+import { numbersInScope, useScope } from "@/lib/scope";
+import { whatsappAccountLabel } from "@/lib/azwa-number-labels";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
@@ -49,12 +50,15 @@ function NotificationsPage() {
   const { scope } = useScope();
   const queryClient = useQueryClient();
   const { data: availableNumbers = [] } = useNumbers();
+  const scopedNumbers = useMemo(() => numbersInScope(availableNumbers, scope), [availableNumbers, scope]);
+  const scopedIds = useMemo(() => new Set(scopedNumbers.map((number) => number.id)), [scopedNumbers]);
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
   const getIntegrationsFn = useServerFn(getNotificationIntegrations);
   const createIntegrationFn = useServerFn(createNotificationIntegration);
   const deleteIntegrationFn = useServerFn(deleteNotificationIntegration);
 
-  const { data: integrations = [], isLoading } = useQuery({
-    queryKey: ["notification_integrations", scope?.id],
+  const { data: integrations = [], isLoading, isError, error } = useQuery({
+    queryKey: ["notification_integrations"],
     queryFn: () => getIntegrationsFn({ data: undefined }),
     enabled: true,
   });
@@ -63,6 +67,13 @@ function NotificationsPage() {
   const [newName, setNewName] = useState("");
   const [newSenderId, setNewSenderId] = useState("");
   const [newRecipients, setNewRecipients] = useState("");
+  useEffect(() => setNewSenderId(""), [scopeKey]);
+  const visibleIntegrations = useMemo(
+    () => scope.kind === "all"
+      ? integrations
+      : integrations.filter((item: any) => scopedIds.has(item.whatsapp_numbers?.id)),
+    [integrations, scopedIds, scope.kind],
+  );
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -141,9 +152,9 @@ function NotificationsPage() {
                       <SelectValue placeholder="Select a WABA number to send from" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableNumbers.map((n) => (
+                      {scopedNumbers.map((n) => (
                         <SelectItem key={n.id} value={n.id}>
-                          {n.display_phone_number} {n.verified_name ? `(${n.verified_name})` : ""}
+                          {whatsappAccountLabel(n.display_phone_number, n.internal_name || n.verified_name)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -175,6 +186,11 @@ function NotificationsPage() {
       />
 
       <Panel>
+        {isError && (
+          <p role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {error instanceof Error ? error.message : "تعذر تحميل مصادر الإشعارات"}
+          </p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -195,14 +211,14 @@ function NotificationsPage() {
                   </td>
                 </tr>
               )}
-              {!isLoading && integrations.length === 0 && (
+              {!isLoading && !isError && visibleIntegrations.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     No notification sources configured.
                   </td>
                 </tr>
               )}
-              {integrations.map((integration: any) => {
+              {visibleIntegrations.map((integration: any) => {
                 const webhookUrl = `${baseUrl}/api/public/notify/${integration.id}?secret=${integration.webhook_secret}`;
                 return (
                   <tr key={integration.id} className="border-b border-border/60 last:border-0">
@@ -216,9 +232,14 @@ function NotificationsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => {
-                            navigator.clipboard.writeText(webhookUrl);
-                            toast.success("Webhook URL copied to clipboard");
+                          aria-label="نسخ رابط Webhook"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(webhookUrl);
+                              toast.success("تم نسخ رابط Webhook");
+                            } catch {
+                              toast.error("تعذر النسخ؛ تحقق من أذونات المتصفح");
+                            }
                           }}
                         >
                           <Copy className="h-3 w-3" />
