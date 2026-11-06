@@ -47,6 +47,12 @@ jobs:
         run: bun run build
         env:
           NITRO_PRESET: node-server
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          VITE_SUPABASE_PROJECT_ID: ci-placeholder
+          SUPABASE_URL: https://ci-placeholder.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder
       - name: Verify deployable artifact
         run: test -f .output/server/index.mjs
       - name: Start built Nitro server and smoke test essential routes
