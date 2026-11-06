@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, Panel } from "@/components/azwa/page-header";
 import { RecordTable } from "@/components/azwa/record-table";
 import { OperationalHelp } from "@/components/azwa/integration-directory";
+import { MetaDocumentation } from "@/components/azwa/meta-documentation";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -26,8 +27,8 @@ function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Settings"
-        description="Operational parameters are stored as data, not code, so behaviour can change without a deployment."
+        title="الإعدادات"
+        description="إعدادات التشغيل، المساعدة، ومراجع Meta الرسمية."
       />
       <Panel title="Required server secrets">
         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -45,8 +46,11 @@ function SettingsPage() {
           </li>
         </ul>
       </Panel>
-      <div className="mt-6">
+      <div className="mt-6" id="help">
         <OperationalHelp />
+      </div>
+      <div className="mt-6" id="documentation">
+        <MetaDocumentation />
       </div>
       <div className="mt-6">
         <RecordTable

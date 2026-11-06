@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, RefreshCw, Search, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import {
 import { sendTemplateMessage } from "@/lib/meta/template-messaging.functions";
 import { deleteTemplate, syncTemplates } from "@/lib/meta/templates.functions";
 import { useScope } from "@/lib/scope";
+import { readRecordTable } from "@/lib/record-table.functions";
 
 export const Route = createFileRoute("/_authenticated/templates")({
   head: () => ({
@@ -461,6 +462,33 @@ function TemplateDetail({
 }) {
   const { data: numbers = [] } = useNumbers();
   const send = useServerFn(sendTemplateMessage);
+  const readContacts = useServerFn(readRecordTable);
+  const [contactSearch, setContactSearch] = useState("");
+  const {
+    data: contactDirectory,
+    isLoading: contactsLoading,
+    isError: contactsUnavailable,
+  } = useQuery({
+    queryKey: ["template-test-contacts", "first-page"],
+    queryFn: () => readContacts({
+      data: { table: "contacts", orderBy: "display_name", limit: 500, page: 1 },
+    }),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const contacts = useMemo(() => {
+    const needle = contactSearch.trim().toLocaleLowerCase();
+    return (contactDirectory?.rows ?? [])
+      .map((row) => ({
+        id: String(row["id"] ?? ""),
+        name: String(row["display_name"] ?? ""),
+        phone: String(row["phone"] ?? ""),
+      }))
+      .filter((contact) => contact.id && /\\d{7,}/.test(contact.phone.replace(/\\D/g, "")))
+      .filter((contact) => !needle ||
+        `${contact.name} ${contact.phone}`.toLocaleLowerCase().includes(needle))
+      .slice(0, 100);
+  }, [contactDirectory, contactSearch]);
   const senders = numbers.filter((number) => number.enabled && number.waba_id === template.waba_id);
   const [numberId, setNumberId] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -594,6 +622,44 @@ function TemplateDetail({
                 ))}
               </select>
             </Field>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+              <label htmlFor="template-contact-search" className="block text-xs font-medium text-muted-foreground">
+                اختيار جهة اتصال محفوظة (اختياري)
+              </label>
+              <input
+                id="template-contact-search"
+                className={inputClass}
+                value={contactSearch}
+                onChange={(event) => setContactSearch(event.target.value)}
+                placeholder="ابحث بالاسم أو رقم الهاتف"
+                autoComplete="off"
+              />
+              <select
+                aria-label="اختر جهة اتصال لاختبار القالب"
+                className={inputClass}
+                value=""
+                onChange={(event) => {
+                  if (event.target.value) setRecipient(event.target.value);
+                }}
+              >
+                <option value="">اختر جهة اتصال من النتائج</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.phone}>
+                    {contact.name || "بدون اسم"} — {contact.phone}
+                  </option>
+                ))}
+              </select>
+              {contactsLoading && <p role="status" className="text-xs text-muted-foreground">تحميل جهات الاتصال...</p>}
+              {contactsUnavailable && (
+                <p role="status" className="text-xs text-muted-foreground">
+                  لا تتوفر صلاحية قراءة جهات الاتصال؛ يمكن إدخال الرقم يدويًا.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                تظهر حتى 100 نتيجة من أول 500 جهة اتصال مصرح بها. اختيار العميل يملأ رقم المستلم فقط.
+                الإرسال الحقيقي يتم عبر صلاحيات الخادم الحالية.
+              </p>
+            </div>
             <Field label="Recipient">
               <input
                 className={inputClass}

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+
+import { getAuthenticatedOrganizationScopes } from "@/lib/auth-scopes.functions";
 
 interface TenantInfo {
   tenantId: string | null;
@@ -9,42 +10,25 @@ interface TenantInfo {
   loading: boolean;
 }
 
+/**
+ * Legacy media-hook compatibility adapter.
+ * Organization access comes exclusively from the authenticated server
+ * membership contract, not from client-controlled localStorage or the old
+ * tenant_members table. Do not use this hook to authorize server operations.
+ */
 export function useTenant(): TenantInfo {
-  const { user } = useAuth();
-  const [tenantId, setTenantId] = useState<string | null>(null);
-  const [tenantName, setTenantName] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) {
-      setTenantId(null);
-      setTenantName(null);
-      setRole(null);
-      setLoading(false);
-      return;
-    }
-
-    const fetchTenant = async () => {
-      // Use a typed select that returns tenants as a nested object
-      const { data } = await (supabase.from as any)("tenant_members")
-        .select("tenant_id, role, tenants(name)")
-        .eq("user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setTenantId((data as any).tenant_id);
-        setRole((data as any).role);
-        // tenants is a one-to-one FK so Supabase returns an object, not an array
-        const tenant = (data as any).tenants as { name: string } | null;
-        setTenantName(tenant?.name ?? null);
-      }
-      setLoading(false);
-    };
-
-    fetchTenant();
-  }, [user]);
-
-  return { tenantId, tenantName, role, loading };
+  const loadScopes = useServerFn(getAuthenticatedOrganizationScopes);
+  const { data: scopes, isLoading } = useQuery({
+    queryKey: ["authenticated-organization-scopes"],
+    queryFn: () => loadScopes({ data: {} }),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const selected = scopes?.[0];
+  return {
+    tenantId: selected?.tenant_id ?? null,
+    tenantName: null,
+    role: selected?.role ?? null,
+    loading: isLoading,
+  };
 }
