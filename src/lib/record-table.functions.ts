@@ -177,7 +177,7 @@ export const readRecordTable = createServerFn({ method: "POST" })
       "conversations", "messages", "media", "message_outbox",
     ]);
     const wabaScopedTables = new Set(["templates", "whatsapp_flows"]);
-    const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table) || data.table === "campaigns";
+    const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table) || data.table === "campaigns" || data.table === "contacts";
     if (isScoped && supportsScope && scopeIds.length === 0) {
       return { rows: [], total: 0, page: 1, pageSize, totalPages: 1 };
     }
@@ -192,6 +192,25 @@ export const readRecordTable = createServerFn({ method: "POST" })
     }
     if (isScoped && data.table === "campaigns") {
       query = query.in("sender_whatsapp_number_id", scopeIds);
+    }
+    if (isScoped && data.table === "contacts") {
+      // Contacts have no number foreign key. Resolve those associated with
+      // conversations in the selected WhatsApp numbers within the organization.
+      const { data: conversationContacts, error: contactScopeError } = await supabaseRuntimeAdmin
+        .from("conversations")
+        .select("contact_id")
+        .eq("organization_id", organization.id)
+        .in("whatsapp_number_id", scopeIds)
+        .not("contact_id", "is", null)
+        .limit(10000);
+      if (contactScopeError) throw new Error(contactScopeError.message);
+      const contactIds = [...new Set((conversationContacts ?? [])
+        .map((row) => row.contact_id)
+        .filter((id): id is string => typeof id === "string"))];
+      if (contactIds.length === 0) {
+        return { rows: [], total: 0, page: 1, pageSize, totalPages: 1 };
+      }
+      query = query.in("id", contactIds);
     }
     if (data.conversationId) query = query.eq("conversation_id", data.conversationId);
     query = query.order(orderBy, { ascending: false }).range(from, to);
