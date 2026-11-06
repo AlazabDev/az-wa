@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { Globe, Building2, Network, Phone } from "lucide-react";
+import { Globe, Building2, Network, Phone, RefreshCw } from "lucide-react";
 
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
@@ -41,6 +41,7 @@ export function ScopeSelector() {
   }, [portfolios, wabas, numbers]);
 
   const loaded = portfolioQuery.isSuccess && wabaQuery.isSuccess && numberQuery.isSuccess;
+  const failed = portfolioQuery.isError || wabaQuery.isError || numberQuery.isError;
   const selectedKey = scopeKey(scope);
   const selected = options.get(selectedKey);
 
@@ -64,6 +65,7 @@ export function ScopeSelector() {
         حساب واتساب
       </label>
       <Select
+        disabled={failed}
         value={options.has(selectedKey) ? selectedKey : "all:"}
         onValueChange={(value) => {
           const next = options.get(value);
@@ -110,6 +112,18 @@ export function ScopeSelector() {
           )}
         </SelectContent>
       </Select>
+      {failed && (
+        <button
+          type="button"
+          onClick={() => void numberQuery.refetch()}
+          aria-label="إعادة تحميل حسابات واتساب"
+          title="تعذر تحميل الحسابات — إعادة المحاولة"
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-destructive/40 text-destructive"
+        >
+          <RefreshCw className="size-4" />
+        </button>
+      )}
+      {failed && <span role="alert" className="sr-only">تعذر تحميل حسابات واتساب</span>}
     </div>
   );
 }
