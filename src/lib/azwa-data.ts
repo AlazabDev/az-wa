@@ -45,13 +45,13 @@ export function useNumbers() {
   });
 }
 
-export function useOpsCounters(numberIds: string[]) {
+export function useOpsCounters(numberIds: string[], scoped = false) {
   const load = useServerFn(getAzwaOpsCounters);
   const normalized = [...new Set(numberIds)].sort();
 
   return useQuery({
-    queryKey: ["ops-counters", normalized.join(",")],
-    queryFn: () => load({ data: { numberIds: normalized } }),
+    queryKey: ["ops-counters", scoped, normalized.join(",")],
+    queryFn: () => load({ data: { numberIds: normalized, scoped } }),
     refetchInterval: 30_000,
   });
 }
