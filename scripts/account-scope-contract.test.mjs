@@ -51,3 +51,20 @@ test("inbox replies resolve WhatsApp phone numbers on the authenticated server",
   assert.match(send, /\.eq\("organization_id", number\.organization_id\)/);
   assert.doesNotMatch(inbox, /recipient = lastIncoming\?\.contact_id/);
 });
+
+test("media and file routes enforce selection in both client and privileged server functions", () => {
+  const mediaPage = read("src/routes/_authenticated/media.tsx");
+  const mediaApi = read("src/lib/media.functions.ts");
+  const filesPage = read("src/routes/_authenticated/files.tsx");
+  const filesApi = read("src/lib/storage/files.functions.ts");
+  for (const page of [mediaPage, filesPage]) {
+    assert.match(page, /useScope/);
+    assert.match(page, /scopeNumberIds|numberIds/);
+    assert.match(page, /scopeKey/);
+  }
+  assert.match(mediaApi, /authorizeMedia\(context, "media.read"\)/);
+  assert.match(mediaApi, /authorizeMedia\(context, "media.manage"\)/);
+  assert.match(mediaApi, /eq\("organization_id", organizationId\)/);
+  assert.match(filesApi, /Invalid organization number scope/);
+  assert.match(filesApi, /\.in\("whatsapp_number_id", scopeIds\)/);
+});
