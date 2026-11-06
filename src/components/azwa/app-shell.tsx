@@ -206,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
           aria-expanded={!collapsed}
         >
-          {collapsed ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+          {collapsed ? <ChevronsLeft className="size-4" /> : <ChevronsRight className="size-4" />}
           {!collapsed && <span>طي القائمة</span>}
         </button>
       </aside>
