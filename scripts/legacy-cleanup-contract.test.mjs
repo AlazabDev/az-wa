@@ -25,7 +25,8 @@ test("active media uses authenticated organization scopes instead of retired Aut
   assert.match(adapter, /getAuthenticatedOrganizationScopes/);
   assert.equal(adapter.includes("contexts/AuthContext"), false);
   assert.equal(adapter.includes('from("tenant_members")'), false);
-  assert.match(media, /useTenant/);
+  assert.doesNotMatch(media, /contexts\\/AuthContext/);
+  assert.match(media, /createSignedUrl/);
 });
 
 test("replacements remain wired into the live TanStack routes", () => {
