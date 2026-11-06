@@ -33,6 +33,8 @@ jobs:
         run: node --test scripts/legacy-cleanup-contract.test.mjs
       - name: Validate sidebar destinations and live route coverage
         run: node --test scripts/navigation-coverage.test.mjs
+      - name: Router error recovery and storage regression
+        run: node --test scripts/route-recovery-contract.test.mjs
       - name: WhatsApp account selector, scope and messaging regression
         run: node --test scripts/account-scope-contract.test.mjs
       - name: Verify runtime vs staged integration import boundary
