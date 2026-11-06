@@ -1,8 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { presignMinioGetUrl } from "@/lib/storage/minio.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, Database } from "@/integrations/supabase/types";
+
+async function authorizeMedia(
+  context: { supabase: SupabaseClient<Database> },
+  permission: "media.read" | "media.manage",
+): Promise<string> {
+  const { data: organization, error } = await supabaseAdmin
+    .from("organizations")
+    .select("id")
+    .eq("slug", "alazab-group")
+    .maybeSingle();
+  if (error || !organization?.id) throw new Error("AzWA organization is not configured");
+  const { data: allowed, error: permissionError } = await context.supabase.rpc(
+    "azwa_has_org_permission",
+    { p_org_id: organization.id, p_permission: permission },
+  );
+  if (permissionError || !allowed) throw new Error("Forbidden");
+  return organization.id;
+}
 
 export type MediaItemWithUrl = Tables<"media"> & {
   signedUrl: string | null;
@@ -20,10 +39,27 @@ export const getMediaItems = createServerFn({ method: "POST" })
         endDate?: string;
         page?: number;
         limit?: number;
+        scoped?: boolean;
+        numberIds?: string[];
       } | void,
     ) => data,
   )
-  .handler(async ({ data: filter }) => {
+  .handler(async ({ data: filter, context }) => {
+    const organizationId = await authorizeMedia(context, "media.read");
+    const scoped = filter?.scoped === true;
+    const numberIds = [...new Set(filter?.numberIds ?? [])];
+    if (numberIds.length > 200 || numberIds.some((id) => !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id))) {
+      throw new Error("Invalid WhatsApp number scope");
+    }
+    if (scoped && numberIds.length > 0) {
+      const { data: permitted, error: scopeError } = await supabaseAdmin
+        .from("whatsapp_numbers").select("id")
+        .eq("organization_id", organizationId).in("id", numberIds);
+      if (scopeError || (permitted ?? []).length !== numberIds.length) {
+        throw new Error("Invalid organization number scope");
+      }
+    }
+    if (scoped && numberIds.length === 0) return { items: [], totalCount: 0 };
     const page = filter?.page ?? 1;
     const limit = filter?.limit ?? 50;
     const from = (page - 1) * limit;
@@ -32,8 +68,11 @@ export const getMediaItems = createServerFn({ method: "POST" })
     let query = supabaseAdmin
       .from("media")
       .select("*, messages(conversation_id)", { count: "exact" })
+      .eq("organization_id", organizationId)
       .order("created_at", { ascending: false })
       .range(from, to);
+
+    if (scoped) query = query.in("whatsapp_number_id", numberIds);
 
     if (filter?.type && filter.type !== "all") {
       if (filter.type === "image") {
@@ -140,10 +179,12 @@ export const getMediaItems = createServerFn({ method: "POST" })
 export const deleteMediaItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: string) => data)
-  .handler(async ({ data: mediaId }) => {
+  .handler(async ({ data: mediaId, context }) => {
+    const organizationId = await authorizeMedia(context, "media.manage");
     const { error } = await supabaseAdmin
       .from("media")
       .delete()
+      .eq("organization_id", organizationId)
       .eq("id", mediaId);
 
     if (error) {
