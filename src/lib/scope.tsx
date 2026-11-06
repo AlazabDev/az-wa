@@ -20,13 +20,13 @@ export function parseSavedScope(value: string | null): Scope | null {
     const parsed: unknown = JSON.parse(value);
     if (!parsed || typeof parsed !== "object") return null;
     const next = parsed as Record<string, unknown>;
-    if (!["all", "business", "waba", "number"].includes(String(next.kind))) return null;
-    if (next.kind === "all") return DEFAULT_SCOPE;
-    if (typeof next.id !== "string" || !/^[0-9a-f-]{36}$/i.test(next.id)) return null;
+    if (!["all", "business", "waba", "number"].includes(String(next["kind"]))) return null;
+    if (next["kind"] === "all") return DEFAULT_SCOPE;
+    if (typeof next["id"] !== "string" || !/^[0-9a-f-]{36}$/i.test(next["id"])) return null;
     return {
-      kind: next.kind as ScopeKind,
-      id: next.id,
-      label: typeof next.label === "string" ? next.label.slice(0, 180) : "حساب واتساب",
+      kind: next["kind"] as ScopeKind,
+      id: next["id"],
+      label: typeof next["label"] === "string" ? next["label"].slice(0, 180) : "حساب واتساب",
     };
   } catch {
     return null;
@@ -49,7 +49,7 @@ export function ScopeProvider({ children }: { children: ReactNode }) {
 
   const setScope = useCallback((next: Scope) => {
     setCurrentScope((previous) =>
-      previous.kind === next.kind && previous.id === next.id && previous.label === next.label
+      previous.kind === next["kind"] && previous.id === next["id"] && previous.label === next["label"]
         ? previous
         : next,
     );
