@@ -25,7 +25,7 @@ test("active media uses authenticated organization scopes instead of retired Aut
   assert.match(adapter, /getAuthenticatedOrganizationScopes/);
   assert.equal(adapter.includes("contexts/AuthContext"), false);
   assert.equal(adapter.includes('from("tenant_members")'), false);
-  assert.doesNotMatch(media, /contexts\\/AuthContext/);
+  assert.equal(media.includes("contexts/AuthContext"), false);
   assert.match(media, /createSignedUrl/);
 });
 
