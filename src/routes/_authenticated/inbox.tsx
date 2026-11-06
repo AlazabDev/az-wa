@@ -264,7 +264,7 @@ function InboxPage() {
   const [activeTab, setActiveTab] = useState<"compose" | "conversations">("conversations");
   const [selectedConversation, setSelectedConversation] = useState<ConversationRow | null>(null);
   const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
-  const scopeNumberIds = useMemo(() => numbersInScope(numbers, scope).map((number) => number.id),
+  const scopeNumberIds = useMemo(() => scope.kind === "all" ? [] : numbersInScope(numbers, scope).map((number) => number.id),
     [numbers, scope]);
   useEffect(() => setSelectedConversation(null), [scopeKey]);
 
