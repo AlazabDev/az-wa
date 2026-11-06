@@ -19,6 +19,14 @@ test("React Router SPA entrypoints and replaced shared components are absent", (
   for (const file of legacy) assert.equal(existsSync(resolve(root, file)), false, file);
   assert.equal(existsSync(resolve(root, "src/pages")), false, "src/pages must not be active");
 });
+test("active media uses authenticated organization scopes instead of retired AuthContext", () => {
+  const adapter = readFileSync(resolve(root, "src/hooks/use-tenant.ts"), "utf8");
+  const media = readFileSync(resolve(root, "src/hooks/use-media-url.ts"), "utf8");
+  assert.match(adapter, /getAuthenticatedOrganizationScopes/);
+  assert.doesNotMatch(adapter, /contexts\\/AuthContext|tenant_members/);
+  assert.match(media, /useTenant/);
+});
+
 test("replacements remain wired into the live TanStack routes", () => {
   const settings = readFileSync(resolve(root, "src/routes/_authenticated/settings.tsx"), "utf8");
   const templates = readFileSync(resolve(root, "src/routes/_authenticated/templates.tsx"), "utf8");
