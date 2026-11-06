@@ -5,7 +5,8 @@
 export type IntegrationRoute =
   | "/credentials" | "/meta-app" | "/numbers" | "/wabas"
   | "/webhooks" | "/media" | "/files" | "/health"
-  | "/api-logs" | "/automation" | "/settings" | "/infrastructure";
+  | "/api-logs" | "/automation" | "/settings" | "/infrastructure"
+  | "/templates" | "/inbox" | "/contacts";
 
 export type IntegrationDirectoryItem = {
   id: "meta" | "storage" | "automation" | "mcp";
@@ -73,6 +74,10 @@ export const AZWA_HELP_ENTRIES: readonly HelpEntry[] = [
   { question: "أين أحفظ مفتاح Meta أو MinIO؟", answer: "تُحفظ القيم السرية على الخادم. هذه الواجهة تعرض أسماء المتغيرات وسجلات الاعتمادات المصرّح بها، ولا تكشف قيم التوكنات.", route: "/credentials", linkLabel: "مفاتيح الربط" },
   { question: "كيف أختبر الاتصال بالتخزين؟", answer: "توجد عملية فحص اتصال MinIO على صفحة خطافات الويب؛ ظهور اسم المتغير لا يثبت سلامة الاتصال.", route: "/webhooks", linkLabel: "اختبار MinIO" },
   { question: "كيف أتحقق من جاهزية الإنتاج؟", answer: "افتح الصحة والتشخيص واطلع على نتائج الاختبارات الفعلية. النتيجة لا تغني عن اختبارات النشر والتكامل.", route: "/health", linkLabel: "الصحة والتشخيص" },
+  { question: "هل مجرد حفظ الرقم يفعّل واتساب؟", answer: "لا؛ يجب استكمال الربط المعتمد من Meta والتحقق من اشتراك Webhook وحالة الرقم وصلاحيات الإرسال.", route: "/numbers", linkLabel: "الأرقام" },
+  { question: "لماذا لا تظهر المحادثات؟", answer: "تحقق من نطاق المحفظة وWABA والرقم وصلاحيات المستخدم، ثم راجع سجل الرسائل وWebhooks. عدم ظهور المحادثات لا يثبت حذفها.", route: "/inbox", linkLabel: "صندوق الوارد" },
+  { question: "أين تحفظ قوالب الرسائل؟", answer: "تُعرض قوالب Meta المعتمدة والمتزامنة بحسب WABA. لا يمكن إرسال قالب قيد المراجعة أو غير معتمد.", route: "/templates", linkLabel: "قوالب الرسائل" },
+  { question: "هل عرض الوسائط يحذف ملفات MinIO؟", answer: "لا؛ مجرد التصفح لا يعني تنفيذ حذف في خدمة التخزين. راجع صلاحيات إدارة الوسائط وسياسات الاحتفاظ قبل أي إزالة.", route: "/media", linkLabel: "الوسائط" },
   { question: "أين سجلات واجهات API؟", answer: "يمكن مراجعة العمليات وأخطاء استدعاءات API من سجل واجهات API وفق الصلاحيات.", route: "/api-logs", linkLabel: "سجل API" },
 ];
 
