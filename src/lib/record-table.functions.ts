@@ -175,7 +175,6 @@ export const readRecordTable = createServerFn({ method: "POST" })
 
     const numberScopedTables = new Set([
       "conversations", "messages", "media", "message_outbox",
-      "message_send_attempts",
     ]);
     const wabaScopedTables = new Set(["templates", "whatsapp_flows"]);
     const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table) || data.table === "campaigns";
