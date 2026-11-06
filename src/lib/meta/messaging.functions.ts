@@ -17,11 +17,11 @@ export const sendTextMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: SendTextInput) => input)
   .handler(async ({ data, context }) => {
-    const recipient = normalizeRecipient(data.recipient);
+    let recipient = normalizeRecipient(data.recipient);
     const body = data.body.trim();
 
     if (!data.numberId) throw new Error("Send-from number is required");
-    if (recipient.length < 7 || recipient.length > 20)
+    if (!data.conversationId && (recipient.length < 7 || recipient.length > 20))
       throw new Error("Recipient number is invalid");
     if (!body) throw new Error("Message body is required");
     if (body.length > 4096) throw new Error("Text message exceeds 4096 characters");
@@ -39,6 +39,51 @@ export const sendTextMessage = createServerFn({ method: "POST" })
     if (!client || !number)
       throw new Error("No active Meta credential is available for this number");
 
+    const { supabaseAdmin, supabaseRuntimeAdmin } =
+      await import("@/integrations/supabase/client.server");
+
+    let verifiedContactId: string | null = null;
+    if (data.conversationId) {
+      // Replies must resolve their destination from the authenticated
+      // conversation, not from a contact UUID supplied by the browser.
+      const { data: conversation, error: conversationError } = await supabaseRuntimeAdmin
+        .from("conversations")
+        .select("id, organization_id, whatsapp_number_id, contact_id")
+        .eq("id", data.conversationId)
+        .eq("organization_id", number.organization_id)
+        .eq("whatsapp_number_id", data.numberId)
+        .maybeSingle();
+      if (conversationError || !conversation)
+        throw new Error("Conversation is unavailable for this WhatsApp number");
+      verifiedContactId = conversation.contact_id ?? null;
+      if (!verifiedContactId || (data.contactId && data.contactId !== verifiedContactId))
+        throw new Error("Conversation contact is not available");
+
+      const { data: channel, error: channelError } = await supabaseRuntimeAdmin
+        .from("contact_channels")
+        .select("address")
+        .eq("organization_id", number.organization_id)
+        .eq("contact_id", verifiedContactId)
+        .eq("channel_type", "whatsapp")
+        .order("is_primary", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (channelError) throw new Error(channelError.message);
+      recipient = normalizeRecipient(channel?.address ?? "");
+      if (!recipient) {
+        const { data: contact, error: contactError } = await supabaseRuntimeAdmin
+          .from("contacts")
+          .select("phone")
+          .eq("organization_id", number.organization_id)
+          .eq("id", verifiedContactId)
+          .maybeSingle();
+        if (contactError) throw new Error(contactError.message);
+        recipient = normalizeRecipient(contact?.phone ?? "");
+      }
+    }
+    if (recipient.length < 7 || recipient.length > 20)
+      throw new Error("A valid WhatsApp recipient is required");
+
     const requestPayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -47,8 +92,6 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       text: { preview_url: false, body },
     };
 
-    const { supabaseAdmin, supabaseRuntimeAdmin } =
-      await import("@/integrations/supabase/client.server");
     const idempotencyKey = `ui:${context.userId}:${crypto.randomUUID()}`;
 
     // Interactive sends are performed synchronously by this authenticated
@@ -60,7 +103,7 @@ export const sendTextMessage = createServerFn({ method: "POST" })
       .insert({
         organization_id: number.organization_id,
         whatsapp_number_id: data.numberId,
-        contact_id: data.contactId ?? null,
+        contact_id: verifiedContactId,
         conversation_id: data.conversationId ?? null,
         recipient_address: recipient,
         message_type: "text",
