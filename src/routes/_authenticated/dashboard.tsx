@@ -44,7 +44,7 @@ function Dashboard() {
   const { data: allNumbers = [], isLoading } = useNumbers();
 
   const numbers = useMemo(() => numbersInScope(allNumbers, scope), [allNumbers, scope]);
-  const { data: counters } = useOpsCounters(numbers.map((n) => n.id));
+  const { data: counters } = useOpsCounters(numbers.map((n) => n.id), scope.kind !== "all");
 
   const scopedWabas =
     scope.kind === "all"
