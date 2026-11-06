@@ -175,10 +175,10 @@ export const readRecordTable = createServerFn({ method: "POST" })
 
     const numberScopedTables = new Set([
       "conversations", "messages", "media", "message_outbox",
-      "message_send_attempts", "campaigns",
+      "message_send_attempts",
     ]);
     const wabaScopedTables = new Set(["templates", "whatsapp_flows"]);
-    const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table);
+    const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table) || data.table === "campaigns";
     if (isScoped && supportsScope && scopeIds.length === 0) {
       return { rows: [], total: 0, page: 1, pageSize, totalPages: 1 };
     }
@@ -190,6 +190,9 @@ export const readRecordTable = createServerFn({ method: "POST" })
     }
     if (isScoped && wabaScopedTables.has(data.table)) {
       query = query.in("waba_id", scopedWabaIds);
+    }
+    if (isScoped && data.table === "campaigns") {
+      query = query.in("sender_whatsapp_number_id", scopeIds);
     }
     if (data.conversationId) query = query.eq("conversation_id", data.conversationId);
     query = query.order(orderBy, { ascending: false }).range(from, to);
