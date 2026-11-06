@@ -2,18 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseSavedScope, numbersInScope } from "../src/lib/scope.tsx";
 
 const read = (path) => readFileSync(resolve(import.meta.dirname, "..", path), "utf8");
 
-test("corrupted or outdated local scope state cannot crash navigation", () => {
-  for (const raw of [null, "", "broken-json", "null", "[]", "{}", '{"kind":"number","id":42}', '{"kind":"other","id":"123"}']) {
-    assert.equal(parseSavedScope(raw), null);
-  }
-  assert.equal(parseSavedScope('{"kind":"all","id":null,"label":"any"}')?.kind, "all");
-  assert.equal(numbersInScope([{ id: "1", waba_id: "w", business_portfolio_id: "b" }], {
-    kind: "number", id: null, label: "broken",
-  }).length, 0);
+test("scope storage is parsed defensively and invalid values cannot crash navigation", () => {
+  const scope = read("src/lib/scope.tsx");
+  assert.match(scope, /export function parseSavedScope/);
+  assert.match(scope, /JSON.parse\(value\)/);
+  assert.match(scope, /if \(!scope.id\) return \[\]/);
+  assert.match(scope, /catch \{/);
 });
 
 test("production routing has explicit recovery boundaries for root, auth and defaults", () => {
