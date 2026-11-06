@@ -218,7 +218,7 @@ export const getAzwaInventory = createServerFn({ method: "POST" })
 
 export const getAzwaOpsCounters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { numberIds: string[] }) => input)
+  .validator((input: { numberIds: string[]; scoped?: boolean }) => input)
   .handler(async ({ data, context }): Promise<OpsCounters> => {
     const organizationId = await organizationAndPermission(context, "messages.read");
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
@@ -237,7 +237,19 @@ export const getAzwaOpsCounters = createServerFn({ method: "POST" })
       allowedNumberIds = (rows ?? []).map((row) => String(row.id));
     }
 
-    const scoped = requestedIds.length > 0;
+    // Explicitly selecting a scope with zero available numbers must never
+    // fall back to organization-wide metrics.
+    if (data.scoped && requestedIds.length === 0) {
+      return {
+        messagesToday: 0, incoming: 0, outgoing: 0, sent: 0,
+        delivered: 0, read: 0, failed: 0, openConversations: 0,
+        contacts: 0, mediaReceived: 0, templates: 0,
+        approvedTemplates: 0, rejectedTemplates: 0,
+        runningCampaigns: 0, webhookErrors: 0, apiErrors: 0,
+        queueBacklog: 0,
+      };
+    }
+    const scoped = Boolean(data.scoped) || requestedIds.length > 0;
     if (scoped && allowedNumberIds.length !== requestedIds.length)
       throw new Error("Invalid number scope");
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
