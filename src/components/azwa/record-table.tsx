@@ -74,7 +74,7 @@ export function RecordTable({
   const [page, setPage] = useState(1);
   const scoped = scope.kind !== "all";
   const scopedNumberIds = useMemo(
-    () => numbersInScope(numbersQuery.data ?? [], scope).map((number) => number.id),
+    () => scope.kind === "all" ? [] : numbersInScope(numbersQuery.data ?? [], scope).map((number) => number.id),
     [numbersQuery.data, scope],
   );
   const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
