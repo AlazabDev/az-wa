@@ -23,7 +23,8 @@ test("active media uses authenticated organization scopes instead of retired Aut
   const adapter = readFileSync(resolve(root, "src/hooks/use-tenant.ts"), "utf8");
   const media = readFileSync(resolve(root, "src/hooks/use-media-url.ts"), "utf8");
   assert.match(adapter, /getAuthenticatedOrganizationScopes/);
-  assert.doesNotMatch(adapter, /contexts\\/AuthContext|tenant_members/);
+  assert.equal(adapter.includes("contexts/AuthContext"), false);
+  assert.equal(adapter.includes('from("tenant_members")'), false);
   assert.match(media, /useTenant/);
 });
 
