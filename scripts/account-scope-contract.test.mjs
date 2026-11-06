@@ -68,3 +68,12 @@ test("media and file routes enforce selection in both client and privileged serv
   assert.match(filesApi, /Invalid organization number scope/);
   assert.match(filesApi, /\.in\("whatsapp_number_id", scopeIds\)/);
 });
+
+test("monitor action links existing protected webhook reconciliation to a visible control", () => {
+  const monitor = read("src/routes/_authenticated/monitor.tsx");
+  const server = read("src/lib/meta/app-webhook.functions.ts");
+  assert.match(monitor, /onClick=\{\(\) => void linkAll\(\)\}/);
+  assert.match(monitor, /ربط Webhook لكل الحسابات/);
+  assert.match(server, /linkAllWabasWebhook/);
+  assert.match(server, /credentials\.manage/);
+});
