@@ -30,24 +30,8 @@ function candidateFiles() {
     execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: root, stdio: "pipe" });
     inGitRepository = true;
   } catch {
-<<<<<<< Updated upstream
     // Standalone regression tests run outside a repository.
-=======
-    // Standalone scanner tests run outside Git; retain full scan there.
-    const walk = (dir) => {
-      let results = [];
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = resolve(dir, entry.name);
-        if (entry.isDirectory()) {
-          results = results.concat(walk(full));
-        } else if (entry.isFile()) {
-          results.push(relative(root, full).replace(/\\/g, "/"));
-        }
-      }
-      return results;
-    };
-    return walk(root);
->>>>>>> Stashed changes
+
   }
   if (!inGitRepository) return walkSourceFiles(root);
   // Do not silently fall back to scanning build artifacts on a Git failure.
