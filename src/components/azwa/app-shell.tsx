@@ -74,6 +74,7 @@ const NAV: NavGroup[] = [
       { label: "المراقبة المباشرة", to: "/monitor", icon: Activity },
       { label: "الصحة والتشخيص", to: "/health", icon: Activity },
       { label: "التنبيهات", to: "/alerts", icon: Bell },
+      { label: "مصادر الإشعارات", to: "/notifications", icon: Bell },
       { label: "الأخطاء", to: "/errors", icon: AlertTriangle },
       { label: "تشخيص المزامنة بالذكاء الاصطناعي", to: "/sync-doctor", icon: AlertTriangle },
       { label: "قوائم الانتظار", to: "/queues", icon: ListChecks },
