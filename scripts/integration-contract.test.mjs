@@ -56,3 +56,32 @@ test("no duplicate API key management routes were introduced", () => {
   assert.equal(fs.existsSync(path.join(cwd, "src/routes/_authenticated/api-keys.tsx")), false);
   assert.equal(fs.existsSync(path.join(cwd, "src/routes/_authenticated/integrations.tsx")), false);
 });
+
+test("legacy documentation and FAQs are integrated in authenticated settings", () => {
+  const docs = read("src/components/azwa/meta-documentation.tsx");
+  assert.match(settings, /<MetaDocumentation \/>/);
+  assert.match(settings, /<OperationalHelp \/>/);
+  for (const endpoint of [
+    "cloud-api/get-started",
+    "cloud-api/webhooks",
+    "message-templates",
+    "/whatsapp/flows",
+  ]) {
+    assert.ok(docs.includes(endpoint), endpoint);
+  }
+  assert.match(catalog, /لماذا لا تظهر المحادثات/);
+  assert.match(catalog, /هل مجرد حفظ الرقم يفعّل واتساب/);
+});
+
+test("template contact picker uses permission-scoped read and existing protected send path", () => {
+  const templates = read("src/routes/_authenticated/templates.tsx");
+  const send = read("src/lib/meta/template-messaging.functions.ts");
+  assert.match(templates, /useServerFn\(readRecordTable\)/);
+  assert.match(templates, /table: "contacts"/);
+  assert.match(templates, /setRecipient\(event\.target\.value\)/);
+  assert.match(templates, /useServerFn\(sendTemplateMessage\)/);
+  assert.match(recordFn, /contacts: \{ permission: "contacts\.read" \}/);
+  assert.match(send, /azwa_can_send_number/);
+  assert.match(send, /template\.organization_id !== number\.organization_id/);
+  assert.doesNotMatch(templates, /supabase\.functions\.invoke\("send_message"/);
+});
