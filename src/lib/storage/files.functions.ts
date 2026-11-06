@@ -38,6 +38,8 @@ export type FilesResponse = {
 
 type ListInput = {
   numberId?: string | undefined;
+  scoped?: boolean;
+  scopeNumberIds?: string[];
   status?: string | undefined;
   mediaType?: string | undefined;
   search?: string | undefined;
@@ -85,14 +87,38 @@ export const listStoredFiles = createServerFn({ method: "POST" })
     const pageSize = Math.min(200, Math.max(25, Math.trunc(data.pageSize ?? 100)));
     const page = Math.max(1, Math.trunc(data.page ?? 1));
     const search = normalizedSearch(data.search);
+    const scoped = data.scoped === true;
+    const scopeIds = [...new Set(data.scopeNumberIds ?? [])];
+    if (scopeIds.length > 200 || scopeIds.some((id) => !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id))) {
+      throw new Error("Invalid WhatsApp number scope");
+    }
+    if (scoped && scopeIds.length > 0) {
+      const { data: authorizedNumbers, error: scopeError } = await supabaseAdmin
+        .from("whatsapp_numbers").select("id")
+        .eq("organization_id", organizationId).in("id", scopeIds);
+      if (scopeError || (authorizedNumbers ?? []).length !== scopeIds.length) {
+        throw new Error("Invalid organization number scope");
+      }
+    }
+    if (scoped && data.numberId && !scopeIds.includes(data.numberId)) {
+      throw new Error("Number is not in the selected scope");
+    }
+    if (scoped && scopeIds.length === 0) {
+      return {
+        bucket: "", files: [], numbers: [],
+        totals: { all: 0, stored: 0, pending: 0, failed: 0, bytes: 0 },
+        page: 1, pageSize, totalPages: 1,
+      };
+    }
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const numberQuery = supabaseAdmin
+    let numberQuery = supabaseAdmin
       .from("whatsapp_numbers")
       .select("id, display_phone_number, verified_name")
       .eq("organization_id", organizationId)
       .order("display_phone_number", { ascending: true });
+    if (scoped) numberQuery = numberQuery.in("id", scopeIds);
 
     let mediaQuery = supabaseAdmin
       .from("media")
@@ -101,6 +127,7 @@ export const listStoredFiles = createServerFn({ method: "POST" })
       )
       .eq("organization_id", organizationId);
 
+    if (scoped) mediaQuery = mediaQuery.in("whatsapp_number_id", scopeIds);
     if (data.numberId) mediaQuery = mediaQuery.eq("whatsapp_number_id", data.numberId);
     if (data.status) mediaQuery = mediaQuery.eq("download_status", data.status);
     if (data.mediaType) mediaQuery = mediaQuery.eq("media_type", data.mediaType);
@@ -116,6 +143,7 @@ export const listStoredFiles = createServerFn({ method: "POST" })
           .select("file_size, download_status")
           .eq("organization_id", organizationId);
 
+        if (scoped) totalsQuery = totalsQuery.in("whatsapp_number_id", scopeIds);
         if (data.numberId) totalsQuery = totalsQuery.eq("whatsapp_number_id", data.numberId);
         if (data.status) totalsQuery = totalsQuery.eq("download_status", data.status);
         if (data.mediaType) totalsQuery = totalsQuery.eq("media_type", data.mediaType);

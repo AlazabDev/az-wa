@@ -82,7 +82,7 @@ function AnalyticsPage() {
   const { scope } = useScope();
   const { data: allNumbers = [] } = useNumbers();
   const numbers = useMemo(() => numbersInScope(allNumbers, scope), [allNumbers, scope]);
-  const { data: counters, isLoading } = useOpsCounters(numbers.map((n) => n.id));
+  const { data: counters, isLoading } = useOpsCounters(numbers.map((n) => n.id), scope.kind !== "all");
 
   // Derived values
   const delivered = counters?.delivered ?? 0;

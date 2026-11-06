@@ -13,6 +13,13 @@ export const getNotificationIntegrations = createServerFn({ method: "GET" })
       .maybeSingle();
 
     if (membershipError || !membership) throw new Error("No active organization membership");
+    // The response contains webhook_secret. Only integration administrators
+    // may list or copy signed integration endpoints.
+    const { data: allowed, error: permissionError } = await context.supabase.rpc(
+      "azwa_has_org_permission",
+      { p_org_id: membership.organization_id, p_permission: "integrations.manage" },
+    );
+    if (permissionError || !allowed) throw new Error("Forbidden");
 
     const { data, error } = await (context.supabase.from as any)("notification_integrations")
       .select(

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Pencil, Phone, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
@@ -17,6 +17,8 @@ import {
   updateContact,
 } from "@/lib/contacts.functions";
 import { readRecordTable } from "@/lib/record-table.functions";
+import { useNumbers } from "@/lib/azwa-data";
+import { numbersInScope, useScope } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({ meta: [{ title: "Contacts — AzWA" }] }),
@@ -507,6 +509,13 @@ const PAGE_SIZE = 100;
 function ContactsPage() {
   const queryClient = useQueryClient();
   const readRecords = useServerFn(readRecordTable);
+  const { scope } = useScope();
+  const numberQuery = useNumbers();
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
+  const scopeNumberIds = useMemo(
+    () => scope.kind === "all" ? [] : numbersInScope(numberQuery.data ?? [], scope).map((number) => number.id),
+    [numberQuery.data, scope],
+  );
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -515,12 +524,25 @@ function ContactsPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ContactRow | null>(null);
 
+  useEffect(() => {
+    setSelected(null);
+    setPage(1);
+  }, [scopeKey]);
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["record-table", "contacts", "last_interaction_at", PAGE_SIZE, page],
+    queryKey: ["record-table", "contacts", "last_interaction_at", PAGE_SIZE, page, scopeKey, scopeNumberIds.join(",")],
     queryFn: () =>
       readRecords({
-        data: { table: "contacts", orderBy: "last_interaction_at", limit: PAGE_SIZE, page },
+        data: {
+          table: "contacts",
+          orderBy: "last_interaction_at",
+          limit: PAGE_SIZE,
+          page,
+          scoped: scope.kind !== "all",
+          scopeNumberIds,
+        },
       }),
+    enabled: scope.kind === "all" || numberQuery.isSuccess,
     refetchInterval: 30_000,
   });
 

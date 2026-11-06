@@ -15,7 +15,7 @@ import {
   Search,
   TriangleAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader, Panel } from "@/components/azwa/page-header";
@@ -28,6 +28,9 @@ import {
   type StoredFile,
 } from "@/lib/storage/files.functions";
 import { cn } from "@/lib/utils";
+import { useNumbers } from "@/lib/azwa-data";
+import { numbersInScope, useScope } from "@/lib/scope";
+import { whatsappAccountLabel } from "@/lib/azwa-number-labels";
 
 export const Route = createFileRoute("/_authenticated/files")({
   head: () => ({
@@ -130,6 +133,13 @@ function FilesPage() {
   const loadFiles = useServerFn(listStoredFiles);
   const loadFileUrl = useServerFn(getStoredFileUrl);
   const retryFile = useServerFn(retryStoredFile);
+  const { scope } = useScope();
+  const numberQuery = useNumbers();
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
+  const scopeNumberIds = useMemo(
+    () => scope.kind === "all" ? [] : numbersInScope(numberQuery.data ?? [], scope).map((number) => number.id),
+    [numberQuery.data, scope],
+  );
 
   const [numberId, setNumberId] = useState("all");
   const [status, setStatus] = useState("all");
@@ -140,22 +150,30 @@ function FilesPage() {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [fileLinks, setFileLinks] = useState<Record<string, { url: string; isPublic: boolean }>>({});
+  useEffect(() => {
+    setNumberId("all");
+    setFileLinks({});
+    setPage(1);
+  }, [scopeKey]);
 
   const input = useMemo(
     () => ({
       page,
       pageSize: PAGE_SIZE,
+      scoped: scope.kind !== "all",
+      scopeNumberIds,
       ...(numberId !== "all" ? { numberId } : {}),
       ...(status !== "all" ? { status } : {}),
       ...(mediaType !== "all" ? { mediaType } : {}),
       ...(search.trim() ? { search: search.trim() } : {}),
     }),
-    [mediaType, numberId, page, search, status],
+    [mediaType, numberId, page, search, status, scope.kind, scopeNumberIds],
   );
 
   const query = useQuery({
-    queryKey: ["stored-files", input],
+    queryKey: ["stored-files", scopeKey, input],
     queryFn: () => loadFiles({ data: input }),
+    enabled: scope.kind === "all" || numberQuery.isSuccess,
     refetchInterval: 30_000,
   });
 
@@ -300,7 +318,12 @@ function FilesPage() {
             <option value="all">كل الأرقام</option>
             {(data?.numbers ?? []).map((number) => (
               <option key={number.id} value={number.id}>
-                {number.label}
+                {(() => {
+                  const inventoryNumber = numberQuery.data?.find((item) => item.id === number.id);
+                  return inventoryNumber
+                    ? whatsappAccountLabel(inventoryNumber.display_phone_number, inventoryNumber.internal_name || inventoryNumber.verified_name)
+                    : number.label;
+                })()}
               </option>
             ))}
           </select>

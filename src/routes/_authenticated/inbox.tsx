@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNumbers } from "@/lib/azwa-data";
 import { sendTextMessage } from "@/lib/meta/messaging.functions";
 import { readRecordTable } from "@/lib/record-table.functions";
-import { useScope } from "@/lib/scope";
+import { numbersInScope, useScope } from "@/lib/scope";
+import { whatsappAccountLabel } from "@/lib/azwa-number-labels";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({ meta: [{ title: "Inbox — AzWA" }] }),
@@ -119,16 +120,10 @@ function ConversationThread({
     if (!body.trim() || !numberId) return;
     setSending(true);
     try {
-      const recipientContact = contactId ?? null;
-      // We need the recipient's WhatsApp number — derive from conversation messages if possible
-      const lastIncoming = [...messages].reverse().find((m) => m.direction === "incoming");
-      const recipient = lastIncoming?.contact_id ?? contactId ?? "";
-      if (!recipient) {
-        toast.error("Cannot determine recipient from this conversation");
-        return;
-      }
+      // The authenticated server resolves the WhatsApp destination from
+      // the conversation's contact channel, never from a contact UUID.
       await send({
-        data: { numberId, recipient, body: body.trim(), conversationId, contactId },
+        data: { numberId, recipient: "", body: body.trim(), conversationId, contactId },
       });
       setBody("");
       await refetch();
@@ -263,10 +258,15 @@ function InboxPage() {
   const queryClient = useQueryClient();
   const send = useServerFn(sendTextMessage);
   const readRecords = useServerFn(readRecordTable);
-  const { data: numbers = [] } = useNumbers();
+  const numberQuery = useNumbers();
+  const numbers = numberQuery.data ?? [];
 
   const [activeTab, setActiveTab] = useState<"compose" | "conversations">("conversations");
   const [selectedConversation, setSelectedConversation] = useState<ConversationRow | null>(null);
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
+  const scopeNumberIds = useMemo(() => scope.kind === "all" ? [] : numbersInScope(numbers, scope).map((number) => number.id),
+    [numbers, scope]);
+  useEffect(() => setSelectedConversation(null), [scopeKey]);
 
   // Compose state
   const senders = useMemo(
@@ -294,11 +294,19 @@ function InboxPage() {
     isLoading: convLoading,
     refetch: refetchConvs,
   } = useQuery({
-    queryKey: ["record-table", "conversations", "last_message_at", 100, 1],
+    queryKey: ["record-table", "conversations", "last_message_at", 100, 1, scopeKey, scopeNumberIds.join(",")],
     queryFn: () =>
       readRecords({
-        data: { table: "conversations", orderBy: "last_message_at", limit: 100, page: 1 },
+        data: {
+          table: "conversations",
+          orderBy: "last_message_at",
+          limit: 100,
+          page: 1,
+          scoped: scope.kind !== "all",
+          scopeNumberIds,
+        },
       }),
+    enabled: scope.kind === "all" || numberQuery.isSuccess,
     refetchInterval: 15_000,
   });
 
@@ -467,7 +475,7 @@ function InboxPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {number?.display_phone_number ?? conv.whatsapp_number_id.slice(0, 12)}
+                            {number ? whatsappAccountLabel(number.display_phone_number, number.internal_name || number.verified_name) : "حساب واتساب"}
                           </p>
                           <p className="mt-0.5 font-mono text-[10px] text-muted-foreground truncate">
                             {conv.id.slice(0, 8)}…

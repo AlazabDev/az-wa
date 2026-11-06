@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { readRecordTable } from "@/lib/record-table.functions";
+import { useNumbers } from "@/lib/azwa-data";
+import { numbersInScope, useScope } from "@/lib/scope";
 import { Button } from "@/components/ui/button";
 
 import { Panel } from "./page-header";
@@ -67,13 +69,24 @@ export function RecordTable({
   actions?: React.ReactNode;
 }) {
   const readRecords = useServerFn(readRecordTable);
+  const { scope } = useScope();
+  const numbersQuery = useNumbers();
   const [page, setPage] = useState(1);
+  const scoped = scope.kind !== "all";
+  const scopedNumberIds = useMemo(
+    () => scope.kind === "all" ? [] : numbersInScope(numbersQuery.data ?? [], scope).map((number) => number.id),
+    [numbersQuery.data, scope],
+  );
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
+  useEffect(() => setPage(1), [scopeKey]);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["record-table", table, orderBy, limit, page],
-    queryFn: () => readRecords({ data: { table, orderBy, limit, page } }),
+    queryKey: ["record-table", table, orderBy, limit, page, scopeKey, scopedNumberIds.join(",")],
+    queryFn: () => readRecords({
+      data: { table, orderBy, limit, page, scoped, scopeNumberIds: scopedNumberIds },
+    }),
+    enabled: !scoped || numbersQuery.isSuccess,
     refetchInterval: 30_000,
-    // Reset to page 1 if filters/search change handled by parent
   });
 
   const rows: Row[] = data?.rows ?? [];

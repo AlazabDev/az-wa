@@ -31,6 +31,10 @@ jobs:
         run: node --test scripts/integration-contract.test.mjs
       - name: Verify retired React Router sources and live TanStack replacements
         run: node --test scripts/legacy-cleanup-contract.test.mjs
+      - name: Validate sidebar destinations and live route coverage
+        run: node --test scripts/navigation-coverage.test.mjs
+      - name: WhatsApp account selector, scope and messaging regression
+        run: node --test scripts/account-scope-contract.test.mjs
       - name: Verify runtime vs staged integration import boundary
         run: node scripts/integration-boundary.mjs
       - name: Verify generated TanStack routes against filesystem

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/azwa/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,8 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, Copy, Download, Trash, Loader2 } from "lucide-react";
 import { getMediaItems, deleteMediaItem } from "@/lib/media.functions";
 import type { MediaItemWithUrl } from "@/lib/media.functions";
+import { useNumbers } from "@/lib/azwa-data";
+import { numbersInScope, useScope } from "@/lib/scope";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -47,6 +49,13 @@ export const Route = createFileRoute("/_authenticated/media")({
 });
 
 function MediaPage() {
+  const { scope } = useScope();
+  const numberQuery = useNumbers();
+  const scopeKey = `${scope.kind}:${scope.id ?? ""}`;
+  const scopeNumberIds = useMemo(
+    () => scope.kind === "all" ? [] : numbersInScope(numberQuery.data ?? [], scope).map((number) => number.id),
+    [numberQuery.data, scope],
+  );
   const [dateFilter, setDateFilter] = useState<
     number | "all" | "custom"
   >(30);
@@ -58,13 +67,21 @@ function MediaPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const limit = 50;
+  useEffect(() => {
+    setPage(1);
+    setViewerOpen(false);
+    setSelectedMedia(null);
+  }, [scopeKey]);
 
   const {
     data: mediaData,
     isLoading,
+    isError,
+    error,
     refetch,
   } = useQuery({
-    queryKey: ["media", dateFilter, dateRange, typeFilter, page, limit],
+    queryKey: ["media", scopeKey, scopeNumberIds.join(","), dateFilter, dateRange, typeFilter, page, limit],
+    enabled: scope.kind === "all" || numberQuery.isSuccess,
     queryFn: () => {
       const payload: {
         days?: number | "all";
@@ -73,10 +90,14 @@ function MediaPage() {
         type?: string;
         page?: number;
         limit?: number;
+        scoped?: boolean;
+        numberIds?: string[];
       } = {
         type: typeFilter,
         page,
         limit,
+        scoped: scope.kind !== "all",
+        numberIds: scopeNumberIds,
       };
 
       if (dateFilter !== "custom") {
@@ -172,9 +193,15 @@ function MediaPage() {
   return (
     <>
       <PageHeader
-        title="WhatsApp Media"
-        description="Browse media attachments across all conversations. Download or remove media without deleting the original message."
+        title="وسائط واتساب"
+        description={`استعراض ملفات المحادثات وفق نطاق الحساب المحدد: ${scope.label}. الحذف يتطلب صلاحية إدارة الوسائط.`}
       />
+      {isError && (
+        <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <span>{error instanceof Error ? error.message : "تعذر تحميل ملفات الوسائط"}</span>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>إعادة المحاولة</Button>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {/* Filter Bar */}

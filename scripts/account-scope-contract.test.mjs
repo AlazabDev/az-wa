@@ -1,0 +1,91 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { normalizeWhatsappPhone, whatsappAccountName, whatsappAccountLabel } from "../src/lib/azwa-number-labels.ts";
+
+const read = (path) => readFileSync(resolve(import.meta.dirname, "..", path), "utf8");
+
+const accounts = [
+  ["201202334066", "Mohamed Azab"],
+  ["201146395966", "Alazab Arc"],
+  ["201092750351", "Alazab"],
+  ["1205-460-5650", "Mohamed Azab"],
+  ["1208-379-9564", "Mohamed Azab"],
+  ["201146397010", "Alazab"],
+  ["1555-724-5001", "alazab"],
+  ["1555-678-2228", "Test Number"],
+  ["1203-204-7240", "Mohamed Azab"],
+];
+test("all nine supplied WhatsApp accounts resolve to their exact names", () => {
+  assert.equal(accounts.length, 9);
+  for (const [phone, name] of accounts) {
+    assert.equal(whatsappAccountName(phone), name, phone);
+    assert.equal(whatsappAccountName("+" + phone), name, phone);
+    assert.match(whatsappAccountLabel(phone), new RegExp(name, "i"));
+  }
+  assert.equal(normalizeWhatsappPhone("+1 (205) 460-5650"), "12054605650");
+});
+test("unlisted numbers are labelled without revealing a Meta identifier", () => {
+  assert.equal(whatsappAccountName("+201000000000"), "حساب واتساب");
+  assert.equal(whatsappAccountName("+201000000000", "Verified account"), "Verified account");
+  assert.doesNotMatch(read("src/components/azwa/scope-selector.tsx"), /n\.meta_phone_number_id|w\.meta_waba_id|p\.meta_business_id/);
+});
+test("scope changes reconcile removed IDs and refresh number-scoped tables", () => {
+  const selector = read("src/components/azwa/scope-selector.tsx");
+  const table = read("src/components/azwa/record-table.tsx");
+  const server = read("src/lib/record-table.functions.ts");
+  assert.match(selector, /if \(!selected\)/);
+  assert.match(selector, /setScope\(next\)/);
+  assert.match(table, /scopeNumberIds/);
+  assert.match(table, /scopeKey/);
+  assert.match(server, /Invalid organization number scope/);
+  assert.match(server, /numberScopedTables/);
+});
+test("inbox replies resolve WhatsApp phone numbers on the authenticated server", () => {
+  const inbox = read("src/routes/_authenticated/inbox.tsx");
+  const send = read("src/lib/meta/messaging.functions.ts");
+  assert.match(inbox, /recipient: ""/);
+  assert.match(send, /from\("contact_channels"\)/);
+  assert.match(send, /conversation\.contact_id/);
+  assert.match(send, /\.eq\("organization_id", number\.organization_id\)/);
+  assert.doesNotMatch(inbox, /recipient = lastIncoming\?\.contact_id/);
+});
+
+test("media and file routes enforce selection in both client and privileged server functions", () => {
+  const mediaPage = read("src/routes/_authenticated/media.tsx");
+  const mediaApi = read("src/lib/media.functions.ts");
+  const filesPage = read("src/routes/_authenticated/files.tsx");
+  const filesApi = read("src/lib/storage/files.functions.ts");
+  for (const page of [mediaPage, filesPage]) {
+    assert.match(page, /useScope/);
+    assert.match(page, /scopeNumberIds|numberIds/);
+    assert.match(page, /scopeKey/);
+  }
+  assert.match(mediaApi, /authorizeMedia\(context, "media.read"\)/);
+  assert.match(mediaApi, /authorizeMedia\(context, "media.manage"\)/);
+  assert.match(mediaApi, /eq\("organization_id", organizationId\)/);
+  assert.match(filesApi, /Invalid organization number scope/);
+  assert.match(filesApi, /\.in\("whatsapp_number_id", scopeIds\)/);
+});
+
+test("monitor action links existing protected webhook reconciliation to a visible control", () => {
+  const monitor = read("src/routes/_authenticated/monitor.tsx");
+  const server = read("src/lib/meta/app-webhook.functions.ts");
+  assert.match(monitor, /onClick=\{\(\) => void linkAll\(\)\}/);
+  assert.match(monitor, /ربط Webhook لكل الحسابات/);
+  assert.match(server, /linkAllWabasWebhook/);
+  assert.match(server, /credentials\.manage/);
+});
+
+test("notification integrations have a live navigation entry, scoped results and privileged secret reads", () => {
+  const nav = read("src/components/azwa/app-shell.tsx");
+  const notifications = read("src/routes/_authenticated/notifications.tsx");
+  const api = read("src/lib/notifications.functions.ts");
+  assert.match(nav, /to: "\/notifications"/);
+  assert.match(notifications, /visibleIntegrations/);
+  assert.match(notifications, /scopedNumbers/);
+  const getter = api.split("export const createNotificationIntegration")[0];
+  assert.match(getter, /integrations\.manage/);
+  assert.match(getter, /webhook_secret/);
+});

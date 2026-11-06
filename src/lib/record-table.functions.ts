@@ -11,6 +11,8 @@ type ReadInput = {
   limit?: number;
   page?: number;
   conversationId?: string;
+  scopeNumberIds?: string[];
+  scoped?: boolean;
 };
 
 type TableRule = {
@@ -151,9 +153,65 @@ export const readRecordTable = createServerFn({ method: "POST" })
     if (data.conversationId && (data.table !== "messages" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.conversationId))) {
       throw new Error("Invalid conversation filter");
     }
+    // A selected number scope must never silently fall back to
+    // organization-wide records. Resolve client-provided number IDs against
+    // the permitted organization before building the service-role query.
+    const scopeIds = [...new Set(data.scopeNumberIds ?? [])];
+    const isScoped = data.scoped === true;
+    if (scopeIds.length > 200 || scopeIds.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) {
+      throw new Error("Invalid number scope");
+    }
+    let scopedWabaIds: string[] = [];
+    if (isScoped && scopeIds.length) {
+      const { data: allowedRows, error: scopeError } = await supabaseRuntimeAdmin
+        .from("whatsapp_numbers")
+        .select("id, waba_id")
+        .eq("organization_id", organization.id)
+        .in("id", scopeIds);
+      if (scopeError) throw new Error(scopeError.message);
+      if ((allowedRows ?? []).length !== scopeIds.length) throw new Error("Invalid organization number scope");
+      scopedWabaIds = [...new Set((allowedRows ?? []).map((row) => String(row.waba_id)))];
+    }
+
+    const numberScopedTables = new Set([
+      "conversations", "messages", "media", "message_outbox",
+    ]);
+    const wabaScopedTables = new Set(["templates", "whatsapp_flows"]);
+    const supportsScope = numberScopedTables.has(data.table) || wabaScopedTables.has(data.table) || data.table === "campaigns" || data.table === "contacts";
+    if (isScoped && supportsScope && scopeIds.length === 0) {
+      return { rows: [], total: 0, page: 1, pageSize, totalPages: 1 };
+    }
 
     let query = runtime.from(data.table).select(rule.safeColumns ?? "*", { count: "exact" });
     if (!globalCatalog) query = query.eq("organization_id", organization.id);
+    if (isScoped && numberScopedTables.has(data.table)) {
+      query = query.in("whatsapp_number_id", scopeIds);
+    }
+    if (isScoped && wabaScopedTables.has(data.table)) {
+      query = query.in("waba_id", scopedWabaIds);
+    }
+    if (isScoped && data.table === "campaigns") {
+      query = query.in("sender_whatsapp_number_id", scopeIds);
+    }
+    if (isScoped && data.table === "contacts") {
+      // Contacts have no number foreign key. Resolve those associated with
+      // conversations in the selected WhatsApp numbers within the organization.
+      const { data: conversationContacts, error: contactScopeError } = await supabaseRuntimeAdmin
+        .from("conversations")
+        .select("contact_id")
+        .eq("organization_id", organization.id)
+        .in("whatsapp_number_id", scopeIds)
+        .not("contact_id", "is", null)
+        .limit(10000);
+      if (contactScopeError) throw new Error(contactScopeError.message);
+      const contactIds = [...new Set((conversationContacts ?? [])
+        .map((row) => row.contact_id)
+        .filter((id): id is string => typeof id === "string"))];
+      if (contactIds.length === 0) {
+        return { rows: [], total: 0, page: 1, pageSize, totalPages: 1 };
+      }
+      query = query.in("id", contactIds);
+    }
     if (data.conversationId) query = query.eq("conversation_id", data.conversationId);
     query = query.order(orderBy, { ascending: false }).range(from, to);
 

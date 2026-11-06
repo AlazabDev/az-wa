@@ -153,6 +153,17 @@ function MonitorPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => void linkAll()}
+              disabled={linking || syncing}
+              className="gap-2"
+              title="إعادة ربط حسابات واتساب مع Webhook الخاص بالتطبيق"
+            >
+              <RefreshCw className={`size-4 ${linking ? "animate-spin" : ""}`} />
+              <span>{linking ? "جارٍ ربط الحسابات..." : "ربط Webhook لكل الحسابات"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => void refresh()}
               disabled={syncing}
               className="gap-2"
