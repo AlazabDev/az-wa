@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { listTemplates } from "@/lib/meta/templates.functions";
 
 export type TemplateStatus =
   "draft" | "pending" | "approved" | "rejected" | "paused" | "disabled" | "deleted" | "unknown";
@@ -318,19 +319,12 @@ export function runtimeComponentsFromValues(
 }
 
 export function useTemplates() {
+  const read = useServerFn(listTemplates);
   return useQuery({
     queryKey: ["templates"],
     queryFn: async (): Promise<Template[]> => {
-      const { data, error } = await supabase
-        .from("templates")
-        .select(
-          "id, waba_id, meta_template_id, name, category, language, status, quality_rating, rejection_reason, components, last_synced_at, updated_at",
-        )
-        .order("name");
-
-      if (error) throw error;
-
-      return (data ?? []).map((template) => ({
+      const data = await read({ data: {} });
+      return data.map((template) => ({
         id: template.id,
         waba_id: template.waba_id,
         meta_template_id: template.meta_template_id ?? null,
@@ -341,8 +335,7 @@ export function useTemplates() {
         quality_rating: template.quality_rating ?? null,
         rejection_reason: template.rejection_reason ?? null,
         components: (Array.isArray(template.components)
-          ? template.components
-          : []) as TemplateComponent[],
+          ? template.components : []) as TemplateComponent[],
         last_synced_at: template.last_synced_at ?? null,
         updated_at: template.updated_at ?? null,
       }));
