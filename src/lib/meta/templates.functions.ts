@@ -47,6 +47,62 @@ async function assertWabaPermission(
   return waba.organization_id;
 }
 
+export type TemplateListRow = {
+  id: string;
+  waba_id: string;
+  meta_template_id: string | null;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  quality_rating: string | null;
+  rejection_reason: string | null;
+  components: unknown;
+  last_synced_at: string | null;
+  updated_at: string | null;
+};
+
+/** Read the clean production backend through an authenticated server boundary. */
+export const listTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: Record<string, never>) => input)
+  .handler(async ({ context }): Promise<TemplateListRow[]> => {
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: memberships, error: membershipError } = await supabaseRuntimeAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", context.userId)
+      .eq("status", "active");
+    if (membershipError) throw new Error(membershipError.message);
+
+    const allowedOrgIds: string[] = [];
+    for (const orgId of [...new Set((memberships ?? []).map((m) => m.organization_id))]) {
+      const { data: allowed, error } = await context.supabase.rpc("azwa_has_org_permission", {
+        p_org_id: orgId, p_permission: "templates.read",
+      });
+      if (error) throw new Error(error.message);
+      if (allowed) allowedOrgIds.push(orgId);
+    }
+    if (!allowedOrgIds.length) return [];
+
+    const rows: TemplateListRow[] = [];
+    for (const orgId of allowedOrgIds) {
+      for (let offset = 0; offset < 50000; offset += 500) {
+        const { data, error } = await supabaseRuntimeAdmin
+          .from("templates")
+          .select("id, waba_id, meta_template_id, name, category, language, status, quality_rating, rejection_reason, components, last_synced_at, updated_at")
+          .eq("organization_id", orgId)
+          .order("id")
+          .range(offset, offset + 499);
+        if (error) throw new Error(error.message);
+        rows.push(...((data ?? []) as TemplateListRow[]));
+        if ((data ?? []).length < 500) break;
+        if (offset === 49500) throw new Error("Template listing exceeded safe pagination limit");
+      }
+    }
+    return rows;
+  });
+
 export const syncTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { wabaId: string }) => {
