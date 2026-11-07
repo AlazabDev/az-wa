@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/azwa/app-shell";
+import { RouteErrorRecovery } from "@/components/azwa/route-error";
 import { supabase } from "@/integrations/supabase/client";
 import { getAuthenticatedOrganizationScopes } from "@/lib/auth-scopes.functions";
 import { ScopeProvider } from "@/lib/scope";
@@ -19,31 +20,28 @@ function AuthPending() {
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    // Production access is granted only after Supabase validates the current user.
-    // Never fall back to browser-controlled test/local storage values.
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    // Transient network/server failures should render the retryable route
+    // boundary, not silently sign users out or redirect them to /auth.
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
-
-    if (!result || result.error || !result.data.user) {
-      throw redirect({ to: "/auth" });
+    if (result === null) {
+      throw new Error("Authentication service timeout — please retry");
     }
-
-    // A valid Supabase account alone is not sufficient for AzWA access.
-    // The server function verifies the bearer token again and returns only active
-    // organization memberships from the protected runtime schema.
-    try {
-      const scopes = await getAuthenticatedOrganizationScopes({ data: {} });
-      if (scopes.length === 0) {
-        await supabase.auth.signOut();
-        throw redirect({ to: "/auth" });
-      }
-    } catch (error) {
-      if (error && typeof error === "object" && "redirect" in error) throw error;
-      throw redirect({ to: "/auth" });
+    if (result.error) {
+      const status = result.error.status;
+      if (status === 401 || status === 403) throw redirect({ to: "/auth" });
+      throw new Error("Unable to verify session with Supabase");
     }
+    if (!result.data.user) throw redirect({ to: "/auth" });
 
+    // Server authorization still requires active organization membership.
+    // Database/network errors propagate to the retry boundary; only a
+    // verified absence of membership blocks access.
+    const scopes = await getAuthenticatedOrganizationScopes({ data: {} });
+    if (!scopes.length) throw redirect({ to: "/auth" });
     return { user: result.data.user };
   },
+  errorComponent: RouteErrorRecovery,
   pendingComponent: AuthPending,
   pendingMs: 0,
   component: () => (
