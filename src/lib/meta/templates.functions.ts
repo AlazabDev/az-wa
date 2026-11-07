@@ -57,7 +57,7 @@ export type TemplateListRow = {
   status: string;
   quality_rating: string | null;
   rejection_reason: string | null;
-  components: unknown;
+  componentsJson: string;
   last_synced_at: string | null;
   updated_at: string | null;
 };
@@ -95,7 +95,10 @@ export const listTemplates = createServerFn({ method: "POST" })
           .order("id")
           .range(offset, offset + 499);
         if (error) throw new Error(error.message);
-        rows.push(...((data ?? []) as TemplateListRow[]));
+        rows.push(...(data ?? []).map((row) => ({
+          ...row,
+          componentsJson: JSON.stringify(row.components ?? []),
+        } as TemplateListRow)));
         if ((data ?? []).length < 500) break;
         if (offset === 49500) throw new Error("Template listing exceeded safe pagination limit");
       }
