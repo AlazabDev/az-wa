@@ -60,6 +60,70 @@ export const syncTemplates = createServerFn({ method: "POST" })
     return syncWabaTemplates(data.wabaId);
   });
 
+/**
+ * Account-wide sync must be initiated as a single authenticated server action,
+ * not a browser loop that stops when one account rejects its token.
+ * Each WABA is independently permission-checked; failures are reported.
+ */
+export const syncAllTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: user, error: userError } = await context.supabase.auth.getUser();
+    if (userError || !user.user) throw new Error("Authentication required");
+
+    const { data: memberships, error: membershipError } = await context.supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.user.id)
+      .eq("status", "active");
+    if (membershipError) throw new Error(membershipError.message);
+    const orgIds = [...new Set((memberships ?? []).map((m) => m.organization_id))];
+    if (!orgIds.length) throw new Error("No authorized organization");
+
+    const { syncWabaTemplates } = await import("./templates.server");
+    const results: Array<{ wabaId: string; name: string; ok: boolean; synced: number; error?: string }> = [];
+
+    for (const orgId of orgIds) {
+      // Page through the inventory; do not assume there are only seven WABAs.
+      let offset = 0;
+      for (;;) {
+        const { data: wabas, error: listError } = await context.supabase
+          .from("wabas")
+          .select("id, name, meta_waba_id")
+          .eq("organization_id", orgId)
+          .order("id")
+          .range(offset, offset + 199);
+        if (listError) throw new Error(listError.message);
+        for (const waba of wabas ?? []) {
+          const name = waba.name || waba.meta_waba_id || waba.id;
+          try {
+            await assertWabaPermission(context.supabase, waba.id);
+            const result = await syncWabaTemplates(waba.id);
+            results.push({
+              wabaId: waba.id, name, ok: result.ok, synced: result.synced,
+              ...(!result.ok ? { error: result.error } : {}),
+            });
+          } catch (error) {
+            results.push({
+              wabaId: waba.id, name, ok: false, synced: 0,
+              error: error instanceof Error ? error.message : "WABA sync failed",
+            });
+          }
+        }
+        if ((wabas ?? []).length < 200) break;
+        offset += 200;
+      }
+    }
+    return {
+      ok: results.length > 0 && results.every((result) => result.ok),
+      totalWabas: results.length,
+      successfulWabas: results.filter((result) => result.ok).length,
+      failedWabas: results.filter((result) => !result.ok).length,
+      synced: results.reduce((sum, result) => sum + result.synced, 0),
+      results,
+    };
+  });
+
 export const createTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: CreateTemplateInput) => {
