@@ -25,7 +25,8 @@ async function assertWabaPermission(
 ): Promise<string> {
   if (!wabaId) throw new Error("A WABA is required");
 
-  const { data: waba, error } = await supabase
+  const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: waba, error } = await supabaseRuntimeAdmin
     .from("wabas")
     .select("id, organization_id")
     .eq("id", wabaId)
@@ -68,13 +69,11 @@ export const syncTemplates = createServerFn({ method: "POST" })
 export const syncAllTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: user, error: userError } = await context.supabase.auth.getUser();
-    if (userError || !user.user) throw new Error("Authentication required");
-
-    const { data: memberships, error: membershipError } = await context.supabase
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: memberships, error: membershipError } = await supabaseRuntimeAdmin
       .from("organization_members")
       .select("organization_id")
-      .eq("user_id", user.user.id)
+      .eq("user_id", context.userId)
       .eq("status", "active");
     if (membershipError) throw new Error(membershipError.message);
     const orgIds = [...new Set((memberships ?? []).map((m) => m.organization_id))];
@@ -87,7 +86,7 @@ export const syncAllTemplates = createServerFn({ method: "POST" })
       // Page through the inventory; do not assume there are only seven WABAs.
       let offset = 0;
       for (;;) {
-        const { data: wabas, error: listError } = await context.supabase
+        const { data: wabas, error: listError } = await supabaseRuntimeAdmin
           .from("wabas")
           .select("id, name, meta_waba_id")
           .eq("organization_id", orgId)
@@ -184,7 +183,8 @@ export const deleteTemplate = createServerFn({ method: "POST" })
     return { templateId: input.templateId };
   })
   .handler(async ({ data, context }) => {
-    const { data: template, error } = await context.supabase
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: template, error } = await supabaseRuntimeAdmin
       .from("templates")
       .select("id, waba_id")
       .eq("id", data.templateId)
