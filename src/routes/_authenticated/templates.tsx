@@ -22,7 +22,7 @@ import {
   type TemplateComponent,
 } from "@/lib/azwa-templates";
 import { sendTemplateMessage } from "@/lib/meta/template-messaging.functions";
-import { deleteTemplate, syncTemplates } from "@/lib/meta/templates.functions";
+import { deleteTemplate, syncTemplates, syncAllTemplates } from "@/lib/meta/templates.functions";
 import { useScope } from "@/lib/scope";
 import { readRecordTable } from "@/lib/record-table.functions";
 
@@ -68,6 +68,7 @@ function TemplatesPage() {
   const { data: numbers = [] } = useNumbers();
 
   const sync = useServerFn(syncTemplates);
+  const syncAll = useServerFn(syncAllTemplates);
   const remove = useServerFn(deleteTemplate);
 
   const [search, setSearch] = useState("");
@@ -174,6 +175,29 @@ function TemplatesPage() {
     }
   };
 
+  const handleSyncAll = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await syncAll();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["templates"] }),
+        queryClient.invalidateQueries({ queryKey: ["wabas"] }),
+      ]);
+      if (!result.ok) {
+        const examples = result.results.filter((item) => !item.ok)
+          .slice(0, 3).map((item) => `${item.name}: ${item.error ?? "فشل غير معروف"}`).join(" | ");
+        toast.error(`فشلت مزامنة ${result.failedWabas} من ${result.totalWabas} حساب WABA. ${examples || "لم تُكتشف حسابات مصرح بها"}`);
+      } else {
+        toast.success(`تمت مطابقة ${result.synced} قالبًا فعليًا عبر ${result.successfulWabas} حساب WABA`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذرت مزامنة حسابات Meta");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDelete = async (template: Template) => {
     if (!window.confirm(`Delete template "${template.name}" on Meta as well?`)) return;
 
@@ -197,6 +221,10 @@ function TemplatesPage() {
           description="Manage the template library per WABA. Sync follows the active scope and pulls approval and quality state from Meta."
           actions={
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSyncAll} disabled={syncing}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                مزامنة جميع حسابات WABA
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                 {syncing ? "Syncing…" : "Sync from Meta"}
