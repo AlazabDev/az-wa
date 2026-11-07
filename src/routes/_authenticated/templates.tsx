@@ -78,6 +78,13 @@ function TemplatesPage() {
   const [selected, setSelected] = useState<Template | null>(null);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncReport, setLastSyncReport] = useState<{
+    totalWabas: number;
+    successfulWabas: number;
+    failedWabas: number;
+    synced: number;
+    results: Array<{ wabaId: string; name: string; ok: boolean; synced: number; error?: string }>;
+  } | null>(null);
 
   const scopedWabaIds = useMemo<Set<string> | null>(() => {
     if (scope.kind === "all") return null;
@@ -152,6 +159,7 @@ function TemplatesPage() {
       return;
     }
 
+    setLastSyncReport(null);
     setSyncing(true);
     try {
       let total = 0;
@@ -180,6 +188,7 @@ function TemplatesPage() {
     setSyncing(true);
     try {
       const result = await syncAll();
+      setLastSyncReport(result);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["templates"] }),
         queryClient.invalidateQueries({ queryKey: ["wabas"] }),
@@ -240,6 +249,23 @@ function TemplatesPage() {
             </div>
           }
         />
+        {lastSyncReport && (
+          <section aria-live="polite" className="mt-4 rounded-lg border border-border bg-card p-3 text-sm">
+            <div className="font-semibold">
+              نتيجة مزامنة Meta: {lastSyncReport.successfulWabas}/{lastSyncReport.totalWabas} حساب WABA ناجح،
+              {" "}{lastSyncReport.synced} قالبًا، {lastSyncReport.failedWabas} حساب فشل
+            </div>
+            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+              {lastSyncReport.results.map((item) => (
+                <p key={item.wabaId} className={item.ok ? "text-foreground" : "text-destructive"}>
+                  {item.ok ? "✓" : "✗"} {item.name}: {item.ok
+                    ? `${item.synced} قالبًا مطابقًا`
+                    : item.error ?? "تعذر قراءة قوالب Meta"}
+                </p>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           {[
