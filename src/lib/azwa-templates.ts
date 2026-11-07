@@ -334,8 +334,7 @@ export function useTemplates() {
         status: normalizeTemplateStatus(template.status),
         quality_rating: template.quality_rating ?? null,
         rejection_reason: template.rejection_reason ?? null,
-        components: (Array.isArray(template.components)
-          ? template.components : []) as TemplateComponent[],
+        components: JSON.parse(template.componentsJson) as TemplateComponent[],
         last_synced_at: template.last_synced_at ?? null,
         updated_at: template.updated_at ?? null,
       }));
