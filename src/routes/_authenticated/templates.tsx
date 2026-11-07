@@ -63,7 +63,7 @@ function labelOfWaba(waba: Waba | undefined): string {
 function TemplatesPage() {
   const { scope } = useScope();
   const queryClient = useQueryClient();
-  const { data: templates = [], isLoading } = useTemplates();
+  const { data: templates = [], isLoading, isError, error: templatesError, refetch: reloadTemplates } = useTemplates();
   const { data: wabas = [] } = useWabas();
   const { data: numbers = [] } = useNumbers();
 
@@ -249,6 +249,12 @@ function TemplatesPage() {
             </div>
           }
         />
+        {isError && (
+          <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <span>{templatesError instanceof Error ? templatesError.message : "تعذر قراءة مكتبة القوالب من الخادم"}</span>
+            <Button variant="outline" size="sm" onClick={() => void reloadTemplates()}>إعادة المحاولة</Button>
+          </div>
+        )}
         {lastSyncReport && (
           <section aria-live="polite" className="mt-4 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="font-semibold">
