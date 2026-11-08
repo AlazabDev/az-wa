@@ -4,6 +4,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MetaGraphClient, resolveCredential } from "./graph.server";
+import { MAX_TEMPLATE_PAGES, nextTemplateCursor, validateTemplatePage, type TemplatePage, type MetaTemplateSnapshot } from "./template-sync-pagination";
 
 export type TemplateComponent = Record<string, unknown>;
 
@@ -47,24 +48,8 @@ export type WabaScope = {
   meta_waba_id: string;
 };
 
-type MetaTemplate = {
-  id: string;
-  name: string;
-  language: string;
-  category?: string;
-  status?: string;
-  quality_score?: { score?: string };
-  rejected_reason?: string;
-  components?: TemplateComponent[];
-};
-
-type MetaTemplatePage = {
-  data?: MetaTemplate[];
-  paging?: {
-    cursors?: { after?: string };
-    next?: string;
-  };
-};
+type MetaTemplate = MetaTemplateSnapshot;
+type MetaTemplatePage = TemplatePage;
 
 function placeholderIndexes(text: string): number[] {
   return [...text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)]
@@ -153,39 +138,43 @@ export async function syncWabaTemplates(wabaId: string) {
   const seenCursors = new Set<string>();
   let after: string | undefined;
 
-  for (let page = 0; page < 100; page += 1) {
-    const query: Record<string, string> = {
-      limit: "100",
-      fields: "id,name,language,category,status,quality_score,rejected_reason,components",
-    };
-    if (after) query["after"] = after;
-
-    const response = await client.request<MetaTemplatePage>(
-      `${waba.meta_waba_id}/message_templates`,
-      { query },
-    );
-
-    if (!response.ok) {
-      return {
-        ok: false as const,
-        error: response.errorMessage ?? "Graph error",
-        synced: 0,
+  try {
+    for (let page = 0; page < MAX_TEMPLATE_PAGES; page += 1) {
+      const query: Record<string, string> = {
+        limit: "100",
+        fields: "id,name,language,category,status,quality_score,rejected_reason,components",
       };
+      if (after) query["after"] = after;
+
+      const response = await client.request<MetaTemplatePage>(
+        `${waba.meta_waba_id}/message_templates`,
+        { query },
+      );
+      if (!response.ok) throw new Error(response.errorMessage ?? "Meta Graph request failed");
+      const verified = validateTemplatePage(response.data);
+      collected.push(...verified);
+      const next = nextTemplateCursor(response.data!, seenCursors);
+      if (!next) {
+        after = undefined;
+        break;
+      }
+      after = next;
     }
-
-    collected.push(...(response.data?.data ?? []));
-
-    const nextCursor = response.data?.paging?.next
-      ? response.data.paging.cursors?.after
-      : undefined;
-
-    if (!nextCursor || seenCursors.has(nextCursor)) break;
-    seenCursors.add(nextCursor);
-    after = nextCursor;
+    // Do not publish a partial snapshot as a successful account sync.
+    if (after) throw new Error(`Template pagination exceeded ${MAX_TEMPLATE_PAGES} pages`);
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Incomplete Meta template listing",
+      synced: 0,
+    };
   }
 
+  // Deduplicate by Meta ID so overlapping Graph pages cannot create
+  // duplicate rows and abort upsert for a complete listing.
+  const unique = [...new Map(collected.map((row) => [row.id, row])).values()];
   const now = new Date().toISOString();
-  const rows = collected.map((template) => ({
+  const rows = unique.map((template) => ({
     organization_id: waba.organization_id,
     waba_id: waba.id,
     meta_template_id: template.id,
@@ -200,16 +189,42 @@ export async function syncWabaTemplates(wabaId: string) {
     updated_at: now,
   }));
 
-  if (rows.length > 0) {
+  for (let offset = 0; offset < rows.length; offset += 100) {
     const { error } = await supabaseAdmin
       .from("templates")
-      // Runtime schema is ahead of the generated client types.
+      .upsert(rows.slice(offset, offset + 100) as any, { onConflict: "waba_id,name,language" });
+    if (error) return { ok: false as const, error: error.message, synced: offset };
+  }
 
-      .upsert(rows as any, { onConflict: "waba_id,name,language" });
-
-    if (error) {
-      return { ok: false as const, error: error.message, synced: 0 };
+  // Reconcile stale Meta templates without removing draft-only local rows.
+  // Only update after every Graph page and upsert has succeeded.
+  // Limit reconciliation to Meta identities so local drafts remain intact.
+  const currentIds = new Set(unique.map((item) => item.id));
+  let pageOffset = 0;
+  for (;;) {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("templates")
+      .select("id, meta_template_id, status")
+      .eq("waba_id", waba.id)
+      .not("meta_template_id", "is", null)
+      .order("id")
+      .range(pageOffset, pageOffset + 499);
+    if (existingError) {
+      return { ok: false as const, error: existingError.message, synced: rows.length };
     }
+    const staleIds = (existing ?? [])
+      .filter((item) => item.meta_template_id && !currentIds.has(item.meta_template_id) && item.status !== "deleted")
+      .map((item) => item.id);
+    for (let offset = 0; offset < staleIds.length; offset += 100) {
+      const { error: staleError } = await supabaseAdmin
+        .from("templates")
+        .update({ status: "deleted", last_synced_at: now, updated_at: now })
+        .eq("waba_id", waba.id)
+        .in("id", staleIds.slice(offset, offset + 100));
+      if (staleError) return { ok: false as const, error: staleError.message, synced: rows.length };
+    }
+    if ((existing ?? []).length < 500) break;
+    pageOffset += 500;
   }
 
   const { error: wabaUpdateError } = await supabaseAdmin
@@ -221,7 +236,7 @@ export async function syncWabaTemplates(wabaId: string) {
     return { ok: false as const, error: wabaUpdateError.message, synced: rows.length };
   }
 
-  return { ok: true as const, synced: rows.length };
+  return { ok: true as const, synced: rows.length, wabaId: waba.id };
 }
 
 /** Submit a new template to Meta for review and persist the returned Meta identity locally. */

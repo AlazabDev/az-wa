@@ -22,7 +22,7 @@ import {
   type TemplateComponent,
 } from "@/lib/azwa-templates";
 import { sendTemplateMessage } from "@/lib/meta/template-messaging.functions";
-import { deleteTemplate, syncTemplates } from "@/lib/meta/templates.functions";
+import { deleteTemplate, syncTemplates, syncAllTemplates } from "@/lib/meta/templates.functions";
 import { useScope } from "@/lib/scope";
 import { readRecordTable } from "@/lib/record-table.functions";
 
@@ -63,11 +63,12 @@ function labelOfWaba(waba: Waba | undefined): string {
 function TemplatesPage() {
   const { scope } = useScope();
   const queryClient = useQueryClient();
-  const { data: templates = [], isLoading } = useTemplates();
+  const { data: templates = [], isLoading, isError, error: templatesError, refetch: reloadTemplates } = useTemplates();
   const { data: wabas = [] } = useWabas();
   const { data: numbers = [] } = useNumbers();
 
   const sync = useServerFn(syncTemplates);
+  const syncAll = useServerFn(syncAllTemplates);
   const remove = useServerFn(deleteTemplate);
 
   const [search, setSearch] = useState("");
@@ -77,6 +78,13 @@ function TemplatesPage() {
   const [selected, setSelected] = useState<Template | null>(null);
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncReport, setLastSyncReport] = useState<{
+    totalWabas: number;
+    successfulWabas: number;
+    failedWabas: number;
+    synced: number;
+    results: Array<{ wabaId: string; name: string; ok: boolean; synced: number; error?: string }>;
+  } | null>(null);
 
   const scopedWabaIds = useMemo<Set<string> | null>(() => {
     if (scope.kind === "all") return null;
@@ -151,6 +159,7 @@ function TemplatesPage() {
       return;
     }
 
+    setLastSyncReport(null);
     setSyncing(true);
     try {
       let total = 0;
@@ -169,6 +178,30 @@ function TemplatesPage() {
       else toast.success(`${total} template(s) synced from Meta`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await syncAll();
+      setLastSyncReport(result);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["templates"] }),
+        queryClient.invalidateQueries({ queryKey: ["wabas"] }),
+      ]);
+      if (!result.ok) {
+        const examples = result.results.filter((item) => !item.ok)
+          .slice(0, 3).map((item) => `${item.name}: ${item.error ?? "فشل غير معروف"}`).join(" | ");
+        toast.error(`فشلت مزامنة ${result.failedWabas} من ${result.totalWabas} حساب WABA. ${examples || "لم تُكتشف حسابات مصرح بها"}`);
+      } else {
+        toast.success(`تمت مطابقة ${result.synced} قالبًا فعليًا عبر ${result.successfulWabas} حساب WABA`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذرت مزامنة حسابات Meta");
     } finally {
       setSyncing(false);
     }
@@ -197,6 +230,10 @@ function TemplatesPage() {
           description="Manage the template library per WABA. Sync follows the active scope and pulls approval and quality state from Meta."
           actions={
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSyncAll} disabled={syncing}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                مزامنة جميع حسابات WABA
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                 {syncing ? "Syncing…" : "Sync from Meta"}
@@ -212,6 +249,29 @@ function TemplatesPage() {
             </div>
           }
         />
+        {isError && (
+          <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <span>{templatesError instanceof Error ? templatesError.message : "تعذر قراءة مكتبة القوالب من الخادم"}</span>
+            <Button variant="outline" size="sm" onClick={() => void reloadTemplates()}>إعادة المحاولة</Button>
+          </div>
+        )}
+        {lastSyncReport && (
+          <section aria-live="polite" className="mt-4 rounded-lg border border-border bg-card p-3 text-sm">
+            <div className="font-semibold">
+              نتيجة مزامنة Meta: {lastSyncReport.successfulWabas}/{lastSyncReport.totalWabas} حساب WABA ناجح،
+              {" "}{lastSyncReport.synced} قالبًا، {lastSyncReport.failedWabas} حساب فشل
+            </div>
+            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+              {lastSyncReport.results.map((item) => (
+                <p key={item.wabaId} className={item.ok ? "text-foreground" : "text-destructive"}>
+                  {item.ok ? "✓" : "✗"} {item.name}: {item.ok
+                    ? `${item.synced} قالبًا مطابقًا`
+                    : item.error ?? "تعذر قراءة قوالب Meta"}
+                </p>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           {[

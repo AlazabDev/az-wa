@@ -34,4 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={{ user, session, loading, signOut }}>{children}</AuthContext.Provider>;
 }
 
+// Kept alongside its legacy provider for backwards compatibility.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

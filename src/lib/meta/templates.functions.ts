@@ -25,7 +25,8 @@ async function assertWabaPermission(
 ): Promise<string> {
   if (!wabaId) throw new Error("A WABA is required");
 
-  const { data: waba, error } = await supabase
+  const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: waba, error } = await supabaseRuntimeAdmin
     .from("wabas")
     .select("id, organization_id")
     .eq("id", wabaId)
@@ -46,6 +47,65 @@ async function assertWabaPermission(
   return waba.organization_id;
 }
 
+export type TemplateListRow = {
+  id: string;
+  waba_id: string;
+  meta_template_id: string | null;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  quality_rating: string | null;
+  rejection_reason: string | null;
+  componentsJson: string;
+  last_synced_at: string | null;
+  updated_at: string | null;
+};
+
+/** Read the clean production backend through an authenticated server boundary. */
+export const listTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: Record<string, never>) => input)
+  .handler(async ({ context }): Promise<TemplateListRow[]> => {
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: memberships, error: membershipError } = await supabaseRuntimeAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", context.userId)
+      .eq("status", "active");
+    if (membershipError) throw new Error(membershipError.message);
+
+    const allowedOrgIds: string[] = [];
+    for (const orgId of [...new Set((memberships ?? []).map((m) => m.organization_id))]) {
+      const { data: allowed, error } = await context.supabase.rpc("azwa_has_org_permission", {
+        p_org_id: orgId, p_permission: "templates.read",
+      });
+      if (error) throw new Error(error.message);
+      if (allowed) allowedOrgIds.push(orgId);
+    }
+    if (!allowedOrgIds.length) return [];
+
+    const rows: TemplateListRow[] = [];
+    for (const orgId of allowedOrgIds) {
+      for (let offset = 0; offset < 50000; offset += 500) {
+        const { data, error } = await supabaseRuntimeAdmin
+          .from("templates")
+          .select("id, waba_id, meta_template_id, name, category, language, status, quality_rating, rejection_reason, components, last_synced_at, updated_at")
+          .eq("organization_id", orgId)
+          .order("id")
+          .range(offset, offset + 499);
+        if (error) throw new Error(error.message);
+        rows.push(...(data ?? []).map((row) => ({
+          ...row,
+          componentsJson: JSON.stringify(row.components ?? []),
+        } as TemplateListRow)));
+        if ((data ?? []).length < 500) break;
+        if (offset === 49500) throw new Error("Template listing exceeded safe pagination limit");
+      }
+    }
+    return rows;
+  });
+
 export const syncTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { wabaId: string }) => {
@@ -58,6 +118,68 @@ export const syncTemplates = createServerFn({ method: "POST" })
     // Keep server-only modules out of the browser bundle.
     const { syncWabaTemplates } = await import("./templates.server");
     return syncWabaTemplates(data.wabaId);
+  });
+
+/**
+ * Account-wide sync must be initiated as a single authenticated server action,
+ * not a browser loop that stops when one account rejects its token.
+ * Each WABA is independently permission-checked; failures are reported.
+ */
+export const syncAllTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: memberships, error: membershipError } = await supabaseRuntimeAdmin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", context.userId)
+      .eq("status", "active");
+    if (membershipError) throw new Error(membershipError.message);
+    const orgIds = [...new Set((memberships ?? []).map((m) => m.organization_id))];
+    if (!orgIds.length) throw new Error("No authorized organization");
+
+    const { syncWabaTemplates } = await import("./templates.server");
+    const results: Array<{ wabaId: string; name: string; ok: boolean; synced: number; error?: string }> = [];
+
+    for (const orgId of orgIds) {
+      // Page through the inventory; do not assume there are only seven WABAs.
+      let offset = 0;
+      for (;;) {
+        const { data: wabas, error: listError } = await supabaseRuntimeAdmin
+          .from("wabas")
+          .select("id, name, meta_waba_id")
+          .eq("organization_id", orgId)
+          .order("id")
+          .range(offset, offset + 199);
+        if (listError) throw new Error(listError.message);
+        for (const waba of wabas ?? []) {
+          const name = waba.name || waba.meta_waba_id || waba.id;
+          try {
+            await assertWabaPermission(context.supabase, waba.id);
+            const result = await syncWabaTemplates(waba.id);
+            results.push({
+              wabaId: waba.id, name, ok: result.ok, synced: result.synced,
+              ...(!result.ok ? { error: result.error } : {}),
+            });
+          } catch (error) {
+            results.push({
+              wabaId: waba.id, name, ok: false, synced: 0,
+              error: error instanceof Error ? error.message : "WABA sync failed",
+            });
+          }
+        }
+        if ((wabas ?? []).length < 200) break;
+        offset += 200;
+      }
+    }
+    return {
+      ok: results.length > 0 && results.every((result) => result.ok),
+      totalWabas: results.length,
+      successfulWabas: results.filter((result) => result.ok).length,
+      failedWabas: results.filter((result) => !result.ok).length,
+      synced: results.reduce((sum, result) => sum + result.synced, 0),
+      results,
+    };
   });
 
 export const createTemplate = createServerFn({ method: "POST" })
@@ -120,7 +242,8 @@ export const deleteTemplate = createServerFn({ method: "POST" })
     return { templateId: input.templateId };
   })
   .handler(async ({ data, context }) => {
-    const { data: template, error } = await context.supabase
+    const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: template, error } = await supabaseRuntimeAdmin
       .from("templates")
       .select("id, waba_id")
       .eq("id", data.templateId)

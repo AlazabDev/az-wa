@@ -8,7 +8,7 @@ import { useScope, type Scope } from "@/lib/scope";
 import { usePortfolios, useWabas, useNumbers } from "@/lib/azwa-data";
 import { normalizeWhatsappPhone, whatsappAccountLabel, whatsappAccountName } from "@/lib/azwa-number-labels";
 
-export function scopeKey(scope: Pick<Scope, "kind" | "id">): string {
+function scopeKey(scope: Pick<Scope, "kind" | "id">): string {
   return `${scope.kind}:${scope.id ?? ""}`;
 }
 
@@ -17,9 +17,9 @@ export function ScopeSelector() {
   const portfolioQuery = usePortfolios();
   const wabaQuery = useWabas();
   const numberQuery = useNumbers();
-  const portfolios = portfolioQuery.data ?? [];
-  const wabas = wabaQuery.data ?? [];
-  const numbers = numberQuery.data ?? [];
+  const portfolios = useMemo(() => portfolioQuery.data ?? [], [portfolioQuery.data]);
+  const wabas = useMemo(() => wabaQuery.data ?? [], [wabaQuery.data]);
+  const numbers = useMemo(() => numberQuery.data ?? [], [numberQuery.data]);
 
   const options = useMemo(() => {
     const list = new Map<string, Scope>();

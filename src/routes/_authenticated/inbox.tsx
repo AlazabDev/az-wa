@@ -108,7 +108,7 @@ function ConversationThread({
   const messages: MessageRow[] = useMemo(
     () =>
       [...((msgData?.rows ?? []) as MessageRow[])].reverse(),
-    [msgData, conversationId],
+    [msgData],
   );
 
   // Scroll to bottom on new messages
@@ -259,7 +259,7 @@ function InboxPage() {
   const send = useServerFn(sendTextMessage);
   const readRecords = useServerFn(readRecordTable);
   const numberQuery = useNumbers();
-  const numbers = numberQuery.data ?? [];
+  const numbers = useMemo(() => numberQuery.data ?? [], [numberQuery.data]);
 
   const [activeTab, setActiveTab] = useState<"compose" | "conversations">("conversations");
   const [selectedConversation, setSelectedConversation] = useState<ConversationRow | null>(null);
