@@ -19,6 +19,7 @@ import {
   requireMetaAccessToken,
   validateRequiredEnv,
 } from "../_shared/meta-env.ts";
+import { isTrustedServiceRequest } from "../_shared/access-control.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -178,6 +179,7 @@ async function sendWhatsApp(phoneNumberId: string, to: string, text: string): Pr
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (!isTrustedServiceRequest(req)) return json({ error: "Unauthorized" }, 401);
 
   try {
     validateRequiredEnv(["ANTHROPIC_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
@@ -190,6 +192,37 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = makeSupabase();
+
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("id, tenant_id, wa_number_id, contacts(phone_e164), wa_numbers(phone_number_id)")
+      .eq("id", convId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    const contact = Array.isArray(conversation?.contacts)
+      ? conversation.contacts[0]
+      : conversation?.contacts;
+    const number = Array.isArray(conversation?.wa_numbers)
+      ? conversation.wa_numbers[0]
+      : conversation?.wa_numbers;
+    const savedPhone = contact?.phone_e164?.replace(/\D/g, "");
+    if (
+      !conversation ||
+      number?.phone_number_id !== phoneNumberId ||
+      !savedPhone ||
+      savedPhone !== fromPhone.replace(/\D/g, "")
+    ) {
+      return json({ error: "Conversation not found" }, 404);
+    }
+    const { data: inboundMessage } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("id", messageId)
+      .eq("tenant_id", tenantId)
+      .eq("conversation_id", convId)
+      .eq("direction", "inbound")
+      .maybeSingle();
+    if (!inboundMessage) return json({ error: "Message not found" }, 404);
 
     // بناء System Prompt
     const systemPrompt =
@@ -221,7 +254,7 @@ Deno.serve(async (req: Request) => {
       timestamp: new Date().toISOString(),
     });
 
-    console.log(`✅ AI reply sent to ${fromPhone} in conv ${convId}`);
+    console.log(`AI reply sent for inbound message ${messageId}`);
     return json({ success: true, reply: aiReply });
   } catch (err) {
     console.error("❌ ai_auto_reply error:", err);

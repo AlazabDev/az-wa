@@ -10,3 +10,7 @@
 > the editor, so keep the branch in a working state.
 
 <!-- LOVABLE:END -->
+
+# Project Architecture Rules
+
+- Shared Supabase Edge Function authorization and public-destination checks belong in `_shared/access-control.ts` and `_shared/ssrf.ts` so exposed handlers fail closed consistently.

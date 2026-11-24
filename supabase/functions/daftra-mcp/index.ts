@@ -7,6 +7,11 @@ import type { Dict, Operation, ToolResult } from "./types.ts";
 import { isObject, toolResult } from "./types.ts";
 import { executeRegistered, validateRegistry } from "./modules/registry.ts";
 import { expandSearchTerms, normalizeArabic } from "./arabic-aliases.ts";
+import {
+  getAuthenticatedUser,
+  getOrganizationIdBySlug,
+  hasOrganizationPermission,
+} from "../_shared/access-control.ts";
 
 const OPERATIONS = catalog as Operation[];
 const COVERAGE = validateRegistry(OPERATIONS);
@@ -102,7 +107,7 @@ const TOOLS = [
   },
 ] as const;
 
-async function invokeTool(name: string, args: Dict): Promise<ToolResult> {
+async function invokeTool(name: string, args: Dict, request: Request): Promise<ToolResult> {
   if (name === "daftra_list_categories") {
     const counts: Record<string, number> = {};
     for (const op of OPERATIONS) counts[op.t] = (counts[op.t] ?? 0) + 1;
@@ -148,6 +153,29 @@ async function invokeTool(name: string, args: Dict): Promise<ToolResult> {
       return toolResult("operation_id must be a nonempty string", true);
     const op = BY_ID.get(args.operation_id);
     if (!op) return toolResult("Unknown operation_id", true);
+
+    const moduleName = op.module.toLowerCase();
+    const method = op.m.toUpperCase();
+    const requiresPermission =
+      moduleName.startsWith("staff/") &&
+      (method !== "GET" || op.id.includes("send_login_details"))
+        ? "users.manage"
+        : moduleName.startsWith("clients/") && method !== "GET"
+          ? "contacts.manage"
+          : null;
+
+    if (requiresPermission) {
+      const user = await getAuthenticatedUser(request);
+      const organizationId = await getOrganizationIdBySlug("alazab-group");
+      if (
+        !user ||
+        !organizationId ||
+        !(await hasOrganizationPermission(user, organizationId, requiresPermission))
+      ) {
+        return toolResult("A signed-in AzWA administrator is required for this operation", true);
+      }
+    }
+
     try {
       return await executeRegistered(op, args);
     } catch (error) {
@@ -158,7 +186,7 @@ async function invokeTool(name: string, args: Dict): Promise<ToolResult> {
   return toolResult(`Unknown tool: ${name}`, true);
 }
 
-async function handle(message: unknown): Promise<unknown | null> {
+async function handle(message: unknown, request: Request): Promise<unknown | null> {
   if (!isObject(message) || message.jsonrpc !== "2.0" || typeof message.method !== "string")
     return rpcError(isObject(message) && message.id !== undefined ? message.id : null, -32600, "Invalid Request");
   if (message.id === undefined) return null;
@@ -188,7 +216,14 @@ async function handle(message: unknown): Promise<unknown | null> {
         return rpcError(id, -32602, "Expected params.arguments to be an object");
       const name = message.params.name;
       if (!TOOLS.some((tool) => tool.name === name)) return rpcError(id, -32602, `Unknown tool: ${name}`);
-      return rpcResult(id, await invokeTool(name, isObject(message.params.arguments) ? message.params.arguments : {}));
+      return rpcResult(
+        id,
+        await invokeTool(
+          name,
+          isObject(message.params.arguments) ? message.params.arguments : {},
+          request,
+        ),
+      );
     }
     default:
       return rpcError(id, -32601, `Method not found: ${message.method}`);
@@ -226,8 +261,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (Array.isArray(payload) && payload.length === 0)
       return response(rpcError(null, -32600, "Empty batch"), 400);
     const output = Array.isArray(payload)
-      ? (await Promise.all(payload.map(handle))).filter((item) => item !== null)
-      : await handle(payload);
+      ? (await Promise.all(payload.map((item) => handle(item, request)))).filter((item) => item !== null)
+      : await handle(payload, request);
     if (output === null || (Array.isArray(output) && output.length === 0))
       return new Response(null, { status: 202, headers: HEADERS });
     return response(output);

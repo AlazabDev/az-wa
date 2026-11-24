@@ -199,8 +199,15 @@ export const searchContacts = createServerFn({ method: "POST" })
     const { organizationId } = await authorize(context, "contacts.read");
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
 
-    const q = `%${data.query.trim().replace(/[%_]/g, " ")}%`;
-    const limit = Math.min(50, data.limit ?? 20);
+    const searchText = data.query
+      .trim()
+      .replace(/[\u0000-\u001f%_*(),\\]/g, " ")
+      .replace(/\s+/g, " ")
+      .slice(0, 100);
+    if (!searchText) return [];
+    const q = `%${searchText}%`;
+    const requestedLimit = Number.isInteger(data.limit) ? data.limit ?? 20 : 20;
+    const limit = Math.max(1, Math.min(50, requestedLimit));
 
     const { data: rows, error } = await (supabaseRuntimeAdmin as any)
       .from("contacts")

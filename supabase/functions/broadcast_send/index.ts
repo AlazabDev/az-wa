@@ -16,6 +16,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getMetaApiVersion, requireMetaAccessToken } from "../_shared/meta-env.ts";
+import { getAuthenticatedUser, hasTenantRole } from "../_shared/access-control.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,10 +109,28 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  const user = await getAuthenticatedUser(req);
+  if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  if (!(await hasTenantRole(user.userId, tenantId, ["admin"]))) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+  }
+
   const supabase = makeSupabase();
   const token = requireMetaAccessToken();
 
   try {
+    const { data: sender, error: senderError } = await supabase
+      .from("wa_numbers")
+      .select("phone_number_id")
+      .eq("id", waNumberId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    if (senderError || !sender || sender.phone_number_id !== phoneNumberId) {
+      return new Response(JSON.stringify({ error: "WhatsApp number is not authorized" }), {
+        status: 403,
+      });
+    }
+
     // 1. إنشاء سجل البث أو استئنافه
     let broadcastId = payload.broadcastId;
     let broadcast: BroadcastRecord;
@@ -269,7 +288,7 @@ Deno.serve(async (req: Request) => {
       } catch (err) {
         failedCount++;
         results.push({ contactId: contact.id, status: "failed", error: String(err) });
-        console.error(`❌ Failed to send to ${contact.phone_e164}:`, err);
+        console.error(`Broadcast delivery failed for contact ${contact.id}:`, err);
       }
     }
 

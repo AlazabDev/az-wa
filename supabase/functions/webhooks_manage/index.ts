@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { assertPublicWebhookUrl } from "../_shared/ssrf.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,6 +128,9 @@ Deno.serve(async (req) => {
 
         if (!ep) return json({ error: "Endpoint not found" }, 404);
 
+        const destination = await assertPublicWebhookUrl(ep.url);
+        if (!destination.ok) return json({ error: "Webhook destination is not allowed" }, 400);
+
         const testPayload = {
           event: "test",
           timestamp: new Date().toISOString(),
@@ -136,6 +140,7 @@ Deno.serve(async (req) => {
         try {
           const response = await fetch(ep.url, {
             method: "POST",
+            redirect: "error",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(testPayload),
           });

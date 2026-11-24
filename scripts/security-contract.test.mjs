@@ -45,3 +45,77 @@ test('deployment cannot apply historical migrations', () => {
   assert.match(deploy, /--apply-migrations\|--migrate\) echo "BLOCKED:/);
   assert.doesNotMatch(deploy, /supabase db push/);
 });
+
+test('privileged message, vision, media, and worker handlers require the internal service credential', () => {
+  for (const path of [
+    'supabase/functions/chatbot_engine/index.ts',
+    'supabase/functions/ai_auto_reply/index.ts',
+    'supabase/functions/ai_vision/index.ts',
+    'supabase/functions/seafile_upload/index.ts',
+    'supabase/functions/worker_dispatch/index.ts',
+  ]) {
+    const source = read(path);
+    assert.match(source, /isTrustedServiceRequest\(req\)/, path);
+    assert.match(source, /Unauthorized/, path);
+  }
+});
+
+test('broadcast and arbitrary-number messaging require elevated tenant access', () => {
+  const broadcast = read('supabase/functions/broadcast_send/index.ts');
+  assert.match(broadcast, /getAuthenticatedUser\(req\)/);
+  assert.match(broadcast, /hasTenantRole\(user\.userId, tenantId, \["admin"\]\)/);
+  assert.match(broadcast, /sender\.phone_number_id !== phoneNumberId/);
+
+  const sender = read('supabase/functions/wa-send/index.ts');
+  assert.match(sender, /existingContact && member\.role !== "admin"/);
+  assert.match(sender, /Only tenant administrators may send to a new recipient/);
+});
+
+test('selected image and webhook URL fetches reject private destinations and redirects', () => {
+  const image = read('supabase/functions/ai_image_analyze/index.ts');
+  assert.match(image, /getAuthenticatedUser\(req\)/);
+  assert.match(image, /hasOrganizationPermission\(user, organizationId, requiredPermission\)/);
+  assert.match(image, /assertPublicWebhookUrl\(image_url\)/);
+  assert.match(image, /fetch\(image_url, \{ redirect: "error" \}\)/);
+  assert.match(image, /\.eq\("organization_id", organizationId\)/);
+
+  const upload = read('supabase/functions/seafile_upload/index.ts');
+  assert.match(upload, /assertPublicWebhookUrl\(String\(file_url\)\)/);
+  assert.match(upload, /fetch\(String\(file_url\), \{ redirect: "error" \}\)/);
+
+  const webhookAdmin = read('supabase/functions/webhooks_manage/index.ts');
+  assert.match(webhookAdmin, /assertPublicWebhookUrl\(ep\.url\)/);
+  assert.match(webhookAdmin, /redirect: "error"/);
+});
+
+test('legacy WhatsApp webhook requires Meta signatures and scopes status updates to its account', () => {
+  const webhook = read('supabase/functions/whatsapp-webhook/index.ts');
+  assert.match(webhook, /verifyMetaSignature\(/);
+  assert.match(webhook, /getMetaAppSecret\(\)/);
+  assert.match(webhook, /\.eq\("account_id", account\.id\)/);
+  assert.match(webhook, /\.eq\("wa_message_id", s\.id\)/);
+});
+
+test('Daftra writes require app permissions and customer search strips filter syntax', () => {
+  const daftra = read('supabase/functions/daftra-mcp/index.ts');
+  assert.match(daftra, /getAuthenticatedUser\(request\)/);
+  assert.match(daftra, /users\.manage/);
+  assert.match(daftra, /contacts\.manage/);
+  assert.match(daftra, /hasOrganizationPermission\(user, organizationId, requiresPermission\)/);
+
+  const contacts = read('src/lib/contacts.functions.ts');
+  assert.match(contacts, /replace\(\/\[\\u0000-\\u001f%_\*\(\),\\\\\]\/g, " "\)/);
+  assert.match(contacts, /\.slice\(0, 100\)/);
+});
+
+test('customer phone numbers and message text are not written to selected diagnostic logs', () => {
+  const chatbot = read('supabase/functions/chatbot_engine/index.ts');
+  assert.doesNotMatch(chatbot, /replyText\.substring\(0, 50\)/);
+  assert.doesNotMatch(chatbot, /AI reply sent to \$\{fromPhone\}/);
+
+  const broadcast = read('supabase/functions/broadcast_send/index.ts');
+  assert.doesNotMatch(broadcast, /Failed to send to \$\{contact\.phone_e164\}/);
+
+  const webhook = read('supabase/functions/whatsapp_webhook/index.ts');
+  assert.doesNotMatch(webhook, /from:\$\{fromPhone\}/);
+});

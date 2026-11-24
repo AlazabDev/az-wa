@@ -1,6 +1,8 @@
 // WhatsApp Cloud API webhook: GET verification challenge + POST event processing.
 // Inbound messages create contacts/conversations/messages; media is archived to MinIO.
 import { adminClient, archiveMedia } from "../_shared/wa.ts";
+import { getMetaAppSecret } from "../_shared/meta-env.ts";
+import { verifyMetaSignature } from "../_shared/meta-signature.mjs";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -161,8 +163,20 @@ async function handleInbound(value: ChangeValue) {
 
 async function handleStatus(value: ChangeValue) {
   const admin = adminClient();
+  const phoneNumberId = value.metadata?.phone_number_id;
+  if (!phoneNumberId) return;
+  const { data: account } = await admin
+    .from("whatsapp_accounts")
+    .select("id")
+    .eq("phone_number_id", phoneNumberId)
+    .maybeSingle();
+  if (!account) return;
   for (const s of value.statuses ?? []) {
-    await admin.from("messages").update({ status: s.status }).eq("wa_message_id", s.id);
+    await admin
+      .from("messages")
+      .update({ status: s.status })
+      .eq("account_id", account.id)
+      .eq("wa_message_id", s.id);
   }
 }
 
@@ -185,7 +199,18 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const body = await req.json() as { object?: string; entry?: { changes?: { value?: ChangeValue; field?: string }[] }[] };
+    const rawBody = await req.arrayBuffer();
+    const validSignature = await verifyMetaSignature(
+      rawBody,
+      req.headers.get("X-Hub-Signature-256"),
+      getMetaAppSecret(),
+    );
+    if (!validSignature) return json({ error: "Invalid webhook signature" }, 403);
+
+    const body = JSON.parse(new TextDecoder().decode(rawBody)) as {
+      object?: string;
+      entry?: { changes?: { value?: ChangeValue; field?: string }[] }[];
+    };
     if (body.object !== "whatsapp_business_account") return json({ received: true });
 
     for (const entry of body.entry ?? []) {
