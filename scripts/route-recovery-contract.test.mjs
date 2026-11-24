@@ -28,11 +28,24 @@ test("production routing has explicit recovery boundaries for root, auth and def
 
 test("temporary backend failures must not sign the user out or mislabel them as unauthorized", () => {
   const auth = read("src/routes/_authenticated/route.tsx");
+  const signIn = read("src/routes/auth.tsx");
   const provider = read("src/lib/scope.tsx");
   assert.doesNotMatch(auth, /supabase\.auth\.signOut\(/);
+  assert.doesNotMatch(signIn, /await supabase\.auth\.signOut\(\)/);
   assert.match(auth, /if \(result === null\)/);
-  assert.match(auth, /if \(status === 401 \|\| status === 403\)/);
+  assert.match(auth, /status === 401/);
+  assert.match(auth, /status === 403/);
+  assert.match(auth, /result\.error\.name === "AuthSessionMissingError"/);
   assert.match(auth, /const scopes = await getAuthenticatedOrganizationScopes/);
   assert.match(provider, /try \{[\s\S]*?window\.localStorage\.getItem/);
   assert.match(provider, /try \{[\s\S]*?window\.localStorage\.setItem/);
+});
+
+test("identity changes recheck protected pages and refresh signed-in data once per app root", () => {
+  const root = read("src/routes/__root.tsx");
+  assert.match(root, /supabase\.auth\.onAuthStateChange/);
+  assert.match(root, /event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED"/);
+  assert.match(root, /router\.invalidate\(\)/);
+  assert.match(root, /if \(event !== "SIGNED_OUT"\) void queryClient\.invalidateQueries\(\)/);
+  assert.match(root, /subscription\.unsubscribe\(\)/);
 });

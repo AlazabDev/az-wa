@@ -29,7 +29,16 @@ export const Route = createFileRoute("/_authenticated")({
     }
     if (result.error) {
       const status = result.error.status;
-      if (status === 401 || status === 403) throw redirect({ to: "/auth" });
+      // Supabase reports a missing persisted session as AuthSessionMissingError
+      // (HTTP 400), not 401/403. Treat that as signed out; keep other failures
+      // on the retryable error boundary so service outages do not sign users out.
+      if (
+        status === 401 ||
+        status === 403 ||
+        result.error.name === "AuthSessionMissingError"
+      ) {
+        throw redirect({ to: "/auth" });
+      }
       throw new Error("Unable to verify session with Supabase");
     }
     if (!result.data.user) throw redirect({ to: "/auth" });

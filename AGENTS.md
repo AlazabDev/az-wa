@@ -14,3 +14,4 @@
 # Project Architecture Rules
 
 - Shared Supabase Edge Function authorization and public-destination checks belong in `_shared/access-control.ts` and `_shared/ssrf.ts` so exposed handlers fail closed consistently.
+- The root route owns one Supabase auth-state listener and invalidates protected routing on identity changes, so expired sessions cannot leave private screens active.
