@@ -16,6 +16,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getMetaApiVersion, requireMetaAccessToken } from "../_shared/meta-env.ts";
+import { isTrustedServiceRequest } from "../_shared/access-control.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,9 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+  if (!isTrustedServiceRequest(req)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   let payload: AiVisionPayload;
   try {
@@ -69,6 +73,23 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabase = makeSupabase();
+  const { data: sourceMessage } = await supabase
+    .from("messages")
+    .select("id")
+    .eq("id", messageId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  const { data: sourceMedia } = await supabase
+    .from("media_files")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("message_id", messageId)
+    .eq("wa_media_id", mediaWaId)
+    .maybeSingle();
+  if (!sourceMessage || !sourceMedia) {
+    return new Response(JSON.stringify({ error: "Media record not found" }), { status: 404 });
+  }
+
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }), {
@@ -172,7 +193,9 @@ Deno.serve(async (req: Request) => {
       await supabase
         .from("media_files")
         .update({ ai_tags: extraction.tags })
-        .eq("wa_media_id", mediaWaId);
+        .eq("wa_media_id", mediaWaId)
+        .eq("tenant_id", tenantId)
+        .eq("message_id", messageId);
     }
 
     console.log(

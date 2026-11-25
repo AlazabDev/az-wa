@@ -70,7 +70,9 @@ function AuthPage() {
 
       const { data, error: validationError } = await supabase.auth.getUser();
       if (validationError || !data.user) {
-        await supabase.auth.signOut();
+        // A successful password sign-in may be followed by a temporary Auth
+        // API failure. Keep the persisted session so the user can retry rather
+        // than turning a transient verification outage into a forced sign-out.
         setError("تعذر التحقق من جلسة الدخول. حاول مرة أخرى.");
         return;
       }

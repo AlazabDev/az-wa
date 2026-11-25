@@ -3,6 +3,12 @@ import { corsHeaders, createErrorResponse, createSuccessResponse } from "./utils
 import { GeminiClient } from "./gemini.client.ts";
 import { ImageAnalysisCache } from "./cache.service.ts";
 import { AnalysisResult, MaintenanceIssueType, UrgencyLevel } from "./types.ts";
+import {
+  getAuthenticatedUser,
+  getOrganizationIdBySlug,
+  hasOrganizationPermission,
+} from "../_shared/access-control.ts";
+import { assertPublicWebhookUrl } from "../_shared/ssrf.ts";
 
 // تهيئة Supabase Client
 const supabase = createClient(
@@ -19,10 +25,43 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  if (req.method !== "POST") return createErrorResponse("Method not allowed", 405);
+
+  const user = await getAuthenticatedUser(req);
+  if (!user) return createErrorResponse("Unauthorized", 401);
 
   try {
+    const input = await req.json();
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return createErrorResponse("Invalid request body", 400);
+    }
     const { image_url, image_base64, image_buffer, caption, conversation_id, request_id } =
-      await req.json();
+      input as Record<string, unknown>;
+
+    let organizationId: string | null = null;
+    let requiredPermission = "media.read";
+    if (conversation_id !== undefined && conversation_id !== null) {
+      if (typeof conversation_id !== "string" || !conversation_id) {
+        return createErrorResponse("Invalid conversation_id", 400);
+      }
+      const { data: conversation, error: conversationError } = await user.supabase
+        .from("conversations")
+        .select("id, organization_id")
+        .eq("id", conversation_id)
+        .maybeSingle();
+      if (conversationError || !conversation) return createErrorResponse("Conversation not found", 404);
+      organizationId = String(conversation.organization_id);
+      requiredPermission = "messages.read";
+    } else {
+      organizationId = await getOrganizationIdBySlug("alazab-group");
+    }
+
+    if (
+      !organizationId ||
+      !(await hasOrganizationPermission(user, organizationId, requiredPermission))
+    ) {
+      return createErrorResponse("Forbidden", 403);
+    }
 
     // التحقق من وجود صورة
     if (!image_url && !image_base64 && !image_buffer) {
@@ -35,11 +74,19 @@ Deno.serve(async (req: Request) => {
     // 1. حساب hash للصورة للتخزين المؤقت
     let imageData: string | Uint8Array;
     if (image_url) {
-      const response = await fetch(image_url);
+      if (typeof image_url !== "string") return createErrorResponse("Invalid image_url", 400);
+      const destination = await assertPublicWebhookUrl(image_url);
+      if (!destination.ok) {
+        return createErrorResponse("Image URL must be a public HTTPS address", 400);
+      }
+      const response = await fetch(image_url, { redirect: "error" });
+      if (!response.ok) return createErrorResponse("Unable to retrieve image", 400);
       imageData = new Uint8Array(await response.arrayBuffer());
     } else if (image_base64) {
+      if (typeof image_base64 !== "string") return createErrorResponse("Invalid image_base64", 400);
       imageData = image_base64;
     } else {
+      if (typeof image_buffer !== "string") return createErrorResponse("Invalid image_buffer", 400);
       imageData = new Uint8Array(JSON.parse(image_buffer));
     }
 
@@ -52,7 +99,12 @@ Deno.serve(async (req: Request) => {
 
       // تسجيل التحليل مع المحادثة إذا كان هناك conversation_id
       if (conversation_id) {
-        await saveAnalysisToConversation(conversation_id, cachedAnalysis, request_id);
+        await saveAnalysisToConversation(
+          conversation_id as string,
+          organizationId,
+          cachedAnalysis,
+          typeof request_id === "string" ? request_id : undefined,
+        );
       }
 
       return createSuccessResponse({
@@ -64,14 +116,22 @@ Deno.serve(async (req: Request) => {
 
     // 3. تحليل الصورة باستخدام Gemini
     console.log("🔄 Analyzing image with Gemini...");
-    const analysis = await geminiClient.analyzeImage(imageData, caption);
+    const analysis = await geminiClient.analyzeImage(
+      imageData,
+      typeof caption === "string" ? caption : undefined,
+    );
 
     // 4. تخزين النتيجة في cache
     await cacheService.set(imageHash, analysis);
 
     // 5. حفظ التحليل في قاعدة البيانات
     if (conversation_id) {
-      await saveAnalysisToConversation(conversation_id, analysis, request_id);
+      await saveAnalysisToConversation(
+        conversation_id as string,
+        organizationId,
+        analysis,
+        typeof request_id === "string" ? request_id : undefined,
+      );
     }
 
     // 6. إرجاع النتيجة
@@ -105,6 +165,7 @@ async function calculateImageHash(data: string | Uint8Array): Promise<string> {
 // حفظ التحليل في قاعدة البيانات
 async function saveAnalysisToConversation(
   conversationId: string,
+  organizationId: string,
   analysis: AnalysisResult,
   requestId?: string,
 ) {
@@ -115,7 +176,8 @@ async function saveAnalysisToConversation(
       last_ai_analysis: analysis,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", conversationId);
+    .eq("id", conversationId)
+    .eq("organization_id", organizationId);
 
   if (convError) {
     console.error("Error updating conversation:", convError);

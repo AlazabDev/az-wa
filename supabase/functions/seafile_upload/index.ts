@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getMetaApiVersion, requireMetaAccessToken } from "../_shared/meta-env.ts";
+import { isTrustedServiceRequest } from "../_shared/access-control.ts";
+import { assertPublicWebhookUrl } from "../_shared/ssrf.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +26,7 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (!isTrustedServiceRequest(req)) return json({ error: "Unauthorized" }, 401);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -33,6 +36,16 @@ Deno.serve(async (req) => {
     const { tenant_id, media_id, file_name, mime_type, message_id, file_url } = body;
 
     if (!tenant_id) return json({ error: "tenant_id is required" }, 400);
+
+    if (message_id) {
+      const { data: message } = await serviceClient
+        .from("messages")
+        .select("id")
+        .eq("id", message_id)
+        .eq("tenant_id", tenant_id)
+        .maybeSingle();
+      if (!message) return json({ error: "Message not found" }, 404);
+    }
 
     const seafileUrl = Deno.env.get("SEAFILE_URL");
     const seafileToken = Deno.env.get("SEAFILE_TOKEN");
@@ -78,7 +91,9 @@ Deno.serve(async (req) => {
         actualFileName = `wa_${media_id.substring(0, 10)}_${Date.now()}${ext}`;
       }
     } else if (file_url) {
-      const fileRes = await fetch(file_url);
+      const check = await assertPublicWebhookUrl(String(file_url));
+      if (!check.ok) return json({ error: "File URL must be a public HTTPS address" }, 400);
+      const fileRes = await fetch(String(file_url), { redirect: "error" });
       if (!fileRes.ok) {
         return json({ error: "Failed to download file from URL" }, 502);
       }

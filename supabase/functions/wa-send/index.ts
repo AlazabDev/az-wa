@@ -65,6 +65,17 @@ Deno.serve(async (req) => {
 
   const toPhone = String(to).replace(/[^0-9]/g, "");
   if (!/^\d{8,15}$/.test(toPhone)) return json({ error: "Invalid destination phone" }, 400);
+  const phoneE164 = `+${toPhone}`;
+  const { data: existingContact, error: contactLookupError } = await admin
+    .from("contacts")
+    .select("id")
+    .eq("tenant_id", num.tenant_id)
+    .eq("phone_e164", phoneE164)
+    .maybeSingle();
+  if (contactLookupError) return json({ error: "Unable to verify recipient" }, 500);
+  if (!existingContact && member.role !== "admin") {
+    return json({ error: "Only tenant administrators may send to a new recipient" }, 403);
+  }
   const waPayload: any = { messaging_product: "whatsapp", to: toPhone, type };
 
   if (type === "text") {
@@ -101,13 +112,7 @@ Deno.serve(async (req) => {
   const waJson = await waResp.json().catch(() => ({}));
   if (!waResp.ok) return json({ error: "WA API error", details: waJson }, waResp.status);
 
-  const phoneE164 = "+" + toPhone;
-  let { data: contact } = await admin
-    .from("contacts")
-    .select("id")
-    .eq("tenant_id", num.tenant_id)
-    .eq("phone_e164", phoneE164)
-    .maybeSingle();
+  let contact = existingContact;
   if (!contact) {
     const ins = await admin
       .from("contacts")

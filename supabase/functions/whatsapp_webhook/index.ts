@@ -418,7 +418,7 @@ async function handleIncoming(
     console.error("❌ Message insert:", me.message);
     return;
   }
-  console.log(`✅ ${saved?.id} | conv:${convId} | from:${fromPhone} | ${msg.type}`);
+  console.log(`Inbound message saved: ${saved?.id} | conversation:${convId} | type:${msg.type}`);
 
   // 5. Chatbot
   if (Deno.env.get("CHATBOT_ENABLED") === "true" && saved?.id) {

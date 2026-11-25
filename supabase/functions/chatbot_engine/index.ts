@@ -19,6 +19,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getMetaApiVersion, requireMetaAccessToken } from "../_shared/meta-env.ts";
+import { isTrustedServiceRequest } from "../_shared/access-control.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,9 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+  if (!isTrustedServiceRequest(req)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   let payload: ChatbotPayload;
   try {
@@ -73,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
   const { tenantId, convId, messageId, waNumberId, phoneNumberId, fromPhone, text } = payload;
 
-  if (!tenantId || !convId) {
+  if (!tenantId || !convId || !messageId || !waNumberId || !phoneNumberId || !fromPhone) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
   }
 
@@ -83,9 +87,33 @@ Deno.serve(async (req: Request) => {
     // 1. تحقق من حالة المحادثة — إذا كانت "human_takeover" لا ترد
     const { data: conv } = await supabase
       .from("conversations")
-      .select("status, chatbot_state, assigned_to")
+      .select("status, chatbot_state, assigned_to, tenant_id, wa_number_id, contacts(phone_e164), wa_numbers(phone_number_id)")
       .eq("id", convId)
-      .single();
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    const contact = Array.isArray(conv?.contacts) ? conv.contacts[0] : conv?.contacts;
+    const number = Array.isArray(conv?.wa_numbers) ? conv.wa_numbers[0] : conv?.wa_numbers;
+    const savedPhone = contact?.phone_e164?.replace(/\D/g, "");
+    if (
+      !conv ||
+      conv.wa_number_id !== waNumberId ||
+      number?.phone_number_id !== phoneNumberId ||
+      !savedPhone ||
+      savedPhone !== fromPhone.replace(/\D/g, "")
+    ) {
+      return new Response("Conversation not found", { status: 404 });
+    }
+
+    const { data: sourceMessage } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("id", messageId)
+      .eq("tenant_id", tenantId)
+      .eq("conversation_id", convId)
+      .eq("direction", "inbound")
+      .maybeSingle();
+    if (!sourceMessage) return new Response("Message not found", { status: 404 });
 
     if (conv?.chatbot_state === "human_takeover" || conv?.assigned_to) {
       console.log(`⏭️ Skipping chatbot — human takeover active for conv:${convId}`);
@@ -320,7 +348,7 @@ async function handleAiResponse(
   await sendWhatsAppText(phoneNumberId, fromPhone, replyText);
   await saveOutboundMessage(supabase, tenantId, convId, replyText, "text", true);
 
-  console.log(`✅ AI reply sent to ${fromPhone}: ${replyText.substring(0, 50)}...`);
+  console.log(`AI reply sent for inbound message ${payload.messageId}`);
 }
 
 // ─── buildSystemPrompt ────────────────────────────────────────────────────────

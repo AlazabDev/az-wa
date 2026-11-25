@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getMetaApiVersion, requireMetaAccessToken } from "../_shared/meta-env.ts";
+import { isTrustedServiceRequest } from "../_shared/access-control.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,8 +18,8 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (!isTrustedServiceRequest(req)) return json({ error: "Unauthorized" }, 401);
 
-  // Internal function - auth handled by Supabase config (verify_jwt = false)
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
