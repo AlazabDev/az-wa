@@ -1,6 +1,6 @@
 import { readFileSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { resolve, basename, relative } from "node:path";
+import { resolve, basename } from "node:path";
 
 const root = process.cwd();
 // Scan files that can enter the repository, including tracked files and
@@ -31,7 +31,6 @@ function candidateFiles() {
     inGitRepository = true;
   } catch {
     // Standalone regression tests run outside a repository.
-
   }
   if (!inGitRepository) return walkSourceFiles(root);
   // Do not silently fall back to scanning build artifacts on a Git failure.
@@ -53,6 +52,34 @@ const patterns = [
 ];
 const sensitiveName =
   /(SECRET|TOKEN|PASSWORD|PASSWD|API_KEY|ACCESS_KEY|PRIVATE_KEY|SERVICE_ROLE|VERIFY_TOKEN|APP_SECRET|CLIENT_SECRET)/i;
+const publicSupabaseKeyNames = new Set([
+  "SUPABASE_PUBLISHABLE_KEY",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_ANON_KEY",
+  "VITE_SUPABASE_ANON_KEY",
+]);
+
+// A Supabase legacy anon key is a JWT, but is intentionally public and is
+// safe only when it is assigned to a known public-key variable in an env file
+// and its decoded claims explicitly identify the Supabase anon role.
+function isPublicSupabaseAnonJwt(rel, text, token) {
+  const name = basename(rel);
+  if (!(name.startsWith(".env") || name.endsWith(".env"))) return false;
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match || !publicSupabaseKeyNames.has(match[1])) continue;
+    const value = match[2].trim().replace(/^['"]|['"]$/g, "");
+    if (value !== token) continue;
+    try {
+      const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+      return payload?.iss === "supabase" && payload?.role === "anon";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 const hits = [];
 for (const rel of paths) {
   const abs = resolve(root, rel);
@@ -66,7 +93,11 @@ for (const rel of paths) {
   }
   for (const [label, pattern] of patterns) {
     pattern.lastIndex = 0;
-    if (pattern.test(text)) hits.push(`${label}: ${rel}`);
+    const matches = [...text.matchAll(pattern)];
+    const unsafeMatches = label === "JWT"
+      ? matches.filter((match) => !isPublicSupabaseAnonJwt(rel, text, match[0]))
+      : matches;
+    if (unsafeMatches.length) hits.push(`${label}: ${rel}`);
   }
   const name = basename(rel);
   if (name.startsWith(".env") || name.endsWith(".env")) {
