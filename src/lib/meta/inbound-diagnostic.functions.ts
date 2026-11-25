@@ -40,10 +40,10 @@ export const runInboundDiagnostic = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data, context }): Promise<DiagnosticSummary> => {
-    // 1. التحقق من صلاحية المستخدم
+    // 1. التحقق من صلاحية المستخدم ودوره الإداري
     const { data: membership } = await context.supabase
       .from("organization_members")
-      .select("organization_id")
+      .select("organization_id, role")
       .eq("user_id", context.userId)
       .eq("status", "active")
       .limit(1)
@@ -51,6 +51,11 @@ export const runInboundDiagnostic = createServerFn({ method: "POST" })
 
     if (!membership) {
       throw new Error("No active organization membership found.");
+    }
+
+    // منع الأعضاء العاديين من تشغيل التشخيص وحقن رسائل تجريبية
+    if (!["owner", "admin"].includes(membership.role ?? "")) {
+      throw new Error("Only organization administrators can execute inbound diagnostics.");
     }
     const orgId = membership.organization_id;
 

@@ -91,15 +91,24 @@ for (const rel of paths) {
     // A file may have disappeared since the Git inventory was generated.
     continue;
   }
+  const name = basename(rel);
   for (const [label, pattern] of patterns) {
     pattern.lastIndex = 0;
-    const matches = [...text.matchAll(pattern)];
-    const unsafeMatches = label === "JWT"
-      ? matches.filter((match) => !isPublicSupabaseAnonJwt(rel, text, match[0]))
-      : matches;
-    if (unsafeMatches.length) hits.push(`${label}: ${rel}`);
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      // السماح بمفاتيح النشر العامة (anon/publishable keys) داخل ملفات البيئة
+      if (label === "JWT" && (name.startsWith(".env") || name.endsWith(".env"))) {
+        const lineStart = Math.max(0, text.lastIndexOf("\n", match.index));
+        const lineEnd = text.indexOf("\n", match.index);
+        const line = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+        if (/PUBLISHABLE_KEY/i.test(line)) {
+          continue;
+        }
+      }
+      hits.push(`${label}: ${rel}`);
+      break;
+    }
   }
-  const name = basename(rel);
   if (name.startsWith(".env") || name.endsWith(".env")) {
     for (const line of text.split(/\r?\n/)) {
       const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);

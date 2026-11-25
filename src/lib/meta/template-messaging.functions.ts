@@ -127,6 +127,32 @@ export const sendTemplateMessage = createServerFn({ method: "POST" })
     if (String(template.status).toLowerCase() !== "approved")
       throw new Error("Only approved Meta templates can be sent");
 
+    const organizationId = number.organization_id;
+
+    // التحقق من صلاحيات العضو أو وجود الرقم ضمن جهات الاتصال المسجلة
+    const { data: member } = await context.supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", organizationId)
+      .eq("user_id", context.userId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    const isAdmin = member && ["owner", "admin"].includes(member.role);
+    if (!isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: contact } = await (supabaseAdmin as any)
+        .from("contacts")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("phone", recipient)
+        .maybeSingle();
+
+      if (!contact) {
+        throw new Error("Standard members can only send templates to registered contacts.");
+      }
+    }
+
     const { client, number: numberScope } = await import("./graph.server").then((m) =>
       m.clientForNumber(data.numberId),
     );
