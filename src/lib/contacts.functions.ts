@@ -196,10 +196,23 @@ export const searchContacts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { query: string; limit?: number }) => input)
   .handler(async ({ data, context }) => {
+    const rawText = data.query.trim().slice(0, 100);
+    const searchText = Array.from(rawText)
+      .filter((ch) => {
+        const code = ch.charCodeAt(0);
+        // استبعاد محارف التحكم والرموز المحجوزة في فلاتر البحث
+        return code >= 32 && !/[%_*(),\\]/.test(ch);
+      })
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!searchText) return [];
+
     const { organizationId } = await authorize(context, "contacts.read");
     const { supabaseRuntimeAdmin } = await import("@/integrations/supabase/client.server");
 
-    const q = `%${data.query.trim().replace(/[%_]/g, " ")}%`;
+    const q = `%${searchText.replace(/[%_]/g, " ")}%`;
     const limit = Math.min(50, data.limit ?? 20);
 
     const { data: rows, error } = await (supabaseRuntimeAdmin as any)

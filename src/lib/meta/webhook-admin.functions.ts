@@ -351,8 +351,26 @@ export const testWebhookChallenge = createServerFn({ method: "POST" })
     );
     if (!secret?.verify_token) throw new Error("Verify token is not configured");
 
-    const challenge = randomUUID().replaceAll("-", "");
     const target = new URL(String(endpoint.url));
+    if (target.protocol !== "https:") {
+      throw new Error("Webhook endpoint must use secure HTTPS protocol");
+    }
+
+    // التحقق من أن الوجهة خارجية عامة وليست شبكة داخلية (SSRF Protection)
+    const hostname = target.hostname.toLowerCase();
+    const isPrivateOrLocal =
+      hostname === "localhost" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal") ||
+      /^127\./.test(hostname) ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+
+    if (isPrivateOrLocal) {
+      throw new Error("Requests to internal or private IP ranges are strictly blocked.");
+    }
+
     target.searchParams.set("hub.mode", "subscribe");
     target.searchParams.set("hub.verify_token", secret.verify_token);
     target.searchParams.set("hub.challenge", challenge);
@@ -360,7 +378,10 @@ export const testWebhookChallenge = createServerFn({ method: "POST" })
     let ok = false;
     let detail = "";
     try {
-      const response = await fetch(target, { signal: AbortSignal.timeout(10_000) });
+      const response = await fetch(target, {
+        signal: AbortSignal.timeout(10_000),
+        redirect: "error", // منع التحويل التلقائي لتفادي تجاوز الفحص
+      });
       const body = (await response.text()).trim();
       ok = response.ok && body === challenge;
       detail = ok
